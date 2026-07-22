@@ -5,13 +5,13 @@ import type { ClassementDivisionD2 } from '@/lib/types';
 import { CLUB_CARREAU_MONDORF } from '@/lib/types';
 
 /**
- * Graphique de classement en EMPHASE : Carreau Mondorf en bleu épais avec son
- * nom en direct-label, les autres clubs en simple repère gris fin — plutôt
- * qu'une ligne par club en couleur catégorielle (7 couleurs à mémoriser pour
- * ne suivre qu'un seul club, jugé illisible lors du prototype Apps Script
- * équivalent). Largeur du tracé proportionnelle au nombre de journées (pas
- * fixe) : déborde naturellement de son cadre sur petit écran → défilement
- * horizontal natif, pas de curseur séparé à piloter.
+ * Graphique de classement en EMPHASE : Carreau Mondorf en terracotta épais
+ * avec son nom en direct-label, les autres clubs en simple repère (gravier)
+ * fin — plutôt qu'une ligne par club en couleur catégorielle (7 couleurs à
+ * mémoriser pour ne suivre qu'un seul club, jugé illisible lors du prototype
+ * Apps Script équivalent). Largeur du tracé proportionnelle au nombre de
+ * journées (pas fixe) : déborde naturellement de son cadre sur petit écran
+ * → défilement horizontal natif, pas de curseur séparé à piloter.
  *
  * Survol/tap sur le tracé : ligne de curseur + infobulle avec le classement
  * complet de la journée pointée, et remonte la journée sélectionnée au parent
@@ -36,7 +36,7 @@ export function ClassementChart({
   const layout = useMemo(() => {
     const nbClubs = clubs.length || 1;
     const padL = 28;
-    const padR = 118;
+    const padR = 128;
     const padT = 14;
     const padB = 22;
     const pasX = 55;
@@ -104,7 +104,7 @@ export function ClassementChart({
               y1={y(r)}
               x2={padL + plotW}
               y2={y(r)}
-              stroke="var(--ligne, #E7E5DE)"
+              stroke="var(--ligne, #e3d5b8)"
               strokeWidth={1}
             />
             <text
@@ -112,7 +112,8 @@ export function ClassementChart({
               y={y(r) + 3}
               textAnchor="end"
               fontSize={9.5}
-              fill="var(--gris-clair, #8b8a84)"
+              fill="var(--encre-douce, #5a4c3c)"
+              fontFamily="var(--font-score, sans-serif)"
             >
               {r}
             </text>
@@ -125,13 +126,14 @@ export function ClassementChart({
             y={h - 6}
             textAnchor="middle"
             fontSize={9.5}
-            fill="var(--gris-clair, #8b8a84)"
+            fill="var(--encre-douce, #5a4c3c)"
+            fontFamily="var(--font-score, sans-serif)"
           >
             J{j}
           </text>
         ))}
 
-        {/* lignes de contexte (les autres clubs) */}
+        {/* lignes de contexte (les autres clubs, ton "gravier") */}
         {clubs
           .filter((c) => c !== CLUB_CARREAU_MONDORF)
           .map((c) => {
@@ -143,9 +145,9 @@ export function ClassementChart({
                 key={c}
                 points={pts}
                 fill="none"
-                stroke="var(--gris-clair, #8b8a84)"
-                strokeWidth={1.5}
-                opacity={0.7}
+                stroke="var(--ligne, #d8c7a3)"
+                strokeWidth={1.75}
+                opacity={0.9}
               />
             );
           })}
@@ -156,8 +158,8 @@ export function ClassementChart({
             <polyline
               points={evoCM.map((pt) => `${x(pt.journee)},${y(pt.rang)}`).join(' ')}
               fill="none"
-              stroke="var(--bleu, #0192D3)"
-              strokeWidth={3}
+              stroke="var(--terracotta, #C1522B)"
+              strokeWidth={3.25}
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -166,16 +168,17 @@ export function ClassementChart({
                 key={pt.journee}
                 cx={x(pt.journee)}
                 cy={y(pt.rang)}
-                r={3.5}
-                fill="var(--bleu, #0192D3)"
+                r={3.75}
+                fill="var(--terracotta, #C1522B)"
               />
             ))}
             <text
-              x={padL + plotW + 8}
-              y={y(evoCM[evoCM.length - 1].rang) + 4}
-              fontSize={11.5}
-              fontWeight={700}
-              fill="var(--encre, #1A1A17)"
+              x={padL + plotW + 10}
+              y={y(evoCM[evoCM.length - 1].rang) + 5}
+              fontSize={13}
+              fontWeight={600}
+              fill="var(--encre, #241b12)"
+              fontFamily="var(--font-display, serif)"
             >
               Carreau Mondorf
             </text>
@@ -189,7 +192,7 @@ export function ClassementChart({
             y1={padT}
             x2={x(hoverJournee)}
             y2={padT + plotH}
-            stroke="var(--bleu, #0192D3)"
+            stroke="var(--terracotta, #C1522B)"
             strokeWidth={1}
             strokeDasharray="3 3"
             opacity={0.5}
@@ -199,8 +202,8 @@ export function ClassementChart({
       </svg>
 
       {hoverJournee != null && (
-        <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-[var(--encre,#1A1A17)] px-2.5 py-2 text-[11.5px] leading-relaxed text-white">
-          <strong>Journée {journeeAffichee}</strong>
+        <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-encre px-3 py-2.5 text-[11.5px] leading-relaxed text-sable-carte shadow-lg">
+          <strong className="font-display">Journée {journeeAffichee}</strong>
           <br />
           {entreesTooltip.map((e) => (
             <div key={e.club}>

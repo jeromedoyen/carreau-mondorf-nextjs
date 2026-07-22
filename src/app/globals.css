@@ -1,54 +1,104 @@
 @import "tailwindcss";
 
-/* Charte graphique Carreau Mondorf — reprise à l'identique de l'app existante
-   (carreau-mondorf-app/Charte_graphique_Carreau_Mondorf.md), ne pas redéfinir
-   de variante locale. */
+/*
+  Direction artistique : "Riviera / Boulodrome" — un club de pétanque
+  méditerranéen, pas une app SaaS. Gravier chaud, vert pin, terracotta,
+  laiton — plutôt que le bleu/blanc générique. Typographie de caractère
+  (Fraunces en display, Bebas Neue pour les scores, Work Sans en corps de
+  texte) au lieu d'Inter/Arial. Voir CLAUDE.md du projet pour le contexte.
+*/
+
 :root {
-  --bleu: #0192D3;
-  --bleu-dark: #046591;
-  --rouge: #E4342A;
-  --rouge-dark: #a3251d;
-  --jaune: #F5EA16;
-  --encre: #1A1A17;
-  --gris-txt: #5c5b56;
-  --gris-clair: #8b8a84;
-  --fond: #FAFAF8;
-  --carte: #FFFFFF;
-  --ligne: #E7E5DE;
-  --radius: 10px;
-  --vert: #3b6d11;
-  --ambre: #854F0B;
-  --violet: #6D4FA8;
+  --sable: #f4ecd8;
+  --sable-carte: #fbf6ea;
+  --encre: #241b12;
+  --encre-douce: #5a4c3c;
+  --ligne: #e3d5b8;
+
+  --terracotta: #c1522b;
+  --terracotta-dark: #96401f;
+  --pin: #24463a;
+  --pin-clair: #3a6353;
+  --laiton: #b1852f;
+  --marine: #1c3a56;
+  --marine-clair: #2f5883;
+
+  --succes: #3b6d3a;
+  --danger: #a3312a;
+
+  --font-display: var(--font-fraunces);
+  --font-score: var(--font-bebas);
+  --font-body: var(--font-worksans);
 }
 
 @theme inline {
-  --color-bleu: var(--bleu);
-  --color-bleu-dark: var(--bleu-dark);
-  --color-rouge: var(--rouge);
-  --color-rouge-dark: var(--rouge-dark);
+  --color-sable: var(--sable);
+  --color-sable-carte: var(--sable-carte);
   --color-encre: var(--encre);
-  --color-gris-txt: var(--gris-txt);
-  --color-gris-clair: var(--gris-clair);
-  --color-fond: var(--fond);
-  --color-carte: var(--carte);
+  --color-encre-douce: var(--encre-douce);
   --color-ligne: var(--ligne);
-  --color-vert: var(--vert);
-  --color-ambre: var(--ambre);
-  --font-oswald: var(--font-oswald);
-  --font-inter: var(--font-inter);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-dark: var(--terracotta-dark);
+  --color-pin: var(--pin);
+  --color-pin-clair: var(--pin-clair);
+  --color-laiton: var(--laiton);
+  --color-marine: var(--marine);
+  --color-marine-clair: var(--marine-clair);
+  --color-succes: var(--succes);
+  --color-danger: var(--danger);
+  --font-display: var(--font-display);
+  --font-score: var(--font-score);
+  --font-body: var(--font-body);
 }
 
 body {
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  background-color: var(--sable);
+  color: var(--encre);
+  font-family: var(--font-body), sans-serif;
+  /* Grain subtil : donne du grain de gravier plutôt qu'un aplat numérique plat. */
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, color-mix(in oklab, var(--laiton) 14%, transparent), transparent),
+    radial-gradient(900px 500px at -10% 10%, color-mix(in oklab, var(--pin) 10%, transparent), transparent);
+  background-attachment: fixed;
 }
 
-h1, h2, h3, .tab {
-  font-family: var(--font-oswald), sans-serif;
+h1, h2, h3, .font-display {
+  font-family: var(--font-display), serif;
 }
 
-/* Bandeau tricolore signature, toujours en haut de page. */
+.font-score {
+  font-family: var(--font-score), sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Bandeau signature : remplace le ribbon tricolore plat par un dégradé
+   terracotta -> laiton, plus en phase avec l'identité "Riviera". */
 .ribbon {
-  height: 8px;
+  height: 6px;
   width: 100%;
-  background: linear-gradient(90deg, var(--rouge) 0 33%, #fff 33% 38%, var(--bleu) 38% 100%);
+  background: linear-gradient(90deg, var(--terracotta) 0%, var(--laiton) 60%, var(--pin) 100%);
+}
+
+/* Grain overlay léger, fixe, pour casser la platitude numérique. */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes monter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.entree {
+  animation: monter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entree { animation: none; }
 }

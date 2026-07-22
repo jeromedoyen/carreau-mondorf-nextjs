@@ -1,3 +1,4 @@
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { ClassementDivisionD2 } from '@/lib/types';
 import { CLUB_CARREAU_MONDORF } from '@/lib/types';
 
@@ -20,32 +21,32 @@ export function ClassementBars({
   const maxAbs = Math.max(...entrees.map((e) => Math.abs(e.pt.diff)), 1);
 
   return (
-    <div>
+    <div className="flex flex-col">
       {entrees.map((e) => {
         const ptPrec = data.evolution[e.club]?.find((p) => p.journee === journee - 1);
-        const tendance = !ptPrec ? '' : e.pt.rang < ptPrec.rang ? '▲' : e.pt.rang > ptPrec.rang ? '▼' : '▬';
+        const monte = ptPrec && e.pt.rang < ptPrec.rang;
+        const descend = ptPrec && e.pt.rang > ptPrec.rang;
         const pct = (Math.abs(e.pt.diff) / maxAbs) * 100;
         const estCM = e.club === CLUB_CARREAU_MONDORF;
-        const couleur = estCM ? 'var(--bleu)' : 'var(--gris-clair)';
         return (
           <div
             key={e.club}
-            className={`grid grid-cols-[22px_1fr_2fr_90px] items-center gap-2.5 py-1 text-[12.5px] ${estCM ? 'font-semibold' : ''}`}
+            className={`grid grid-cols-[26px_1fr_2fr_100px] items-center gap-3 border-t border-ligne py-2 text-[12.5px] first:border-t-0 ${estCM ? 'font-semibold text-encre' : 'text-encre-douce'}`}
           >
-            <span className="font-[family-name:var(--font-oswald)] text-[var(--gris-txt)]">
-              {e.pt.rang}
-            </span>
-            <span>{e.club}</span>
-            <span className="block h-[18px] overflow-hidden rounded-md bg-[var(--fond)]">
+            <span className="font-score text-base">{e.pt.rang}</span>
+            <span className={estCM ? '' : 'text-encre'}>{e.club}</span>
+            <span className="block h-[16px] overflow-hidden rounded-full bg-sable">
               <span
-                className="block h-full rounded-md"
-                style={{ width: `${pct}%`, background: couleur }}
+                className="block h-full rounded-full transition-[width] duration-500"
+                style={{ width: `${pct}%`, background: estCM ? 'var(--terracotta)' : 'var(--ligne)' }}
               />
             </span>
-            <span>
+            <span className="flex items-center gap-1.5 text-[11.5px]">
               {e.pt.diff > 0 ? '+' : ''}
-              {e.pt.diff} <span className="opacity-60">{tendance}</span> · {e.pt.victoires}V{' '}
-              {e.pt.defaites}D
+              {e.pt.diff} · {e.pt.victoires}V {e.pt.defaites}D
+              {monte && <TrendingUp size={13} className="text-pin" />}
+              {descend && <TrendingDown size={13} className="text-danger" />}
+              {!monte && !descend && ptPrec && <Minus size={13} className="opacity-40" />}
             </span>
           </div>
         );

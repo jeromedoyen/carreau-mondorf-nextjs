@@ -12,22 +12,24 @@ export function Tabs({
   const [active, setActive] = useState(0);
   return (
     <div>
-      <div className="mb-5 flex gap-1.5 border-b border-[var(--ligne)]">
+      <div className="mb-6 flex gap-2 border-b border-ligne">
         {labels.map((label, i) => (
           <button
             key={label}
             onClick={() => setActive(i)}
-            className={`border-b-[3px] px-4 py-2.5 text-[13.5px] tracking-[.03em] ${
+            className={`font-display px-4 py-2.5 text-[14.5px] transition-colors ${
               active === i
-                ? 'border-[var(--bleu)] text-[var(--encre)]'
-                : 'border-transparent text-[var(--gris-txt)]'
+                ? 'border-b-2 border-terracotta text-encre'
+                : 'border-b-2 border-transparent text-encre-douce hover:text-terracotta'
             }`}
           >
             {label}
           </button>
         ))}
       </div>
-      {children[active]}
+      <div key={active} className="entree">
+        {children[active]}
+      </div>
     </div>
   );
 }

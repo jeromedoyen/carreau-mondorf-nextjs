@@ -1,17 +1,24 @@
 import type { Metadata } from "next";
-import { Oswald, Inter } from "next/font/google";
+import { Fraunces, Bebas_Neue, Work_Sans } from "next/font/google";
 import { NavBar } from "@/components/NavBar";
 import "./globals.css";
 
-const oswald = Oswald({
-  variable: "--font-oswald",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
-  weight: ["400", "500", "600"],
+const bebas = Bebas_Neue({
+  variable: "--font-bebas",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+const workSans = Work_Sans({
+  variable: "--font-worksans",
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
 });
 
@@ -26,8 +33,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${oswald.variable} ${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[var(--fond)] text-[var(--encre)]">
+    <html
+      lang="fr"
+      className={`${fraunces.variable} ${bebas.variable} ${workSans.variable} h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col bg-sable text-encre">
+        <div className="grain" />
         <div className="ribbon" />
         <NavBar />
         {children}
