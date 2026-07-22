@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : 22/07/2026, fin de session.
+Dernière mise à jour : 22/07/2026, Phase 1 de la feuille de route "développement total" — statistiques individuelles.
 
 ## Ce que c'est, et ce que ce n'est PAS
 
@@ -75,15 +75,40 @@ Choix assumé et explicite de **ne pas reproduire la charte graphique de `carrea
 - Skills Claude installés et utilisés pour cette passe : `frontend-design` et `tailwind-v4-shadcn` (dans `~/.claude/skills/` — copiés depuis `github.com/secondsky/claude-skills`, catalogue complet cloné dans `~/claude-skills` si besoin d'en installer d'autres). Un plugin officiel Vercel (`vercel/vercel-plugin`, 30 skills + agents + commandes) est aussi installé via le mécanisme de plugins natif de Claude Code — actif à la prochaine session.
 - shadcn/ui (la CLI, les composants Radix) **volontairement pas installé** — l'app n'a pas besoin de primitives accessibles complexes (pas de modales/dropdowns), un système de tokens Tailwind v4 fait main suffit et donne plus de contrôle créatif.
 
+## Feuille de route "développement total" (décidée le 22/07/2026 avec Jérôme)
+
+Jérôme a demandé de poursuivre le développement complet du prototype (pas juste le module Compétition en lecture seule). Séquencée en 5 phases :
+
+1. **Statistiques individuelles** (National D2 + Promotion) — **FAIT**, voir session ci-dessous.
+2. **Calendrier fédération unifié** — table `calendrier_federation` déjà importée (26 événements), aucune page ne l'affiche encore. Pas de blocage, prochaine étape naturelle.
+3. **Authentification** — à décider : Supabase Auth natif (magic link/OTP) plutôt que réimplémenter l'OTP Brevo maison de l'app d'origine. Bloquant pour les phases 4 et 5.
+4. **Registre membres/licenciés** — RGPD-sensible, nécessite la phase 3 d'abord.
+5. **Actions CA en écriture** (saisie feuille de match, forfait, édition rencontre) — nécessite auth + rôle CA + policies Supabase en écriture (RLS actuellement lecture seule pour tout le monde, écriture uniquement via la clé de service du script d'import).
+
+**Décision actée** : les statistiques individuelles sont **publiques pour l'instant** (cohérent avec le périmètre 100% public actuel du prototype), alors qu'elles sont réservées au CA dans l'app d'origine (`requireMembreCA_`) — à reverrouiller une fois la phase 3 (auth) faite.
+
 ## Périmètre non couvert (pistes pour la suite, pas encore commencées)
 
-- **Statistiques individuelles & binômes/trios** (National D2 et Promotion) — onglets présents dans l'UI mais affichent juste "à venir". La table `parties_d2` existe déjà en base mais n'est pas encore exploitée côté lecture.
-- **Actions CA** : saisie de feuille de match, déclaration de forfait, édition d'une rencontre — tout ça reste dans l'app Apps Script pour l'instant.
-- **Authentification** : ce prototype est 100% public/sans connexion (assumé : aucune donnée RGPD sensible dans le module Compétition). Il faudra une vraie auth avant d'ajouter des actions d'écriture ou le registre membres.
-- **Registre membres/licenciés** : pas commencé, RGPD-sensible, phase ultérieure.
-- **Calendrier fédération unifié** (tournois, Coupe de Luxembourg) : la table existe, aucune page ne l'affiche encore.
+- **Actions CA** : saisie de feuille de match, déclaration de forfait, édition d'une rencontre — tout ça reste dans l'app Apps Script pour l'instant (phase 5 ci-dessus).
+- **Authentification** : ce prototype est 100% public/sans connexion (phase 3 ci-dessus).
+- **Registre membres/licenciés** : pas commencé, RGPD-sensible, phase ultérieure (phase 4 ci-dessus).
+- **Calendrier fédération unifié** (tournois, Coupe de Luxembourg) : la table existe, aucune page ne l'affiche encore (phase 2 ci-dessus).
 
-## À vérifier en priorité à la reprise
+## Session du 22/07/2026 (suite) — résolution du déploiement Vercel périmé
 
-- **Le déploiement Vercel semblait afficher une version périmée** (ancienne page d'accueil, avant la refonte visuelle) juste après le push du commit `9ea9065`, malgré `git status` confirmant localement que `main` est à jour avec `origin/main`. Pas eu le temps d'élucider dans cette session (fausse urgence lancée par erreur — la vraie présentation CA du lendemain concernait `carreau-mondorf-app`, pas ce prototype). **Premier réflexe à la reprise** : vérifier l'onglet "Deployments" de Vercel (build réussi ? échoué ? bloqué ?) avant de creuser plus loin côté code.
-- Valider visuellement la refonte "Riviera" sur un vrai écran (les captures d'écran automatiques ont été capricieuses en fin de session côté outil, pas côté site — le rendu a été confirmé correct via inspection du texte/DOM et deux captures réussies plus tôt, mais un vrai coup d'œil humain reste utile).
+- **Cause racine trouvée** : les deux derniers déploiements (`9ea9065`, `a6266b4`) étaient en **Error** sur Vercel — donc la prod restait épinglée sur l'ancien build réussi (avant la refonte "Riviera"), d'où l'ancienne charte bleu/rouge/Oswald/Inter encore visible malgré des push réussis sur `main`. Ce n'était pas un problème de cache CDN (confirmé : `x-vercel-cache: HIT` avec un `age` qui grimpait sans jamais se rafraîchir, cohérent avec "toujours le même vieux build").
+- **Diagnostic** : `npm run build` en local passait sans erreur (Windows, insensible à la casse) — écarté un premier temps l'hypothèse casse de fichier (vérifié explicitement, aucun mismatch). Le log Vercel donnait `Error: Failed to collect page data for /national-d2`, qui pointait vers `getClassementDivisionD2()`/`getRencontresD2()` (`src/lib/data.ts`) appelant Supabase **au moment du build** (génération statique). Cause confirmée : `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` **absentes des Environment Variables Vercel (Production)** — présentes seulement en local dans `.env.local` (gitignored, jamais synchronisé côté Vercel).
+- **Corrigé par Jérôme** : les deux variables ajoutées dans Vercel → Settings → Environment Variables (Production), puis redeploy manuel du dernier commit. Build réussi, vérifié via fetch direct (`x-vercel-cache: PRERENDER`, `age: 0`, classes de police `fraunces_.../bebas_neue_.../work_sans_...` présentes dans le HTML servi) et lecture du contenu de la page d'accueil (texte "1er de la poule National D2 à l'issue de la journée 8" bien affiché).
+- **Leçon retenue** : toute variable d'environnement ajoutée dans `.env.local` pour une donnée consommée **au build** (pas seulement au runtime) doit être répliquée dans Vercel dès sa création, pas seulement au moment où l'app plante — `/national-d2` et `/promotion` font un fetch Supabase pendant la génération statique, donc un env var manquant y casse le build entier, pas juste une page en erreur runtime.
+- Validation visuelle humaine sur un vrai écran (au-delà de la vérification technique ci-dessus) toujours à faire par Jérôme — outil de capture d'écran resté capricieux en fin de session, contenu confirmé par inspection réseau/DOM uniquement.
+
+## Session du 22/07/2026 (suite) — Phase 1 : statistiques individuelles
+
+- **`scripts/import-csv.ts`** étendu avec `--parties <csv>` : importe le détail de "Parties championnat" dans `parties_d2`, en résolvant `Id_Rencontre` (Id d'origine côté Sheet) vers `rencontres_d2.id` (Supabase) via `source_id` — nécessite que `--rencontres` ait déjà été importé avant (dans cette exécution ou une précédente). Jérôme a exporté et fourni le CSV (160 lignes = 8 rencontres × 20 parties), import réel exécuté avec succès, toutes les lignes résolues sans `Id_Rencontre` introuvable.
+- **`src/lib/stats.ts`** (nouveau) :
+  - `getStatistiquesJoueursD2(saison)` — **port fidèle** de `calculerStatistiquesJoueurs_()` (`carreau-mondorf-app/ChampionnatBackend.gs:1244`) : même regroupement par nom normalisé (`sansAccents()`, équivalent JS de `sansAccents_()`), mêmes clés de binôme/trio (type + noms triés), même tri (tauxVictoire desc, puis joues desc). Lit `parties_d2` + `rencontres_d2` via Supabase (au lieu des Sheets).
+  - `getStatistiquesPromotion(saison)` — **pas un port** (l'app d'origine n'affichait jamais ce calcul), calcul propre à ce prototype à partir de `promotion_equipes` (déjà en base, aucun nouvel import nécessaire) : participations et parties gagnées par joueur/trio, sans détail de partie individuelle (non transcrit à l'import d'origine). Résultat : quelques doublons de noms visibles côté Promotion (ex. "SALVAN Thierry"/"SALVAN Thiery", "Szczucki Bernard"/"SZCUCKI Bernard", "PRYBYLA Jeannine"/"PRYBYLA Jeanine") — **attendu, pas un bug** : contrairement au National D2, la Promotion n'a jamais eu de rapprochement de noms appliqué côté source.
+- **UI** : `src/components/StatistiquesD2.tsx` (classement triable taux de victoire/parties jouées, drill-down par joueur au clic — détail par type de partie + 6 dernières parties —, tableau binômes/trios) et `src/components/StatistiquesPromotion.tsx` (classement triable, bilan par trio, pas de drill-down puisqu'aucun détail de partie disponible). Remplacent les placeholders "à venir" dans `src/app/national-d2/page.tsx` et `src/app/promotion/page.tsx`. Réutilisent les tokens visuels "Riviera" existants (`bg-sable-carte`, `border-ligne`, `font-display`/`font-score`, `text-terracotta`), aucune nouvelle dépendance.
+- **Vérifié en local** (`npm run dev`, navigateur) : les deux onglets Statistiques affichent des données réelles et cohérentes, tri et drill-down fonctionnels. `npx tsc --noEmit`, `npm run lint` et `npm run build` passent sans erreur.
+- **`.claude/launch.json`** créé pour ce projet (manquait) — `npm run dev`, port 3000, `autoPort: true`.
+- **Pas encore fait** : commit + push (Jérôme, comme d'habitude) ; déploiement Vercel de cette phase ; validation visuelle humaine.

@@ -10,6 +10,7 @@
  *                      --division data/division_d2.csv \
  *                      --promotion data/equipes_promotion.csv \
  *                      --federation data/calendrier_federation.csv \
+ *                      --parties data/parties_d2.csv \
  *                      [--dry-run]
  *
  * Chaque CSV doit avoir exactement les en-têtes de la feuille Google Sheets
@@ -24,6 +25,12 @@
  *                       Joueur 1, Joueur 2, Joueur 3, Parties gagnées, Points, Supprimé
  *   - federation      : Id, Saison, Date, Date fin, Libellé, Catégorie, Lieu,
  *                       Domicile, Concerne le club, Notes, Supprimé
+ *   - parties         : Id, Id_Rencontre, Phase, Type, Ordre, Joueurs CM,
+ *                       Joueurs Adverse, Score CM, Score Adverse, Terrain, Supprimé
+ *                       (Id_Rencontre = l'Id d'origine de "Rencontres championnat" ;
+ *                       --rencontres doit avoir été importé au préalable — la
+ *                       résolution se fait via source_id, pas d'ordre imposé
+ *                       entre les deux imports sinon).
  *
  * --dry-run : parse et affiche les compteurs sans rien écrire dans Supabase
  * (utile pour valider un export avant de configurer les identifiants).
@@ -61,9 +68,10 @@ async function main() {
     division: argument('division'),
     promotion: argument('promotion'),
     federation: argument('federation'),
+    parties: argument('parties'),
   };
 
-  if (!chemins.rencontres && !chemins.division && !chemins.promotion && !chemins.federation) {
+  if (!chemins.rencontres && !chemins.division && !chemins.promotion && !chemins.federation && !chemins.parties) {
     console.error(
       'Aucun fichier CSV fourni. Voir l’en-tête de scripts/import-csv.ts pour l’usage.'
     );
@@ -177,6 +185,60 @@ async function main() {
     if (!dryRun && supabase) {
       const { error } = await supabase.from('calendrier_federation').insert(rows as never[]);
       if (error) throw error;
+    }
+  }
+
+  // --- Parties championnat (détail des 20 parties par rencontre, National D2) ---
+  if (chemins.parties) {
+    const lignes = lireCsv(chemins.parties).filter(nonSupprime);
+    if (!dryRun && supabase) {
+      // Résout Id_Rencontre (Id d'origine côté Sheet) -> rencontres_d2.id
+      // (Supabase) via source_id — nécessite que --rencontres ait déjà été
+      // importé (dans cette exécution ou une précédente).
+      const { data: rencontres, error: errR } = await supabase
+        .from('rencontres_d2')
+        .select('id, source_id');
+      if (errR) throw errR;
+      const idParSourceId = new Map(
+        ((rencontres ?? []) as { id: number; source_id: string | null }[]).map((r) => [
+          String(r.source_id),
+          r.id,
+        ])
+      );
+
+      const rows: Record<string, unknown>[] = [];
+      const introuvables = new Set<string>();
+      for (const l of lignes) {
+        const rencontreId = idParSourceId.get(String(l['Id_Rencontre']));
+        if (!rencontreId) {
+          introuvables.add(l['Id_Rencontre']);
+          continue;
+        }
+        rows.push({
+          source_id: l['Id'],
+          rencontre_id: rencontreId,
+          phase: parseEntierOuNull(l['Phase']),
+          type: l['Type'],
+          ordre: parseEntierOuNull(l['Ordre']),
+          joueurs_cm: l['Joueurs CM'],
+          joueurs_adverse: l['Joueurs Adverse'] || null,
+          score_cm: parseEntierOuNull(l['Score CM']),
+          score_adverse: parseEntierOuNull(l['Score Adverse']),
+          terrain: l['Terrain'] || null,
+        });
+      }
+      if (introuvables.size) {
+        console.warn(
+          `parties_d2 : ${introuvables.size} Id_Rencontre introuvable(s) dans rencontres_d2 (lignes ignorées) : ${[...introuvables].join(', ')}`
+        );
+      }
+      console.log(`parties_d2 : ${rows.length} lignes (après filtre Supprimé + résolution rencontre).`);
+      const { error } = await supabase.from('parties_d2').insert(rows as never[]);
+      if (error) throw error;
+    } else {
+      console.log(
+        `parties_d2 : ${lignes.length} lignes (après filtre Supprimé) — résolution Id_Rencontre non vérifiée en --dry-run.`
+      );
     }
   }
 

@@ -1,11 +1,16 @@
 import { Tabs } from '@/components/Tabs';
 import { CalendrierPromotion } from '@/components/CalendrierPromotion';
+import { StatistiquesPromotion } from '@/components/StatistiquesPromotion';
 import { getEquipesPromotion } from '@/lib/data';
+import { getStatistiquesPromotion } from '@/lib/stats';
 
 const SAISON_PROMOTION = '2025'; // seule saison disponible pour l'instant (championnat clos)
 
 export default async function PromotionPage() {
-  const equipes = await getEquipesPromotion(SAISON_PROMOTION);
+  const [equipes, stats] = await Promise.all([
+    getEquipesPromotion(SAISON_PROMOTION),
+    getStatistiquesPromotion(SAISON_PROMOTION),
+  ]);
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-12">
@@ -17,13 +22,7 @@ export default async function PromotionPage() {
       </header>
       <Tabs labels={['Calendrier', 'Statistiques']}>
         <CalendrierPromotion key="calendrier" equipes={equipes} />
-        <div
-          key="stats"
-          className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce"
-        >
-          Statistiques individuelles &amp; trios — à venir dans une prochaine
-          itération de ce prototype.
-        </div>
+        <StatistiquesPromotion key="stats" stats={stats} />
       </Tabs>
     </main>
   );

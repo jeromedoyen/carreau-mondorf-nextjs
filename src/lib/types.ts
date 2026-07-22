@@ -32,3 +32,68 @@ export type ClassementDivisionD2 = {
 };
 
 export const CLUB_CARREAU_MONDORF = 'Carreau Mondorf';
+
+// Statistiques individuelles National D2 — mêmes champs que renvoyait
+// calculerStatistiquesJoueurs_() côté Apps Script (ChampionnatBackend.gs).
+
+export type StatsParType = Record<string, { joues: number; victoires: number }>;
+
+export type PartieJoueurD2 = {
+  idRencontre: number;
+  journee: number;
+  date: string;
+  adversaireClub: string | null;
+  phase: number;
+  type: string;
+  scoreCM: number;
+  scoreAdverse: number;
+  gagne: boolean;
+  partenaires: string[];
+};
+
+export type StatJoueurD2 = {
+  nom: string;
+  parType: StatsParType;
+  parties: PartieJoueurD2[];
+  joues: number;
+  victoires: number;
+  tauxVictoire: number;
+};
+
+export type StatEquipeD2 = {
+  type: string;
+  joueurs: string[];
+  joues: number;
+  victoires: number;
+  tauxVictoire: number;
+};
+
+export type StatistiquesD2 = {
+  joueurs: StatJoueurD2[];
+  equipes: StatEquipeD2[];
+};
+
+// Statistiques individuelles Promotion — pas de détail par partie disponible
+// (seul le bilan du trio par journée a été importé), donc pas de "parType"
+// ni d'historique de parties par joueur, contrairement au National D2.
+
+export type StatJoueurPromotion = {
+  nom: string;
+  participations: number;
+  partiesJouees: number;
+  partiesGagnees: number;
+  tauxVictoire: number;
+};
+
+export type StatTrioPromotion = {
+  joueurs: string[];
+  participations: number;
+  partiesJouees: number;
+  partiesGagnees: number;
+  tauxVictoire: number;
+};
+
+export type StatistiquesPromotion = {
+  joueurs: StatJoueurPromotion[];
+  trios: StatTrioPromotion[];
+};
