@@ -28,12 +28,14 @@
  * --dry-run : parse et affiche les compteurs sans rien écrire dans Supabase
  * (utile pour valider un export avant de configurer les identifiants).
  */
-import 'dotenv/config';
+import { config } from 'dotenv';
 import { readFileSync } from 'node:fs';
 import { parse } from 'csv-parse/sync';
 import { createClient } from '@supabase/supabase-js';
 import { canoniserClubD2 } from './club-aliases';
-import { parseBooleanOuiNon, parseDateSouple, parseEntierOuNull } from './parse-date';
+import { parseBooleanOuiNon, parseDateSouple, parseEntierOuNull, parseJournee } from './parse-date';
+
+config({ path: '.env.local' });
 
 type Ligne = Record<string, string>;
 
@@ -71,10 +73,12 @@ async function main() {
   let supabase: ReturnType<typeof createClient> | null = null;
   if (!dryRun) {
     const url = process.env.SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Nouvelle terminologie Supabase : clé "secret" (sb_secret_...), remplace
+    // l'ancienne clé "service_role" — même usage (contourne la RLS).
+    const serviceKey = process.env.SUPABASE_SECRET_KEY;
     if (!url || !serviceKey) {
       console.error(
-        'SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants dans .env.local (voir .env.local.example). Utilisez --dry-run pour juste valider le parsing.'
+        'SUPABASE_URL / SUPABASE_SECRET_KEY manquants dans .env.local (voir .env.local.example). Utilisez --dry-run pour juste valider le parsing.'
       );
       process.exit(1);
     }
@@ -88,7 +92,7 @@ async function main() {
       source_id: l['Id'],
       saison: l['Saison'],
       division: l['Division'] || 'National D2',
-      journee: parseEntierOuNull(l['Journée']),
+      journee: parseJournee(l['Journée']),
       date: parseDateSouple(l['Date']),
       domicile: parseBooleanOuiNon(l['Domicile']),
       club_adverse: l['Club adverse'] || null,
@@ -135,7 +139,7 @@ async function main() {
     const rows = lignes.map((l) => ({
       source_id: l['Id'],
       saison: l['Saison'],
-      journee: parseEntierOuNull(l['Journée']),
+      journee: parseJournee(l['Journée']),
       date: parseDateSouple(l['Date']),
       numero_equipe: parseEntierOuNull(l['N° Équipe']),
       categorie: l['Catégorie'] || null,

@@ -1,11 +1,11 @@
-import type { mockEquipesPromotion } from '@/lib/mock-data';
+import type { EquipePromotion } from '@/lib/data';
 
 function formatDate(iso: string) {
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function CalendrierPromotion({ equipes }: { equipes: typeof mockEquipesPromotion }) {
+export function CalendrierPromotion({ equipes }: { equipes: EquipePromotion[] }) {
   return (
     <div className="rounded-2xl border border-[var(--ligne)] bg-[var(--carte)] p-5 shadow-[0_1px_3px_rgba(26,26,23,.04),0_1px_2px_rgba(26,26,23,.03)]">
       <h3 className="m-0 mb-1 text-base">Équipes &amp; résultats</h3>

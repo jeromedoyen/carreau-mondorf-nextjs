@@ -1,11 +1,11 @@
-import type { mockRencontresD2 } from '@/lib/mock-data';
+import type { RencontreD2 } from '@/lib/data';
 
 function formatDate(iso: string) {
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function CalendrierD2({ rencontres }: { rencontres: typeof mockRencontresD2 }) {
+export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
   return (
     <div className="rounded-2xl border border-[var(--ligne)] bg-[var(--carte)] p-5 shadow-[0_1px_3px_rgba(26,26,23,.04),0_1px_2px_rgba(26,26,23,.03)]">
       <h3 className="m-0 mb-4 text-base">Calendrier &amp; résultats</h3>

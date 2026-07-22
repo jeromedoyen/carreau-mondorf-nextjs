@@ -25,3 +25,12 @@ export function parseEntierOuNull(valeur: string | null | undefined): number | n
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
+
+/** La colonne "Journée" est préfixée "J" dans Rencontres championnat et
+ *  Équipes Promotion (ex. "J10"), mais purement numérique dans Résultats
+ *  division D2 (ex. "10") — gère les deux formats indifféremment. */
+export function parseJournee(valeur: string | null | undefined): number | null {
+  const s = String(valeur ?? '').trim();
+  const m = s.match(/^j?(\d+)$/i);
+  return m ? Number(m[1]) : null;
+}

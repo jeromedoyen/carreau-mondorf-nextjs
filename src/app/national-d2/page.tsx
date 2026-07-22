@@ -1,13 +1,15 @@
 import { Tabs } from '@/components/Tabs';
 import { CalendrierD2 } from '@/components/CalendrierD2';
 import { ClassementView } from '@/components/ClassementView';
-import { mockClassementD2, mockRencontresD2 } from '@/lib/mock-data';
+import { getClassementDivisionD2, getRencontresD2 } from '@/lib/data';
 
-export default function NationalD2Page() {
-  // TODO (tâche #6) : remplacer les données mock par une lecture Supabase
-  // une fois l'import CSV effectué. La forme des données ne change pas.
-  const data = mockClassementD2;
-  const rencontres = mockRencontresD2;
+const SAISON_ACTUELLE = '2026';
+
+export default async function NationalD2Page() {
+  const [data, rencontres] = await Promise.all([
+    getClassementDivisionD2(SAISON_ACTUELLE),
+    getRencontresD2(SAISON_ACTUELLE),
+  ]);
 
   return (
     <main className="mx-auto max-w-[1080px] px-5 py-8">
@@ -17,21 +19,17 @@ export default function NationalD2Page() {
           Carreau Boules &amp; Pétanque Mondorf — Saison {data.saison}
         </p>
       </header>
-      <Tabs
-        tabs={[
-          { label: 'Calendrier', content: <CalendrierD2 rencontres={rencontres} /> },
-          { label: 'Classement', content: <ClassementView data={data} /> },
-          {
-            label: 'Statistiques',
-            content: (
-              <div className="rounded-2xl border border-[var(--ligne)] bg-[var(--carte)] p-5 text-[13px] text-[var(--gris-txt)]">
-                Statistiques individuelles &amp; binômes/trios — à venir dans une
-                prochaine itération de ce prototype.
-              </div>
-            ),
-          },
-        ]}
-      />
+      <Tabs labels={['Calendrier', 'Classement', 'Statistiques']}>
+        <CalendrierD2 key="calendrier" rencontres={rencontres} />
+        <ClassementView key="classement" data={data} />
+        <div
+          key="stats"
+          className="rounded-2xl border border-[var(--ligne)] bg-[var(--carte)] p-5 text-[13px] text-[var(--gris-txt)]"
+        >
+          Statistiques individuelles &amp; binômes/trios — à venir dans une
+          prochaine itération de ce prototype.
+        </div>
+      </Tabs>
     </main>
   );
 }
