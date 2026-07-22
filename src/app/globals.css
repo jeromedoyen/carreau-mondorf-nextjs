@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
+/* Charte graphique Carreau Mondorf — reprise à l'identique de l'app existante
+   (carreau-mondorf-app/Charte_graphique_Carreau_Mondorf.md), ne pas redéfinir
+   de variante locale. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bleu: #0192D3;
+  --bleu-dark: #046591;
+  --rouge: #E4342A;
+  --rouge-dark: #a3251d;
+  --jaune: #F5EA16;
+  --encre: #1A1A17;
+  --gris-txt: #5c5b56;
+  --gris-clair: #8b8a84;
+  --fond: #FAFAF8;
+  --carte: #FFFFFF;
+  --ligne: #E7E5DE;
+  --radius: 10px;
+  --vert: #3b6d11;
+  --ambre: #854F0B;
+  --violet: #6D4FA8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bleu: var(--bleu);
+  --color-bleu-dark: var(--bleu-dark);
+  --color-rouge: var(--rouge);
+  --color-rouge-dark: var(--rouge-dark);
+  --color-encre: var(--encre);
+  --color-gris-txt: var(--gris-txt);
+  --color-gris-clair: var(--gris-clair);
+  --color-fond: var(--fond);
+  --color-carte: var(--carte);
+  --color-ligne: var(--ligne);
+  --color-vert: var(--vert);
+  --color-ambre: var(--ambre);
+  --font-oswald: var(--font-oswald);
+  --font-inter: var(--font-inter);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+}
+
+h1, h2, h3, .tab {
+  font-family: var(--font-oswald), sans-serif;
+}
+
+/* Bandeau tricolore signature, toujours en haut de page. */
+.ribbon {
+  height: 8px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--rouge) 0 33%, #fff 33% 38%, var(--bleu) 38% 100%);
 }

@@ -32,9 +32,14 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env*.example
 
 # vercel
 .vercel
+
+# exports CSV réels (contiennent des noms de joueurs) — jamais versionnés,
+# seul le script d'import (scripts/import-csv.ts) l'est
+/data/*.csv
 
 # typescript
 *.tsbuildinfo
