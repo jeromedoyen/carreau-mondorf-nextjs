@@ -201,4 +201,19 @@ Premier vrai test grandeur nature du modèle d'accès et de l'exigence d'audit-l
 - **UI** : `FeuilleDeMatch.tsx` (formulaire des 20 parties réparties sur 4 phases, préremplissage si une saisie existe déjà) sur une nouvelle route `/national-d2/rencontres/[id]`, gardée CA côté serveur (même pattern que `/membres`). Lien "Saisir"/"Modifier" ajouté dans `CalendrierD2.tsx` — **converti en Client Component** pour vérifier le statut CA côté client (`onAuthStateChange`-style, via RPC `est_membre_ca` au montage) plutôt que côté serveur, afin que `/national-d2` reste statique (même piège déjà rencontré avec `NavBar.tsx` et évité ici dès la conception).
 - **`getRencontresD2`/`RencontreD2`** complétés avec `id` (manquant jusqu'ici, nécessaire pour lier vers la page de saisie). Nouvelle fonction `getRencontreDetail(id)` dans `data.ts` (lecture publique, rencontre + parties existantes pour préremplissage).
 - **Vérifié en local** : build propre, toutes les pages de données toujours statiques (`○`), seules `/national-d2/rencontres/[id]`, `/connexion`, `/membres`, `/auth/callback` dynamiques (attendu). Gate CA testé sans session : accès refusé correctement sur `/national-d2/rencontres/1` ("Réservé au comité"), aucun lien "Saisir/Modifier" visible sur `/national-d2`. **Pas testé de bout en bout avec une vraie session CA** (nécessite de compléter le flux de connexion par lien magique, pas automatisable depuis cette session) — à faire par Jérôme à la reprise : se connecter, saisir un résultat pour une rencontre "à venir", vérifier le score/statut recalculés et une ligne dans `journal_modifications`.
-- **Pas encore fait** : commit + push ; déploiement Vercel ; test d'écriture réel.
+- Commité (`0c9e43b`) et poussé par Jérôme.
+
+## Session du 23/07/2026 (suite) — déclaration de forfait
+
+- **`src/lib/actions/matchSheet.ts`** — `declarerForfaitRencontre()`, port fidèle de `declarerForfaitRencontre_()` (`ChampionnatBackend.gs:1193`) : le club vainqueur d'un forfait remporte 32-0. Les statuts `ForfaitCM`/`ForfaitAdverse` étaient déjà prévus dans le `check` constraint de `rencontres_d2` depuis `0001_init.sql` — aucune migration nécessaire. Ne touche jamais `parties_d2` (même gap connu que l'original : si une feuille de match avait déjà été saisie puis corrigée en forfait, les anciennes parties restent en base — pas corrigé, fidélité au comportement source).
+- **UI** : `ForfaitPanel.tsx` (confirmation en deux temps — clic sur "Forfait X" puis confirmation inline avec le score annoncé, jamais de `window.confirm()`) ajouté en haut de la page de saisie, au-dessus de `FeuilleDeMatch`. `CalendrierD2.tsx` corrigé : les rencontres en forfait étaient jusqu'ici affichées comme "à venir" (le check `statut === 'Jouée'` ne couvrait pas `ForfaitCM`/`ForfaitAdverse`) — ajout d'un badge "Forfait" à côté du score.
+- **Vérifié en local** : build propre, aucune régression sur `/national-d2` (pas de rencontre en forfait dans les données actuelles, donc rendu identique). Gate CA revérifié.
+- Commité (`452bca8`) — **pas encore poussé**.
+
+### Pas encore fait
+
+- `git push` de cette dernière session.
+- Test d'écriture réel de bout en bout (saisie feuille de match ET forfait) — nécessite une vraie session CA connectée.
+- Import réel du registre membres (en attente des exports CSV + confirmation de Jérôme).
+- Équivalent Promotion des actions CA en écriture (pas commencé — la Promotion n'a pour l'instant que de la lecture).
+- Reverrouillage des statistiques individuelles au CA (toujours public "pour l'instant", cf. Phase 1).
