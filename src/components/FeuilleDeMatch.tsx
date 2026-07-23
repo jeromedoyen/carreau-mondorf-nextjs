@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { PartieExistante, RencontreDetail } from '@/lib/data';
+import type { PartieExistante, RencontreDetail } from '@/lib/rencontreDetail';
 import { enregistrerResultatRencontre, type PartieSaisie } from '@/lib/actions/matchSheet';
 
 type Ligne = PartieSaisie;

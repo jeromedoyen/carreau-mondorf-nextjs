@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FeuilleDeMatch } from '@/components/FeuilleDeMatch';
 import { ForfaitPanel } from '@/components/ForfaitPanel';
-import { getRencontreDetail } from '@/lib/data';
+import { getRencontreDetail } from '@/lib/rencontreDetail';
 import { estMembreCA } from '@/lib/membres';
 
 const LABEL_STATUT: Record<string, string> = {
