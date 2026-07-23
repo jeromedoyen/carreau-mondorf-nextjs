@@ -216,4 +216,11 @@ Premier vrai test grandeur nature du modèle d'accès et de l'exigence d'audit-l
 - Test d'écriture réel de bout en bout (saisie feuille de match ET forfait) — nécessite une vraie session CA connectée.
 - Import réel du registre membres (en attente des exports CSV + confirmation de Jérôme).
 - Équivalent Promotion des actions CA en écriture (pas commencé — la Promotion n'a pour l'instant que de la lecture).
-- Reverrouillage des statistiques individuelles au CA (toujours public "pour l'instant", cf. Phase 1).
+
+## Session du 23/07/2026 (suite) — reverrouillage des statistiques individuelles D2 au CA
+
+- **`0006_verrouillage_stats.sql`** : `parties_d2` passe de lecture publique à lecture CA uniquement (`est_membre_ca()`). Vraie restriction RLS (pas un masquage d'interface qui laisserait la donnée accessible en appelant l'API Supabase directement).
+- **Refactor pour préserver le rendu statique** : `getStatistiquesJoueursD2`/`getStatistiquesPromotion` (`src/lib/stats.ts`) prennent désormais le client Supabase en paramètre plutôt que d'en importer un fixe. `StatistiquesD2.tsx` est devenu un composant qui récupère et calcule ses propres données **côté client** (vérifie `est_membre_ca()` via RPC au montage, puis charge les stats avec le client navigateur porteur de la session) — évite de refaire l'erreur déjà commise deux fois (`NavBar.tsx`, puis `CalendrierD2.tsx`) de forcer `/national-d2` en rendu dynamique en calculant les stats côté serveur dans une page qui doit rester statique. `getRencontreDetail` (préremplissage de la feuille de match) bascule sur le client avec session pour la même raison RLS.
+- **Décision en attente, pas tranchée unilatéralement** : les statistiques **Promotion restent publiques** — `promotion_equipes` sert aussi `CalendrierPromotion.tsx` (composition des équipes, déjà public), donc la verrouiller casserait une fonctionnalité existante. Deux options pour Jérôme : (a) accepter l'asymétrie D2 verrouillé / Promotion public, ou (b) rendre tout le module Promotion réservé aux licenciés connectés comme dans l'app d'origine (changement plus large, touche aussi le calendrier).
+- **Vérifié en local** : build propre, `/national-d2` toujours statique (`○`). Onglet Statistiques testé sans session : message "réservé au comité d'administration" + lien de connexion, confirmé.
+- Commité (`178adb3`) — **pas encore poussé**. Migration `0006` restante à appliquer par Jérôme.
