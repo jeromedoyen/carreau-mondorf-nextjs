@@ -88,3 +88,37 @@ export async function enregistrerResultatRencontre(
   revalidatePath('/national-d2');
   return { ok: true, scoreCM, scoreAdverse, resultat };
 }
+
+export type ResultatForfait = { ok: true } | { ok: false; error: string };
+
+/** Port fidèle de declarerForfaitRencontre() (ChampionnatBackend.gs:1193) :
+ *  le club vainqueur d'un forfait remporte 32-0 (règlement FLBP). Ne touche
+ *  jamais parties_d2 (même comportement que l'original — si une feuille de
+ *  match avait déjà été saisie puis corrigée en forfait, les anciennes
+ *  parties restent en base, gap connu déjà présent côté v1, pas corrigé
+ *  ici pour rester fidèle). */
+export async function declarerForfaitRencontre(
+  rencontreId: number,
+  forfaitDe: 'CM' | 'Adverse'
+): Promise<ResultatForfait> {
+  const supabase = await createClient();
+
+  const { data: estCA } = await supabase.rpc('est_membre_ca');
+  if (!estCA) {
+    return { ok: false, error: 'Action réservée aux membres du CA.' };
+  }
+
+  const scoreCM = forfaitDe === 'CM' ? 0 : 32;
+  const scoreAdverse = forfaitDe === 'CM' ? 32 : 0;
+  const statut = forfaitDe === 'CM' ? 'ForfaitCM' : 'ForfaitAdverse';
+  const resultat = forfaitDe === 'CM' ? 'Défaite' : 'Victoire';
+
+  const { error } = await supabase
+    .from('rencontres_d2')
+    .update({ statut, score_cm: scoreCM, score_adverse: scoreAdverse, resultat })
+    .eq('id', rencontreId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/national-d2');
+  return { ok: true };
+}

@@ -28,7 +28,8 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
       <h3 className="font-display m-0 mb-5 text-xl">Calendrier &amp; résultats</h3>
       <div className="flex flex-col">
         {rencontres.map((r) => {
-          const joue = r.statut === 'Jouée';
+          const forfait = r.statut === 'ForfaitCM' || r.statut === 'ForfaitAdverse';
+          const joue = r.statut === 'Jouée' || forfait;
           const exempt = r.statut === 'Exempt';
           const gagne = joue && r.scoreCM! > r.scoreAdverse!;
           return (
@@ -56,12 +57,17 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 {joue ? (
-                  <span
-                    className={`font-score rounded-lg px-3 py-1 text-base ${
-                      gagne ? 'bg-pin/10 text-pin' : 'bg-danger/10 text-danger'
-                    }`}
-                  >
-                    {r.scoreCM} – {r.scoreAdverse}
+                  <span className="flex items-center gap-2">
+                    {forfait && (
+                      <span className="text-[11px] uppercase tracking-wide text-danger">Forfait</span>
+                    )}
+                    <span
+                      className={`font-score rounded-lg px-3 py-1 text-base ${
+                        gagne ? 'bg-pin/10 text-pin' : 'bg-danger/10 text-danger'
+                      }`}
+                    >
+                      {r.scoreCM} – {r.scoreAdverse}
+                    </span>
                   </span>
                 ) : !exempt ? (
                   <span className="text-[12px] uppercase tracking-wide text-encre-douce/50">

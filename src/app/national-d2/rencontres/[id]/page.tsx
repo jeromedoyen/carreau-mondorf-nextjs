@@ -1,8 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FeuilleDeMatch } from '@/components/FeuilleDeMatch';
+import { ForfaitPanel } from '@/components/ForfaitPanel';
 import { getRencontreDetail } from '@/lib/data';
 import { estMembreCA } from '@/lib/membres';
+
+const LABEL_STATUT: Record<string, string> = {
+  ForfaitCM: 'Forfait Carreau Mondorf enregistré',
+  ForfaitAdverse: "Forfait de l'adversaire enregistré",
+};
 
 export default async function SaisieRencontrePage({
   params,
@@ -43,8 +49,14 @@ export default async function SaisieRencontrePage({
         <h1 className="font-display mt-1 text-4xl italic">
           {rencontre.domicile ? `Carreau Mondorf — ${rencontre.adversaire}` : `${rencontre.adversaire} — Carreau Mondorf`}
         </h1>
+        {LABEL_STATUT[rencontre.statut] && (
+          <p className="mt-2 text-[13px] font-medium text-danger">{LABEL_STATUT[rencontre.statut]}</p>
+        )}
       </header>
-      <FeuilleDeMatch rencontre={rencontre} />
+      <div className="flex flex-col gap-6">
+        <ForfaitPanel rencontreId={rencontre.id} adversaire={rencontre.adversaire ?? 'l’adversaire'} />
+        <FeuilleDeMatch rencontre={rencontre} />
+      </div>
     </main>
   );
 }
