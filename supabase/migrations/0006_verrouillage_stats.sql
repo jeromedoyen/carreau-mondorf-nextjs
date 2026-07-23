@@ -1,0 +1,21 @@
+-- Reverrouille les statistiques individuelles National D2 au CA — décision
+-- actée en Phase 1 ("public pour l'instant, à reverrouiller une fois l'auth
+-- en place") et l'auth existe désormais. Équivalent de requireMembreCA_()
+-- sur getStatistiquesJoueurs() côté app d'origine (ChampionnatBackend.gs).
+--
+-- Sans risque pour le reste de l'app : `parties_d2` n'est consommée que par
+-- (1) le calcul des stats individuelles (src/lib/stats.ts) et (2) le
+-- préremplissage du formulaire de saisie de feuille de match
+-- (getRencontreDetail, déjà réservé au CA côté page ET maintenant lu via le
+-- client avec session, cf. commit associé) — jamais par le calendrier
+-- public (`CalendrierD2.tsx` ne lit que `rencontres_d2`).
+--
+-- ⚠️ Ne s'applique PAS à `promotion_equipes` (statistiques Promotion) :
+-- cette table sert aussi le calendrier Promotion public
+-- (CalendrierPromotion.tsx, composition des équipes), donc la verrouiller
+-- casserait une fonctionnalité publique existante. Décision à trancher
+-- séparément avec Jérôme (accepter l'asymétrie, ou rendre tout le module
+-- Promotion réservé aux licenciés comme dans l'app d'origine) — cf.
+-- CONTEXTE_PROJET.md.
+drop policy "lecture publique" on parties_d2;
+create policy "lecture CA uniquement" on parties_d2 for select using (public.est_membre_ca());

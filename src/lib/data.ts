@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { createClient as createClientAvecSession } from './supabase/server';
 import type { ClassementDivisionD2, EvolutionPoint } from './types';
 
 /** Reproduit exactement getClassementDivisionD2() de DivisionD2Backend.gs :
@@ -151,10 +152,16 @@ export type PartieExistante = {
 export type RencontreDetail = RencontreD2 & { parties: PartieExistante[] };
 
 /** Rencontre + détail des parties déjà saisies (pour préremplir le
- *  formulaire de saisie/modification) — lecture publique (RLS), pas besoin
- *  du client avec session ici, seule l'écriture (Server Action) l'exige. */
+ *  formulaire de saisie/modification). Utilise le client avec session (pas
+ *  le client public du haut de ce fichier) : `parties_d2` est réservée au
+ *  CA depuis 0006_verrouillage_stats.sql — un client anonyme recevrait un
+ *  tableau de parties vide, cassant le préremplissage pour le CA lui-même.
+ *  Uniquement appelée depuis la page de saisie (déjà dynamique/gardée CA),
+ *  donc aucun impact sur le rendu statique des pages publiques. */
 export async function getRencontreDetail(id: number): Promise<RencontreDetail | null> {
-  const { data: rencontre, error: errR } = await supabase
+  const supabaseSession = await createClientAvecSession();
+
+  const { data: rencontre, error: errR } = await supabaseSession
     .from('rencontres_d2')
     .select('id, journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
     .eq('id', id)
@@ -162,7 +169,7 @@ export async function getRencontreDetail(id: number): Promise<RencontreDetail | 
   if (errR) throw errR;
   if (!rencontre) return null;
 
-  const { data: parties, error: errP } = await supabase
+  const { data: parties, error: errP } = await supabaseSession
     .from('parties_d2')
     .select('phase, type, ordre, joueurs_cm, joueurs_adverse, score_cm, score_adverse, terrain')
     .eq('rencontre_id', id)

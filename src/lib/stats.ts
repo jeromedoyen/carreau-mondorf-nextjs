@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   StatEquipeD2,
   StatistiquesD2,
@@ -47,8 +47,17 @@ type LigneRencontre = {
 /** Port fidèle de calculerStatistiquesJoueurs_() (ChampionnatBackend.gs:1244) —
  *  même regroupement, mêmes clés, même tri. Ne recalcule rien que l'app
  *  d'origine n'a pas déjà décidé ; se contente de lire parties_d2/rencontres_d2
- *  (déjà nettoyées côté source, cf. commentaire du schéma SQL). */
-export async function getStatistiquesJoueursD2(saison: string): Promise<StatistiquesD2> {
+ *  (déjà nettoyées côté source, cf. commentaire du schéma SQL).
+ *
+ *  Le client Supabase est injecté (pas importé fixe) : `parties_d2` est
+ *  réservée au CA (RLS, cf. 0006_verrouillage_stats.sql), donc l'appelant
+ *  doit passer le client navigateur avec session (src/lib/supabase/client.ts)
+ *  pour que la lecture respecte le rôle réel de l'utilisateur connecté — un
+ *  client anonyme recevra toujours un tableau vide, jamais une erreur. */
+export async function getStatistiquesJoueursD2(
+  supabase: SupabaseClient,
+  saison: string
+): Promise<StatistiquesD2> {
   const { data: rencontresData, error: errR } = await supabase
     .from('rencontres_d2')
     .select('id, journee, date, club_adverse')
@@ -168,8 +177,12 @@ type LigneEquipePromotion = {
  *  scripts/import-csv.ts). Chaque partie du trio (sur 4) est comptée comme
  *  jouée par chacun des 3 joueurs ; victoire = partie gagnée par le trio,
  *  répartie de la même façon (on ne sait pas qui, dans le trio, a joué
- *  quelle partie individuellement). */
-export async function getStatistiquesPromotion(saison: string): Promise<StatistiquesPromotion> {
+ *  quelle partie individuellement). Client injecté pour la même raison que
+ *  getStatistiquesJoueursD2 ci-dessus. */
+export async function getStatistiquesPromotion(
+  supabase: SupabaseClient,
+  saison: string
+): Promise<StatistiquesPromotion> {
   const { data, error } = await supabase
     .from('promotion_equipes')
     .select('numero_equipe, journee, joueur_1, joueur_2, joueur_3, parties_gagnees')

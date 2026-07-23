@@ -3,15 +3,13 @@ import { CalendrierD2 } from '@/components/CalendrierD2';
 import { ClassementView } from '@/components/ClassementView';
 import { StatistiquesD2 } from '@/components/StatistiquesD2';
 import { getClassementDivisionD2, getRencontresD2 } from '@/lib/data';
-import { getStatistiquesJoueursD2 } from '@/lib/stats';
 
 const SAISON_ACTUELLE = '2026';
 
 export default async function NationalD2Page() {
-  const [data, rencontres, stats] = await Promise.all([
+  const [data, rencontres] = await Promise.all([
     getClassementDivisionD2(SAISON_ACTUELLE),
     getRencontresD2(SAISON_ACTUELLE),
-    getStatistiquesJoueursD2(SAISON_ACTUELLE),
   ]);
 
   return (
@@ -25,7 +23,7 @@ export default async function NationalD2Page() {
       <Tabs labels={['Calendrier', 'Classement', 'Statistiques']}>
         <CalendrierD2 key="calendrier" rencontres={rencontres} />
         <ClassementView key="classement" data={data} />
-        <StatistiquesD2 key="stats" stats={stats} />
+        <StatistiquesD2 key="stats" saison={SAISON_ACTUELLE} />
       </Tabs>
     </main>
   );

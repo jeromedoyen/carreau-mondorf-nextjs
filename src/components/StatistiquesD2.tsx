@@ -1,10 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { StatistiquesD2 as StatistiquesD2Data } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import { getStatistiquesJoueursD2 } from '@/lib/stats';
 
 type TriColonne = 'tauxVictoire' | 'joues';
+type Etat = 'verification' | 'refuse' | 'chargement' | 'pret';
 
 function formatPct(v: number) {
   return `${Math.round(v * 100)}%`;
@@ -20,25 +24,73 @@ const COLONNES: [TriColonne, string][] = [
   ['joues', 'Parties jouées'],
 ];
 
-/** Classement individuel triable + drill-down par joueur (par type de
- *  partie, historique récent) + bilan des binômes/trios — reprend le même
- *  regroupement que calculerStatistiquesJoueurs_() côté Apps Script
- *  (src/lib/stats.ts), juste réinterprété visuellement. */
-export function StatistiquesD2({ stats }: { stats: StatistiquesD2Data }) {
+/** Réservé au CA (décision Phase 1 : public "pour l'instant", reverrouillé
+ *  cette session) — cf. 0006_verrouillage_stats.sql. Calcul fait entièrement
+ *  côté client (pas dans la page Server Component, qui doit rester statique
+ *  pour la vitesse — même raison que AuthNavLink.tsx/CalendrierD2.tsx) : le
+ *  client navigateur porte la session, seul lui peut lire `parties_d2`
+ *  malgré la RLS. */
+export function StatistiquesD2({ saison }: { saison: string }) {
+  const [etat, setEtat] = useState<Etat>('verification');
+  const [stats, setStats] = useState<StatistiquesD2Data | null>(null);
   const [tri, setTri] = useState<TriColonne>('tauxVictoire');
   const [ouvert, setOuvert] = useState<string | null>(null);
 
-  const joueursTries = useMemo(
-    () =>
-      [...stats.joueurs].sort((a, b) =>
-        tri === 'tauxVictoire'
-          ? b.tauxVictoire - a.tauxVictoire || b.joues - a.joues
-          : b.joues - a.joues || b.tauxVictoire - a.tauxVictoire
-      ),
-    [stats.joueurs, tri]
-  );
+  useEffect(() => {
+    const supabase = createClient();
+    let annule = false;
+    supabase.rpc('est_membre_ca').then(async ({ data: estCA }) => {
+      if (annule) return;
+      if (!estCA) {
+        setEtat('refuse');
+        return;
+      }
+      setEtat('chargement');
+      const resultat = await getStatistiquesJoueursD2(supabase, saison);
+      if (annule) return;
+      setStats(resultat);
+      setEtat('pret');
+    });
+    return () => {
+      annule = true;
+    };
+  }, [saison]);
 
-  if (!stats.joueurs.length) {
+  const joueursTries = useMemo(() => {
+    if (!stats) return [];
+    return [...stats.joueurs].sort((a, b) =>
+      tri === 'tauxVictoire'
+        ? b.tauxVictoire - a.tauxVictoire || b.joues - a.joues
+        : b.joues - a.joues || b.tauxVictoire - a.tauxVictoire
+    );
+  }, [stats, tri]);
+
+  if (etat === 'verification' || etat === 'chargement') {
+    return (
+      <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce">
+        Chargement…
+      </div>
+    );
+  }
+
+  if (etat === 'refuse') {
+    return (
+      <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-center text-[13.5px] text-encre-douce">
+        <p className="mb-3">
+          Les statistiques individuelles sont réservées au comité
+          d&apos;administration.
+        </p>
+        <Link
+          href="/connexion"
+          className="inline-block rounded-lg bg-terracotta px-4 py-2 text-[13px] text-white transition-opacity hover:opacity-90"
+        >
+          Se connecter
+        </Link>
+      </div>
+    );
+  }
+
+  if (!stats || !stats.joueurs.length) {
     return (
       <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce">
         Aucune donnée de partie détaillée importée pour l’instant — les
