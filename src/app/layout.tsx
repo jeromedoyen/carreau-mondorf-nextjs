@@ -23,7 +23,10 @@ const workSans = Work_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Carreau Mondorf — Compétition",
+  title: {
+    default: "Carreau Mondorf — Compétition",
+    template: "%s — Carreau Mondorf",
+  },
   description: "Carreau Boules et Pétanque Mondorf a.s.b.l. — National D2 & Promotion",
 };
 

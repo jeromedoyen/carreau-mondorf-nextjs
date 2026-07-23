@@ -96,6 +96,7 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
                     value={l.joueursCM}
                     onChange={(e) => modifierLigne(l.index, 'joueursCM', e.target.value)}
                     placeholder="Joueurs Carreau Mondorf"
+                    aria-label={`${LABEL_PHASE[phase]} ${type} ${l.ordre} — joueurs Carreau Mondorf`}
                     className="rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-encre outline-none focus:border-terracotta"
                   />
                   <input
@@ -103,6 +104,7 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
                     value={l.joueursAdverse}
                     onChange={(e) => modifierLigne(l.index, 'joueursAdverse', e.target.value)}
                     placeholder="Joueurs adverses"
+                    aria-label={`${LABEL_PHASE[phase]} ${type} ${l.ordre} — joueurs adverses`}
                     className="rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-encre outline-none focus:border-terracotta"
                   />
                   <input
@@ -110,6 +112,7 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
                     min={0}
                     value={l.scoreCM}
                     onChange={(e) => modifierLigne(l.index, 'scoreCM', Number(e.target.value))}
+                    aria-label={`${LABEL_PHASE[phase]} ${type} ${l.ordre} — score Carreau Mondorf`}
                     className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
                   />
                   <input
@@ -117,6 +120,7 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
                     min={0}
                     value={l.scoreAdverse}
                     onChange={(e) => modifierLigne(l.index, 'scoreAdverse', Number(e.target.value))}
+                    aria-label={`${LABEL_PHASE[phase]} ${type} ${l.ordre} — score adverse`}
                     className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
                   />
                   <input
@@ -124,6 +128,7 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
                     value={l.terrain}
                     onChange={(e) => modifierLigne(l.index, 'terrain', e.target.value)}
                     placeholder="Terrain"
+                    aria-label={`${LABEL_PHASE[phase]} ${type} ${l.ordre} — terrain`}
                     className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
                   />
                 </div>

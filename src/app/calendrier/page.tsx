@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { CalendrierUnifie } from '@/components/CalendrierUnifie';
 import { getRencontresD2, getCalendrierFederation, fusionnerCalendrier } from '@/lib/data';
+
+export const metadata: Metadata = { title: 'Calendrier' };
 
 const SAISON_ACTUELLE = '2026';
 

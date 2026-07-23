@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { RegistreMembres } from '@/components/RegistreMembres';
 import { getRegistreMembres, estMembreCA } from '@/lib/membres';
+
+export const metadata: Metadata = { title: 'Membres & licenciés' };
 
 const ANNEE_ACTUELLE = '2026';
 

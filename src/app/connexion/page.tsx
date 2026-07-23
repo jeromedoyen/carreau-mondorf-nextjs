@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { ConnexionForm } from '@/components/ConnexionForm';
+
+export const metadata: Metadata = { title: 'Connexion' };
 
 export default async function ConnexionPage({
   searchParams,

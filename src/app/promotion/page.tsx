@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { PromotionContent } from '@/components/PromotionContent';
+
+export const metadata: Metadata = { title: 'Promotion' };
 
 const SAISON_PROMOTION = '2025'; // seule saison disponible pour l'instant (championnat clos)
 

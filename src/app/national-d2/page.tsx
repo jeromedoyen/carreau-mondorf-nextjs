@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { Tabs } from '@/components/Tabs';
 import { CalendrierD2 } from '@/components/CalendrierD2';
 import { ClassementView } from '@/components/ClassementView';
 import { StatistiquesD2 } from '@/components/StatistiquesD2';
 import { getClassementDivisionD2, getRencontresD2 } from '@/lib/data';
+
+export const metadata: Metadata = { title: 'National D2' };
 
 const SAISON_ACTUELLE = '2026';
 
