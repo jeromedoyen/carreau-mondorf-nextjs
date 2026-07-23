@@ -63,3 +63,23 @@ create policy "lecture CA uniquement" on adhesions for select using (public.est_
 -- (Phase 5) viendront avec leurs propres policies + le journal de
 -- modifications requis (cf. CLAUDE.md, section "Exigence produit : audit
 -- des modifications").
+
+-- 🚧 PAS ENCORE FAIT (à ajouter une fois des données réelles importées) :
+-- est_licencie() / est_membre() — les vraies fonctions basées sur
+-- adhesions.type ('Licencié' vs 'Membre (non-licencié)'), distinctes de
+-- est_utilisateur_autorise() (0003_role_ca.sql, qui ne fait que vérifier le
+-- droit de connexion, pas le statut réel du membre). Nécessite de faire le
+-- lien acces.email -> personnes.email -> adhesions — à concevoir avec soin
+-- (les emails ne correspondent pas forcément à 100% entre les deux listes).
+-- Exemple de forme attendue une fois les données là :
+--
+-- create function public.est_licencie() returns boolean ... as $$
+--   select exists (
+--     select 1 from public.adhesions a
+--     join public.personnes p on p.id = a.personne_id
+--     where lower(p.email) = lower(coalesce(auth.jwt()->>'email', ''))
+--     and a.type = 'Licencié' and a.annee = <année en cours> and a.supprime = false
+--   );
+-- $$;
+-- (et une variante est_membre() sans le filtre sur `type`, pour "n'importe
+-- quel type d'adhésion cette année").

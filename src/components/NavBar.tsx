@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CircleDot } from 'lucide-react';
+import Image from 'next/image';
 import { AuthNavLink } from './AuthNavLink';
 
 export function NavBar() {
@@ -7,9 +7,14 @@ export function NavBar() {
     <nav className="sticky top-0 z-30 border-b border-ligne/70 bg-sable/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl items-center gap-7 px-5 py-3.5">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pin text-sable-carte">
-            <CircleDot size={17} strokeWidth={2.2} />
-          </span>
+          <Image
+            src="/logo.png"
+            alt="Carreau Mondorf"
+            width={500}
+            height={261}
+            priority
+            className="h-[34px] w-auto"
+          />
           <span className="font-display text-[17px] font-semibold tracking-tight">
             Carreau Mondorf
           </span>
