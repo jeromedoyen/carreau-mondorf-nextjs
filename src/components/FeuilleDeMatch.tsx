@@ -87,44 +87,48 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
           <h3 className="font-display m-0 mb-4 text-lg">
             {LABEL_PHASE[phase]} — {type}
           </h3>
-          <div className="flex flex-col gap-2.5">
-            {lignesGroupe.map((l) => (
-              <div key={l.index} className="grid grid-cols-[1fr_1fr_60px_60px_70px] items-center gap-2 text-[13px]">
-                <input
-                  type="text"
-                  value={l.joueursCM}
-                  onChange={(e) => modifierLigne(l.index, 'joueursCM', e.target.value)}
-                  placeholder="Joueurs Carreau Mondorf"
-                  className="rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-encre outline-none focus:border-terracotta"
-                />
-                <input
-                  type="text"
-                  value={l.joueursAdverse}
-                  onChange={(e) => modifierLigne(l.index, 'joueursAdverse', e.target.value)}
-                  placeholder="Joueurs adverses"
-                  className="rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-encre outline-none focus:border-terracotta"
-                />
-                <input
-                  type="number"
-                  value={l.scoreCM}
-                  onChange={(e) => modifierLigne(l.index, 'scoreCM', Number(e.target.value))}
-                  className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
-                />
-                <input
-                  type="number"
-                  value={l.scoreAdverse}
-                  onChange={(e) => modifierLigne(l.index, 'scoreAdverse', Number(e.target.value))}
-                  className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
-                />
-                <input
-                  type="text"
-                  value={l.terrain}
-                  onChange={(e) => modifierLigne(l.index, 'terrain', e.target.value)}
-                  placeholder="Terrain"
-                  className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
-                />
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <div className="flex min-w-[560px] flex-col gap-2.5">
+              {lignesGroupe.map((l) => (
+                <div key={l.index} className="grid grid-cols-[1fr_1fr_60px_60px_70px] items-center gap-2 text-[13px]">
+                  <input
+                    type="text"
+                    value={l.joueursCM}
+                    onChange={(e) => modifierLigne(l.index, 'joueursCM', e.target.value)}
+                    placeholder="Joueurs Carreau Mondorf"
+                    className="rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-encre outline-none focus:border-terracotta"
+                  />
+                  <input
+                    type="text"
+                    value={l.joueursAdverse}
+                    onChange={(e) => modifierLigne(l.index, 'joueursAdverse', e.target.value)}
+                    placeholder="Joueurs adverses"
+                    className="rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-encre outline-none focus:border-terracotta"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={l.scoreCM}
+                    onChange={(e) => modifierLigne(l.index, 'scoreCM', Number(e.target.value))}
+                    className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={l.scoreAdverse}
+                    onChange={(e) => modifierLigne(l.index, 'scoreAdverse', Number(e.target.value))}
+                    className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
+                  />
+                  <input
+                    type="text"
+                    value={l.terrain}
+                    onChange={(e) => modifierLigne(l.index, 'terrain', e.target.value)}
+                    placeholder="Terrain"
+                    className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ))}
