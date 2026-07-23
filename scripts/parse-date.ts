@@ -26,6 +26,15 @@ export function parseEntierOuNull(valeur: string | null | undefined): number | n
   return Number.isFinite(n) ? n : null;
 }
 
+/** Montants (Cotisation/Licence) — export CSV français, virgule décimale
+ *  possible ("20,00") en plus du point. */
+export function parseDecimalOuNull(valeur: string | null | undefined): number | null {
+  const s = String(valeur ?? '').trim().replace(',', '.');
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
 /** La colonne "Journée" est préfixée "J" dans Rencontres championnat et
  *  Équipes Promotion (ex. "J10"), mais purement numérique dans Résultats
  *  division D2 (ex. "10") — gère les deux formats indifféremment. */

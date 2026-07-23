@@ -14,7 +14,7 @@ A from-scratch Next.js reconstruction of the "Compétition" module of `carreau-m
 
 **Independent of `carreau-mondorf-app`**: separate repo, separate deployment, one-time CSV → Supabase data copy with no ongoing sync. The Apps Script app remains the club's live production tool; this project is a prototype until validated. All user-facing text is French.
 
-**Scope, deliberately narrow for now**: read-only, no authentication, Compétition module only (National D2 + Promotion). No CA write actions, no member registry, no auth — see `CONTEXTE_PROJET.md` for the full rationale and what's deferred.
+**Scope, growing per an agreed 5-phase roadmap** (see `CONTEXTE_PROJET.md`): started read-only/no-auth (Compétition module only), now adding individual player stats, a unified federation calendar, and authentication (Supabase Auth + email OTP). Still no CA write actions or full member registry — those are later phases, still gated behind auth.
 
 ## Stack
 
@@ -28,7 +28,7 @@ npm run build    # production build — run before every deploy
 npm run lint     # ESLint
 npx tsc --noEmit                        # typecheck the Next.js app
 npx tsc --noEmit -p scripts/tsconfig.json  # typecheck the standalone scripts/ (excluded from the app's tsconfig)
-npm run import -- --rencontres <csv> --division <csv> --promotion <csv> --federation <csv> [--dry-run]
+npm run import -- --rencontres <csv> --division <csv> --promotion <csv> --federation <csv> --parties <csv> --acces <csv> [--dry-run]
 ```
 
 **Deploy**: `git push` to `main` → Vercel builds and deploys automatically. **Claude cannot run `git push` itself in this environment** (no interactive GitHub auth available to the sandboxed shell) — always ask the user to run it from their own terminal, and never ask them to paste a token/secret into chat.
@@ -40,11 +40,17 @@ npm run import -- --rencontres <csv> --division <csv> --promotion <csv> --federa
 - `src/lib/types.ts` — shared TypeScript shapes matching the Apps Script data model.
 - `src/components/Classement*.tsx` — the emphasis ranking chart (Carreau Mondorf highlighted, other clubs as gray/context lines) and its supporting bar-list view. This exact chart design was already validated with the user on the Apps Script side before being ported here — don't redesign the interaction model (hover/tap → crosshair + tooltip + synced bar list), only re-skin colors if needed.
 - `scripts/import-csv.ts` + `scripts/club-aliases.ts` + `scripts/parse-date.ts` — one-time/repeatable data import from CSV exports of the original app's Google Sheets. Watch for the "Journée" column format difference (`J10` in some sheets, plain `10` in others — see `parseJournee()`).
-- `supabase/migrations/0001_init.sql` — schema for all tables, applied manually via the Supabase SQL editor (no Supabase CLI wired up).
+- `supabase/migrations/0001_init.sql` — schema for the read-only Compétition tables. `0002_acces.sql` adds the `acces` allowlist table + the `verifier_acces_avant_creation()` Postgres function for the Supabase "Before user created" Auth Hook. Both applied manually via the Supabase SQL editor (no Supabase CLI wired up) — new migrations need the same manual step, and Auth Hooks additionally need wiring in the Dashboard (Authentication → Hooks), which Claude cannot do itself.
+- `src/lib/stats.ts` — individual player statistics. `getStatistiquesJoueursD2()` is a faithful port of `calculerStatistiquesJoueurs_()` from `carreau-mondorf-app/ChampionnatBackend.gs` (same name-normalization grouping, same sort). `getStatistiquesPromotion()` has no original to port from (that computation never existed in the source app) — Promotion player names have known unreconciled duplicates (typos never cleaned at the source), that's expected, not a bug to fix here.
+- **Auth**: Supabase Auth (email OTP, no passwords) — `src/lib/supabase/client.ts` (browser), `src/lib/supabase/server.ts` (Server Components/Actions, via `next/headers` cookies), `src/proxy.ts` (Next.js 16's renamed `middleware.ts` — refreshes the session cookie every request). Login UI: `src/app/connexion/page.tsx` + `src/components/ConnexionForm.tsx`. **Keep any auth-state read out of Server Components rendered in the root layout** (i.e., out of `NavBar.tsx`) — calling `cookies()`/`getUser()` there forces every page in the tree to dynamic rendering, defeating the static-prerender speed pitch this whole project exists to prove. Auth state lives client-side instead, in `src/components/AuthNavLink.tsx` (hydrates via `onAuthStateChange`).
 
 ## Design direction
 
 "Riviera / boulodrome" — warm terracotta/pine-green/brass/sand palette, Fraunces (display, italic) + Bebas Neue (scoreboard-style accents) + Work Sans (body), deliberately distinct from `carreau-mondorf-app`'s blue/red charte graphique. This was an explicit user request ("effet waouh", not a v1 copy) — don't pull the design back toward the original app's colors/fonts without being asked.
+
+## Exigence produit : audit des modifications (décidée le 23/07/2026)
+
+Toute future action d'écriture (Phase 4 registre membres, Phase 5 actions CA) doit enregistrer **qui** a fait **quoi** — ajout, modification, ou suppression — via la session authentifiée, pas juste la donnée finale. Demande explicite de Jérôme, à respecter dès la première table/action d'écriture construite : prévoir soit des colonnes `modifie_par`/`modifie_le` (+ `cree_par`/`cree_le`) sur chaque table mutable, soit une table `journal_modifications` dédiée (table, ligne, action, ancien/nouvel état, `auth.uid()`/email, horodatage) — trancher au moment de concevoir la première action d'écriture plutôt que d'improviser après coup. Ne s'applique qu'aux données mutables ; les tables actuelles (Compétition) sont en lecture seule, non concernées pour l'instant.
 
 ## Secrets
 

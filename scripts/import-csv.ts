@@ -11,6 +11,8 @@
  *                      --promotion data/equipes_promotion.csv \
  *                      --federation data/calendrier_federation.csv \
  *                      --parties data/parties_d2.csv \
+ *                      --personnes data/personnes.csv \
+ *                      --adhesions data/adhesions.csv \
  *                      [--dry-run]
  *
  * Chaque CSV doit avoir exactement les en-têtes de la feuille Google Sheets
@@ -31,6 +33,20 @@
  *                       --rencontres doit avoir été importé au préalable — la
  *                       résolution se fait via source_id, pas d'ordre imposé
  *                       entre les deux imports sinon).
+ *   - acces           : Email, Nom (export de l'onglet "Accès" — liste
+ *                       d'autorisation minimale pour l'OTP, PAS le registre
+ *                       complet des membres). Lignes sans email ignorées.
+ *   - personnes       : Id, NOM, Prénom, Sexe, Date de naissance, Nationalité,
+ *                       Adresse, Code postal / Ville, Téléphone, Email,
+ *                       Droit à l'image, Supprimé — DONNÉES PERSONNELLES
+ *                       RÉELLES (RGPD), à importer seulement après
+ *                       confirmation explicite (cf. CONTEXTE_PROJET.md).
+ *                       --adhesions doit être importé après --personnes
+ *                       (résolution Id_Personne -> personnes.id).
+ *   - adhesions       : Id, Id_Personne, Année, Type, Licence, Catégorie,
+ *                       Classe, Supprimé, Cotisation payée, Cotisation date,
+ *                       Cotisation montant, Cotisation mode, Licence payée,
+ *                       Licence date, Licence montant.
  *
  * --dry-run : parse et affiche les compteurs sans rien écrire dans Supabase
  * (utile pour valider un export avant de configurer les identifiants).
@@ -40,7 +56,13 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'csv-parse/sync';
 import { createClient } from '@supabase/supabase-js';
 import { canoniserClubD2 } from './club-aliases';
-import { parseBooleanOuiNon, parseDateSouple, parseEntierOuNull, parseJournee } from './parse-date';
+import {
+  parseBooleanOuiNon,
+  parseDateSouple,
+  parseDecimalOuNull,
+  parseEntierOuNull,
+  parseJournee,
+} from './parse-date';
 
 config({ path: '.env.local' });
 
@@ -69,9 +91,21 @@ async function main() {
     promotion: argument('promotion'),
     federation: argument('federation'),
     parties: argument('parties'),
+    acces: argument('acces'),
+    personnes: argument('personnes'),
+    adhesions: argument('adhesions'),
   };
 
-  if (!chemins.rencontres && !chemins.division && !chemins.promotion && !chemins.federation && !chemins.parties) {
+  if (
+    !chemins.rencontres &&
+    !chemins.division &&
+    !chemins.promotion &&
+    !chemins.federation &&
+    !chemins.parties &&
+    !chemins.acces &&
+    !chemins.personnes &&
+    !chemins.adhesions
+  ) {
     console.error(
       'Aucun fichier CSV fourni. Voir l’en-tête de scripts/import-csv.ts pour l’usage.'
     );
@@ -238,6 +272,98 @@ async function main() {
     } else {
       console.log(
         `parties_d2 : ${lignes.length} lignes (après filtre Supprimé) — résolution Id_Rencontre non vérifiée en --dry-run.`
+      );
+    }
+  }
+
+  // --- Accès (liste d'autorisation minimale pour l'OTP) ---
+  if (chemins.acces) {
+    const lignes = lireCsv(chemins.acces).filter((l) => (l['Email'] || '').trim());
+    const rows = lignes.map((l) => ({
+      email: l['Email'].trim().toLowerCase(),
+      nom: l['Nom'] || '',
+    }));
+    console.log(`acces : ${rows.length} lignes (lignes sans email ignorées).`);
+    if (!dryRun && supabase) {
+      const { error } = await supabase.from('acces').insert(rows as never[]);
+      if (error) throw error;
+    }
+  }
+
+  // --- Personnes (registre membres — RGPD, cf. avertissement en tête de fichier) ---
+  if (chemins.personnes) {
+    const lignes = lireCsv(chemins.personnes).filter(nonSupprime);
+    const rows = lignes.map((l) => ({
+      source_id: l['Id'],
+      nom: l['NOM'],
+      prenom: l['Prénom'],
+      sexe: l['Sexe'] || null,
+      date_naissance: parseDateSouple(l['Date de naissance']),
+      nationalite: l['Nationalité'] || null,
+      adresse: l['Adresse'] || null,
+      code_postal_ville: l['Code postal / Ville'] || null,
+      telephone: l['Téléphone'] || null,
+      email: l['Email'] || null,
+      droit_image: parseBooleanOuiNon(l["Droit à l'image"]),
+    }));
+    console.log(`personnes : ${rows.length} lignes (après filtre Supprimé).`);
+    if (!dryRun && supabase) {
+      const { error } = await supabase.from('personnes').insert(rows as never[]);
+      if (error) throw error;
+    }
+  }
+
+  // --- Adhésions (une ligne = une personne pour une année donnée) ---
+  if (chemins.adhesions) {
+    const lignes = lireCsv(chemins.adhesions).filter(nonSupprime);
+    if (!dryRun && supabase) {
+      const { data: personnes, error: errP } = await supabase
+        .from('personnes')
+        .select('id, source_id');
+      if (errP) throw errP;
+      const idParSourceId = new Map(
+        ((personnes ?? []) as { id: number; source_id: string | null }[]).map((p) => [
+          String(p.source_id),
+          p.id,
+        ])
+      );
+
+      const rows: Record<string, unknown>[] = [];
+      const introuvables = new Set<string>();
+      for (const l of lignes) {
+        const personneId = idParSourceId.get(String(l['Id_Personne']));
+        if (!personneId) {
+          introuvables.add(l['Id_Personne']);
+          continue;
+        }
+        rows.push({
+          source_id: l['Id'],
+          personne_id: personneId,
+          annee: l['Année'],
+          type: l['Type'],
+          licence: l['Licence'] || null,
+          categorie: l['Catégorie'] || null,
+          classe: l['Classe'] || null,
+          cotisation_payee: parseBooleanOuiNon(l['Cotisation payée']),
+          cotisation_date: parseDateSouple(l['Cotisation date']),
+          cotisation_montant: parseDecimalOuNull(l['Cotisation montant']),
+          cotisation_mode: l['Cotisation mode'] || null,
+          licence_payee: parseBooleanOuiNon(l['Licence payée']),
+          licence_date: parseDateSouple(l['Licence date']),
+          licence_montant: parseDecimalOuNull(l['Licence montant']),
+        });
+      }
+      if (introuvables.size) {
+        console.warn(
+          `adhesions : ${introuvables.size} Id_Personne introuvable(s) dans personnes (lignes ignorées) : ${[...introuvables].join(', ')}`
+        );
+      }
+      console.log(`adhesions : ${rows.length} lignes (après filtre Supprimé + résolution personne).`);
+      const { error } = await supabase.from('adhesions').insert(rows as never[]);
+      if (error) throw error;
+    } else {
+      console.log(
+        `adhesions : ${lignes.length} lignes (après filtre Supprimé) — résolution Id_Personne non vérifiée en --dry-run.`
       );
     }
   }

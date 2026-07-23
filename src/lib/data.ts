@@ -140,3 +140,76 @@ export async function getSaisonsPromotionDisponibles(): Promise<string[]> {
   if (error) throw error;
   return Array.from(new Set((data ?? []).map((r) => r.saison as string))).sort();
 }
+
+export type EvenementFederation = {
+  date: string;
+  dateFin: string;
+  libelle: string;
+  categorie: string;
+  lieu: string | null;
+  domicile: boolean | null;
+};
+
+export async function getCalendrierFederation(saison: string): Promise<EvenementFederation[]> {
+  const { data, error } = await supabase
+    .from('calendrier_federation')
+    .select('date, date_fin, libelle, categorie, lieu, domicile')
+    .eq('saison', saison)
+    .order('date', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((f) => ({
+    date: f.date as string,
+    dateFin: (f.date_fin as string | null) ?? (f.date as string),
+    libelle: f.libelle as string,
+    categorie: (f.categorie as string | null) ?? 'Fédération',
+    lieu: f.lieu as string | null,
+    domicile: f.domicile as boolean | null,
+  }));
+}
+
+export type ItemCalendrier = {
+  date: string;
+  dateFin: string;
+  titre: string;
+  categorie: string;
+  lieu: string | null;
+  domicile: boolean | null;
+};
+
+/** Port simplifié de getCalendrierUnifie() (CalendrierFederation.gs) : mêmes
+ *  deux sources (rencontres D2 + calendrier fédération), triées
+ *  chronologiquement — les manifestations internes du club (3ᵉ source côté
+ *  Apps Script) sont hors périmètre de ce prototype, cf. CONTEXTE_PROJET.md. */
+export function fusionnerCalendrier(
+  rencontres: RencontreD2[],
+  federation: EvenementFederation[]
+): ItemCalendrier[] {
+  const items: ItemCalendrier[] = [];
+  rencontres
+    .filter((r) => r.statut !== 'Exempt')
+    .forEach((r) => {
+      const titre = r.domicile
+        ? `Carreau Mondorf — ${r.adversaire}`
+        : `${r.adversaire} — Carreau Mondorf`;
+      items.push({
+        date: r.date,
+        dateFin: r.date,
+        titre,
+        categorie: 'National D2',
+        lieu: null,
+        domicile: r.domicile,
+      });
+    });
+  federation.forEach((f) => {
+    items.push({
+      date: f.date,
+      dateFin: f.dateFin,
+      titre: f.libelle,
+      categorie: f.categorie,
+      lieu: f.lieu,
+      domicile: f.domicile,
+    });
+  });
+  items.sort((a, b) => a.date.localeCompare(b.date));
+  return items;
+}

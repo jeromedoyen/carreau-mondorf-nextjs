@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CircleDot } from 'lucide-react';
+import { AuthNavLink } from './AuthNavLink';
 
 export function NavBar() {
   return (
@@ -26,6 +27,19 @@ export function NavBar() {
           >
             Promotion
           </Link>
+          <Link
+            href="/calendrier"
+            className="text-encre-douce transition-colors hover:text-terracotta"
+          >
+            Calendrier
+          </Link>
+          <Link
+            href="/membres"
+            className="text-encre-douce transition-colors hover:text-terracotta"
+          >
+            Membres
+          </Link>
+          <AuthNavLink />
         </div>
       </div>
     </nav>

@@ -97,3 +97,34 @@ export type StatistiquesPromotion = {
   joueurs: StatJoueurPromotion[];
   trios: StatTrioPromotion[];
 };
+
+// Registre membres/licenciés (Phase 4) — réservé au CA, lu via le client
+// Supabase avec session (src/lib/supabase/server.ts), pas le client public.
+
+export type Personne = {
+  id: number;
+  nom: string;
+  prenom: string;
+  sexe: string | null;
+  dateNaissance: string | null;
+  nationalite: string | null;
+  adresse: string | null;
+  codePostalVille: string | null;
+  telephone: string | null;
+  email: string | null;
+  droitImage: boolean | null;
+};
+
+export type Adhesion = {
+  id: number;
+  personneId: number;
+  annee: string;
+  type: string;
+  licence: string | null;
+  categorie: string | null;
+  classe: string | null;
+  cotisationPayee: boolean | null;
+  licencePayee: boolean | null;
+};
+
+export type PersonneAvecAdhesion = Personne & { adhesion: Adhesion | null };
