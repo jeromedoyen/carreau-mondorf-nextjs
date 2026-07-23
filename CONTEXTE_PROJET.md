@@ -246,6 +246,7 @@ Jérôme a donné carte blanche ("tu es l'expert", tests/qualité/visuel/fonctio
 - **Point resté ouvert, maintenant fermé** : "équivalent Promotion des actions CA en écriture" retiré de la liste des pistes — vérifié dans `PromotionBackend.gs` (app d'origine) qu'**aucune fonction d'écriture n'existe pour la Promotion**, cohérent avec la saison 2025 explicitement documentée comme historique/close (plus aucune nouvelle donnée n'y sera jamais entrée). Ce n'est pas un manque de ce prototype, juste un module qui n'a jamais eu besoin d'écriture.
 - Commits de cette passe : `c2a6862` (nav mobile), `5cfdb98` (feuille de match responsive), `2a9bc58` (fermeture menu mobile) — **pas encore poussés**.
 
-### Pistes identifiées mais pas encore traitées (à la discrétion de Jérôme ou d'une prochaine session)
-- Labels d'accessibilité (`<label>`) absents sur les champs de `FeuilleDeMatch.tsx` (seulement des `placeholder`) — impact réel faible (formulaire dense réservé au CA), mais à corriger si le temps le permet.
-- Pas de mode sombre (`prefers-color-scheme`) — la direction artistique "Riviera" n'a jamais été pensée pour ça ; à voir si c'est un besoin exprimé un jour.
+- **Migrations `0006`/`0007` confirmées appliquées par Jérôme** — reverrouillage stats D2 + Promotion désormais réellement actif en base (revérifié via clé anonyme : les deux tables refusent la lecture publique).
+- **Favicon, titres de page, accessibilité** : `icon.png` (recadré depuis le logo, les deux boules) remplace le favicon par défaut de Next.js — jamais changé depuis le scaffold initial. Titre d'onglet dynamique par page (`title.template` dans `layout.tsx`). `aria-label` ajoutés sur les champs de `FeuilleDeMatch.tsx` (seuls des `placeholder` existaient).
+- Dark mode explicitement écarté par Jérôme ("point de détail") — ne pas y revenir sans demande explicite.
+- Commits de cette dernière passe : `fd67365`.
