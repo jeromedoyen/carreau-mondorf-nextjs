@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { AuthNavLink } from './AuthNavLink';
@@ -18,9 +18,28 @@ const LIENS = [
  *  son panneau déroulant sont interactifs. */
 export function MobileMenu() {
   const [ouvert, setOuvert] = useState(false);
+  const conteneurRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ouvert) return;
+    function surClicExterieur(e: MouseEvent) {
+      if (conteneurRef.current && !conteneurRef.current.contains(e.target as Node)) {
+        setOuvert(false);
+      }
+    }
+    function surEchap(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOuvert(false);
+    }
+    document.addEventListener('mousedown', surClicExterieur);
+    document.addEventListener('keydown', surEchap);
+    return () => {
+      document.removeEventListener('mousedown', surClicExterieur);
+      document.removeEventListener('keydown', surEchap);
+    };
+  }, [ouvert]);
 
   return (
-    <div className="md:hidden">
+    <div className="md:hidden" ref={conteneurRef}>
       <button
         type="button"
         onClick={() => setOuvert((v) => !v)}
