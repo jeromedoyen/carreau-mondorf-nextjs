@@ -61,6 +61,7 @@ export async function getStatistiquesJoueursD2(saison: string): Promise<Statisti
     .from('parties_d2')
     .select('rencontre_id, type, phase, joueurs_cm, score_cm, score_adverse')
     .in('rencontre_id', rencontres.map((r) => r.id))
+    .eq('supprime', false)
     .not('score_cm', 'is', null)
     .not('score_adverse', 'is', null);
   if (errP) throw errP;

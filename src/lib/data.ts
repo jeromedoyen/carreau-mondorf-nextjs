@@ -79,6 +79,7 @@ export async function getSaisonsDisponiblesDivisionD2(): Promise<string[]> {
 }
 
 export type RencontreD2 = {
+  id: number;
   journee: number;
   date: string;
   domicile: boolean | null;
@@ -91,11 +92,12 @@ export type RencontreD2 = {
 export async function getRencontresD2(saison: string): Promise<RencontreD2[]> {
   const { data, error } = await supabase
     .from('rencontres_d2')
-    .select('journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
+    .select('id, journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
     .eq('saison', saison)
     .order('journee', { ascending: true });
   if (error) throw error;
   return (data ?? []).map((r) => ({
+    id: r.id as number,
     journee: r.journee as number,
     date: r.date as string,
     domicile: r.domicile as boolean | null,
@@ -133,6 +135,62 @@ export async function getEquipesPromotion(saison: string): Promise<EquipePromoti
     joueurs: [e.joueur_1, e.joueur_2, e.joueur_3].filter((j): j is string => !!j),
     partiesGagnees: e.parties_gagnees as number,
   }));
+}
+
+export type PartieExistante = {
+  phase: number;
+  type: string;
+  ordre: number;
+  joueursCM: string;
+  joueursAdverse: string;
+  scoreCM: number | null;
+  scoreAdverse: number | null;
+  terrain: string | null;
+};
+
+export type RencontreDetail = RencontreD2 & { parties: PartieExistante[] };
+
+/** Rencontre + détail des parties déjà saisies (pour préremplir le
+ *  formulaire de saisie/modification) — lecture publique (RLS), pas besoin
+ *  du client avec session ici, seule l'écriture (Server Action) l'exige. */
+export async function getRencontreDetail(id: number): Promise<RencontreDetail | null> {
+  const { data: rencontre, error: errR } = await supabase
+    .from('rencontres_d2')
+    .select('id, journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
+    .eq('id', id)
+    .maybeSingle();
+  if (errR) throw errR;
+  if (!rencontre) return null;
+
+  const { data: parties, error: errP } = await supabase
+    .from('parties_d2')
+    .select('phase, type, ordre, joueurs_cm, joueurs_adverse, score_cm, score_adverse, terrain')
+    .eq('rencontre_id', id)
+    .eq('supprime', false)
+    .order('phase', { ascending: true })
+    .order('ordre', { ascending: true });
+  if (errP) throw errP;
+
+  return {
+    id: rencontre.id as number,
+    journee: rencontre.journee as number,
+    date: rencontre.date as string,
+    domicile: rencontre.domicile as boolean | null,
+    adversaire: rencontre.club_adverse as string | null,
+    scoreCM: rencontre.score_cm as number | null,
+    scoreAdverse: rencontre.score_adverse as number | null,
+    statut: rencontre.statut as string,
+    parties: (parties ?? []).map((p) => ({
+      phase: p.phase as number,
+      type: p.type as string,
+      ordre: p.ordre as number,
+      joueursCM: p.joueurs_cm as string,
+      joueursAdverse: p.joueurs_adverse as string,
+      scoreCM: p.score_cm as number | null,
+      scoreAdverse: p.score_adverse as number | null,
+      terrain: p.terrain as string | null,
+    })),
+  };
 }
 
 export async function getSaisonsPromotionDisponibles(): Promise<string[]> {
