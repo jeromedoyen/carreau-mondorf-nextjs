@@ -36,7 +36,7 @@ export function ConnexionForm() {
     setEnCours(true);
     await supabase.auth.signInWithOtp({
       email: adresse,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
     });
     setEnCours(false);
     setEnvoye(true);
