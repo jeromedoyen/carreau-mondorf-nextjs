@@ -7,6 +7,7 @@ export const LIENS_PRINCIPAUX = [
   { href: '/national-d2', label: 'National D2' },
   { href: '/promotion', label: 'Promotion' },
   { href: '/calendrier', label: 'Calendrier' },
+  { href: '/manifestations', label: 'Manifestations' },
   { href: '/membres', label: 'Membres' },
 ];
 
