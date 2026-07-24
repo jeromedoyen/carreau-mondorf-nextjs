@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { MapPin, Users } from 'lucide-react';
+import { MapPin } from 'lucide-react';
+import { NouveauCreneauForm } from '@/components/NouveauCreneauForm';
+import { CreneauAffectations } from '@/components/CreneauAffectations';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
 
 export const metadata: Metadata = { title: 'Détail manifestation' };
@@ -61,61 +63,42 @@ export default async function ManifestationDetailPage({
 
       <h2 className="font-display mb-4 text-xl italic">Créneaux &amp; bénévoles</h2>
 
+      <NouveauCreneauForm manifestationId={manifestation.id} />
+
       {creneaux.length === 0 ? (
         <p className="text-[14px] text-encre-douce">Aucun créneau enregistré pour cette manifestation.</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {creneaux.map((c) => {
-            const postesRestants = c.postesPrevus - c.affectations.length;
-            return (
-              <div
-                key={c.id}
-                className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-[15px]">{c.tache}</span>
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                        CATEGORIE_COULEUR[c.categorie] ?? 'bg-encre-douce/15 text-encre-douce'
-                      }`}
-                    >
-                      {c.categorie}
-                    </span>
-                  </div>
-                  <span className="text-[12.5px] text-encre-douce">
-                    {new Date(c.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    {c.heureDebut && ` · ${c.heureDebut}${c.heureFin ? `–${c.heureFin}` : c.finImprecise ? '…' : ''}`}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  <Users size={14} className="text-encre-douce" />
-                  {c.affectations.length === 0 ? (
-                    <span className="text-[12.5px] text-encre-douce">Aucun bénévole inscrit</span>
-                  ) : (
-                    c.affectations.map((a) => (
-                      <span
-                        key={a.id}
-                        className={`rounded-full px-2.5 py-1 text-[12px] font-medium ${
-                          a.estMembre ? 'bg-pin/10 text-pin' : 'bg-sable text-encre-douce'
-                        }`}
-                      >
-                        {a.nom}
-                      </span>
-                    ))
-                  )}
+          {creneaux.map((c) => (
+            <div
+              key={c.id}
+              className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-[15px]">{c.tache}</span>
                   <span
-                    className={`ml-auto text-[12px] font-medium ${
-                      postesRestants > 0 ? 'text-terracotta' : 'text-succes'
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                      CATEGORIE_COULEUR[c.categorie] ?? 'bg-encre-douce/15 text-encre-douce'
                     }`}
                   >
-                    {postesRestants > 0 ? `${postesRestants} poste(s) à pourvoir` : 'Complet'}
+                    {c.categorie}
                   </span>
                 </div>
+                <span className="text-[12.5px] text-encre-douce">
+                  {new Date(c.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  {c.heureDebut && ` · ${c.heureDebut}${c.heureFin ? `–${c.heureFin}` : c.finImprecise ? '…' : ''}`}
+                </span>
               </div>
-            );
-          })}
+
+              <CreneauAffectations
+                manifestationId={manifestation.id}
+                creneauId={c.id}
+                affectations={c.affectations}
+                postesPrevus={c.postesPrevus}
+              />
+            </div>
+          ))}
         </div>
       )}
     </main>

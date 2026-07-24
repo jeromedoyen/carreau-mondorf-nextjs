@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
+import { NouvelleManifestationForm } from '@/components/NouvelleManifestationForm';
 import { getManifestations, estUtilisateurAutorise } from '@/lib/manifestations';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
 
@@ -56,6 +57,8 @@ export default async function ManifestationsPage({
         </div>
         <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
+
+      <NouvelleManifestationForm />
 
       {manifestations.length === 0 ? (
         <p className="text-[14px] text-encre-douce">Aucune manifestation enregistrée pour cette saison.</p>
