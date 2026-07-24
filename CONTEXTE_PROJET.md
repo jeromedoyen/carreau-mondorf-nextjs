@@ -19,14 +19,9 @@ Dernière mise à jour : 22/07/2026 soir, Phase 3 — authentification. Code pr�
 - **Déploiement** : push sur `main` → build automatique Vercel. URL de prod : `https://carreau-mondorf-nextjs.vercel.app`.
 - Comptes créés par Jérôme lui-même (Claude ne crée jamais de comptes) : GitHub, Vercel (connecté via "Continue with GitHub"), Supabase (connecté via "Continue with GitHub").
 
-### ⚠️ Contrainte d'environnement importante : `git push` doit être fait par Jérôme
+### ✅ `git push` autonome activé depuis le 24/07/2026
 
-L'outil Bash de Claude dans cette session n'a pas d'accès interactif à GitHub (pas de `/dev/tty`, pas de navigateur pour l'auth OAuth/Credential Manager). Claude peut committer localement, mais **le push doit systématiquement être relancé par Jérôme depuis son propre PowerShell** :
-```powershell
-cd C:\Users\jerom\carreau-mondorf-nextjs
-git push
-```
-Si GitHub redemande un jeton (Personal Access Token) : le nom d'utilisateur GitHub dans le champ "Username", le jeton **uniquement** dans le champ "Password" — ne jamais les confondre (déjà arrivé une fois, jeton révoqué par précaution après coup, sans conséquence puisque le push avait déjà réussi).
+Jusqu'ici bloquant (l'outil Bash de Claude n'a pas d'accès interactif à GitHub — pas de `/dev/tty`, pas de navigateur pour l'auth OAuth). Résolu après l'installation de **GitHub Desktop** par Jérôme : `git config --global credential.helper manager` + `credential.credentialStore wincredman` configurés globalement (partagé par tous les outils Git de la machine, y compris le shell de Claude), puis authentification faite une fois par Jérôme (login GitHub Desktop). Le jeton stocké dans le Gestionnaire d'identifiants Windows permet désormais à Claude de committer **et pousser** directement, sans intervention manuelle — testé et confirmé (`f456b4f`). Ne plus demander à Jérôme de faire `git push` sauf incident.
 
 ### ⚠️ Secrets déjà exposés en chat (gérés, mais schéma à ne pas reproduire)
 
