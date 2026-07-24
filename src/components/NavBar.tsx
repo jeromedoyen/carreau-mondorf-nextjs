@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { AuthNavLink } from './AuthNavLink';
-import { MobileMenu } from './MobileMenu';
+import { NavLinks } from './NavLinks';
 
 export function NavBar() {
   return (
@@ -20,34 +20,10 @@ export function NavBar() {
             Carreau Mondorf
           </span>
         </Link>
-        <div className="hidden shrink-0 items-center gap-6 text-[13.5px] font-medium md:flex">
-          <Link
-            href="/national-d2"
-            className="text-encre-douce transition-colors hover:text-terracotta"
-          >
-            National D2
-          </Link>
-          <Link
-            href="/promotion"
-            className="text-encre-douce transition-colors hover:text-terracotta"
-          >
-            Promotion
-          </Link>
-          <Link
-            href="/calendrier"
-            className="text-encre-douce transition-colors hover:text-terracotta"
-          >
-            Calendrier
-          </Link>
-          <Link
-            href="/membres"
-            className="text-encre-douce transition-colors hover:text-terracotta"
-          >
-            Membres
-          </Link>
+        <div className="flex shrink-0 items-center gap-6 text-[13.5px] font-medium">
+          <NavLinks />
           <AuthNavLink />
         </div>
-        <MobileMenu />
       </div>
     </nav>
   );
