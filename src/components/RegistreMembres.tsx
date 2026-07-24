@@ -1,3 +1,4 @@
+import { MessageSquareText } from 'lucide-react';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
 function formatDate(iso: string | null) {
@@ -37,7 +38,14 @@ export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion
           {personnes.map((p) => (
             <tr key={p.id} className="border-b border-ligne last:border-b-0 hover:bg-sable/60">
               <td className="px-4 py-2.5 font-medium text-encre">
-                {p.nom} {p.prenom}
+                <span className="inline-flex items-center gap-1.5">
+                  {p.nom} {p.prenom}
+                  {p.notes && (
+                    <span title={p.notes} aria-label={`Note : ${p.notes}`}>
+                      <MessageSquareText size={13} className="shrink-0 text-encre-douce/60" />
+                    </span>
+                  )}
+                </span>
               </td>
               <td className="px-4 py-2.5 text-encre-douce">{p.adhesion?.type ?? '—'}</td>
               <td className="px-4 py-2.5 text-encre-douce">{p.adhesion?.categorie ?? '—'}</td>

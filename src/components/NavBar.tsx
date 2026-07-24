@@ -21,9 +21,6 @@ export function NavBar() {
           </span>
         </Link>
         <div className="flex shrink-0 items-center gap-4 text-[13.5px] font-medium md:gap-6">
-          <Link href="/club" className="text-encre-douce transition-colors hover:text-terracotta">
-            Le Club
-          </Link>
           <Link
             href="/manifestations"
             className="text-encre-douce transition-colors hover:text-terracotta md:hidden"
@@ -31,6 +28,9 @@ export function NavBar() {
             Manif.
           </Link>
           <NavLinks />
+          <Link href="/club" className="text-encre-douce transition-colors hover:text-terracotta">
+            Le Club
+          </Link>
           <AuthNavLink />
         </div>
       </div>

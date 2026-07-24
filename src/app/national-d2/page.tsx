@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Tabs } from '@/components/Tabs';
 import { CalendrierD2 } from '@/components/CalendrierD2';
 import { ClassementView } from '@/components/ClassementView';
 import { StatistiquesD2 } from '@/components/StatistiquesD2';
@@ -37,11 +36,18 @@ export default async function NationalD2Page({
         </div>
         <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
-      <Tabs labels={['Calendrier', 'Classement', 'Statistiques']}>
-        <CalendrierD2 key="calendrier" rencontres={rencontres} />
-        <ClassementView key="classement" data={data} />
-        <StatistiquesD2 key="stats" saison={saison} />
-      </Tabs>
+      {/* PC : calendrier à gauche, classement à droite, visibles ensemble
+          (pense-bête Jérôme, 24/07/2026) — empilés en une colonne sur mobile,
+          où la largeur ne permet pas un affichage côte à côte lisible. */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
+        <CalendrierD2 rencontres={rencontres} />
+        <ClassementView data={data} />
+      </div>
+
+      <div className="mt-12">
+        <h2 className="font-display mb-4 text-xl italic">Statistiques individuelles</h2>
+        <StatistiquesD2 saison={saison} />
+      </div>
     </main>
   );
 }

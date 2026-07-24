@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ChampionnatMenu } from './ChampionnatMenu';
 
 export const LIENS_PRINCIPAUX = [
-  { href: '/national-d2', label: 'National D2' },
-  { href: '/promotion', label: 'Promotion' },
   { href: '/calendrier', label: 'Calendrier' },
   { href: '/manifestations', label: 'Manifestations' },
   { href: '/conges', label: 'Congés' },
@@ -16,12 +15,15 @@ export const LIENS_PRINCIPAUX = [
 /** Liens de nav desktop avec indicateur d'état actif — extrait de NavBar.tsx
  *  (Server Component statique) car usePathname exige un Client Component.
  *  L'indicateur (soulignement terracotta) répond à la règle UX "l'utilisateur
- *  doit toujours savoir où il se trouve dans la hiérarchie du site". */
+ *  doit toujours savoir où il se trouve dans la hiérarchie du site".
+ *  National D2 + Promotion regroupés sous ChampionnatMenu (pense-bête
+ *  Jérôme, 24/07/2026) plutôt que deux entrées séparées. */
 export function NavLinks() {
   const pathname = usePathname();
 
   return (
     <div className="hidden shrink-0 items-center gap-6 text-[13.5px] font-medium md:flex">
+      <ChampionnatMenu />
       {LIENS_PRINCIPAUX.map((lien) => {
         const actif = pathname.startsWith(lien.href);
         return (

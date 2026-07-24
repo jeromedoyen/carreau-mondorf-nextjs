@@ -13,6 +13,7 @@ type LignePersonne = {
   telephone: string | null;
   email: string | null;
   droit_image: boolean | null;
+  notes: string | null;
 };
 
 type LigneAdhesion = {
@@ -37,7 +38,7 @@ export async function getRegistreMembres(annee: string): Promise<PersonneAvecAdh
 
   const { data: personnesData, error: errP } = await supabase
     .from('personnes')
-    .select('id, nom, prenom, sexe, date_naissance, nationalite, adresse, code_postal_ville, telephone, email, droit_image')
+    .select('id, nom, prenom, sexe, date_naissance, nationalite, adresse, code_postal_ville, telephone, email, droit_image, notes')
     .eq('supprime', false)
     .order('nom', { ascending: true });
   if (errP) throw errP;
@@ -67,6 +68,7 @@ export async function getRegistreMembres(annee: string): Promise<PersonneAvecAdh
       telephone: p.telephone,
       email: p.email,
       droitImage: p.droit_image,
+      notes: p.notes,
       adhesion: a
         ? {
             id: a.id,

@@ -113,6 +113,7 @@ export type Personne = {
   telephone: string | null;
   email: string | null;
   droitImage: boolean | null;
+  notes: string | null;
 };
 
 export type Adhesion = {
