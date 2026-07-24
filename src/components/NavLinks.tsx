@@ -8,6 +8,7 @@ export const LIENS_PRINCIPAUX = [
   { href: '/promotion', label: 'Promotion' },
   { href: '/calendrier', label: 'Calendrier' },
   { href: '/manifestations', label: 'Manifestations' },
+  { href: '/conges', label: 'Congés' },
   { href: '/membres', label: 'Membres' },
 ];
 
