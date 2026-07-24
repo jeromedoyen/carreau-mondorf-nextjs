@@ -16,17 +16,29 @@ export default function ConfirmationPage() {
 
   useEffect(() => {
     // Diagnostic temporaire (débogage échec de connexion, juillet 2026) :
-    // capture si le fragment #access_token=... était présent à l'arrivée
-    // sur cette page, avant que getSession() ne le consomme — permet de
-    // savoir si le lien a perdu ses jetons en route (lien réécrit par le
-    // client mail) ou s'il a été consommé avant le clic (scanner de
-    // sécurité). À retirer une fois le diagnostic terminé.
+    // capture l'état complet de l'URL à l'arrivée sur cette page, avant que
+    // getSession() ne consomme le fragment — distingue "lien perdu en
+    // route" (aucun #access_token ET aucune erreur Supabase) de "lien
+    // rejeté par Supabase" (Supabase redirige avec ?error=... en cas de
+    // token déjà utilisé/expiré, ce que le diagnostic précédent ne
+    // capturait pas). À retirer une fois le diagnostic terminé.
     const avaitFragment = window.location.hash.includes('access_token');
+    const params = new URLSearchParams(window.location.search);
+    const erreurSupabase = params.get('error') || params.get('error_code') || '';
+    const descriptionErreur = params.get('error_description') || '';
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
-      router.replace(
-        data.session ? '/' : `/connexion?erreur=lien_invalide&diag_fragment=${avaitFragment}`
-      );
+      if (data.session) {
+        router.replace('/');
+        return;
+      }
+      const diag = new URLSearchParams({
+        erreur: 'lien_invalide',
+        diag_fragment: String(avaitFragment),
+        diag_erreur_supabase: erreurSupabase,
+        diag_description: descriptionErreur,
+      });
+      router.replace(`/connexion?${diag.toString()}`);
     });
   }, [router]);
 

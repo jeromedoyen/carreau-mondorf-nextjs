@@ -2,7 +2,32 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : 22/07/2026 soir, Phase 3 — authentification. Code prêt, mais **bloquée en test réel** : l'envoi d'email OTP via Brevo ne fonctionne pas (cause non identifiée après un long débogage), et le mailer par défaut Supabase ne peut pas être adapté (pas de code, juste un lien). Voir la section dédiée en fin de fichier avant de reprendre.
+Dernière mise à jour : 24/07/2026, feuille de route "développement total" (6 phases) — Phases 0, A, B, C, D toutes livrées (voir section dédiée en fin de fichier). Reste bloqué : connexion réelle jamais validée de bout en bout (voir section auth ci-dessous), Phase E (RGPD) et Phase F pas commencées.
+
+## Session du 24/07/2026 — Phases 0 à D de la feuille de route
+
+Feuille de route en 6 phases décidée avec Jérôme (objectif : solide en septembre 2026, formation CA/bénévoles nov-déc, opérationnel saison 2027, vision historique année par année sur tous les modules) :
+
+- **Phase 0 (fondations)** : table `saisons` transversale (0008_saisons.sql) + `SaisonSwitcher` réutilisable, pilotée sur `/national-d2`. Refonte navigation : desktop avec indicateur d'état actif (`NavLinks.tsx`), mobile remplace le menu hamburger par une barre fixe en bas d'écran façon app (`BottomNav.tsx`, 5 destinations max, cibles tactiles 44px+, `env(safe-area-inset-bottom)`).
+- **Phase A** : `/club`, carte de visite publique — port fidèle du contenu réel de `carreau-mondorf-app/CarteVisite.html` (disciplines, infos pratiques, itinéraires 4 frontières, comité avec photos). Pas de multilingue dans cette v2 (l'original en a 5 : FR/LB/DE/EN/IT) — **décision explicite de Jérôme : reporté, pas abandonné**, à reprendre plus tard.
+- **Phase B** : `/manifestations`, gestion complète (créer événement, créneaux, s'inscrire/se désinscrire comme bénévole) — ouvert à tout licencié connecté (`est_utilisateur_autorise()`), pas réservé au CA, fidèle à v1 (`Code.gs`). Migrations 0009 (lecture) + 0010 (écriture + audit).
+- **Phase C** : `/conges`, congés/indisponibilités du CA — réservé CA (`est_membre_ca()`). Migration 0011.
+- **Phase D** : `/federation`, gestion du calendrier fédération par le CA — en v1 ce calendrier n'avait jamais eu de vraie fonction de chargement (juste un seed écrit à la main par Claude à partir d'un PDF, exécutable seulement depuis l'éditeur Apps Script) ; maintenant le CA peut créer/retirer les événements en autonomie, saison après saison. Migration 0012.
+
+**Git push autonome activé** : Jérôme a installé GitHub Desktop, `credential.helper=manager` + `credential.credentialStore=wincredman` configurés globalement → Claude committe ET pousse directement depuis cette session, plus besoin de demander à Jérôme de le faire (testé et confirmé, commit `f456b4f`).
+
+Chaque migration (0008 à 0012) a été appliquée manuellement par Jérôme dans le SQL Editor Supabase au fil de la session, comme d'habitude (pas de CLI Supabase configurée).
+
+### ⚠️ Connexion réelle jamais validée de bout en bout — diagnostic en cours
+
+Le flux magic-link a été basculé de PKCE vers `flowType: 'implicit'` (session précédente, 22-23/07) pour éliminer la dépendance au cookie `code_verifier` du navigateur d'origine. Testé aujourd'hui : la demande de lien fonctionne bien côté app (confirmé par interception directe du fetch vers `/auth/v1/otp` : réponse `200 {}`, donc Supabase accepte la requête), mais :
+
+1. **Un email a mis longtemps à arriver / n'est jamais arrivé** certaines fois — cause probable : le mailer par défaut Supabase a un quota très bas (quelques envois/heure, projet entier confondu), déjà suspecté par Jérôme ("quota des 2 connexions par heure"). Plusieurs tentatives cumulées dans une même session épuisent vite ce quota, sans que l'API ne renvoie d'erreur explicite (elle répond 200 même si l'envoi réel est ensuite freiné/droppé côté mailer).
+2. **Un email reçu a bien été cliqué, résultat : `/connexion?erreur=lien_invalide&diag_fragment=false`** — le fragment `#access_token=...` était absent à l'arrivée sur `/auth/confirm`. Un diagnostic temporaire plus poussé vient d'être ajouté dans `src/app/auth/confirm/page.tsx` (capture aussi `?error=`/`?error_code=`/`?error_description=` que Supabase peut mettre dans l'URL en cas de token déjà utilisé/expiré — le premier diagnostic ne les voyait pas). **Pas encore retesté avec ce diagnostic amélioré** — prochaine étape à la reprise, une fois le quota mailer disponible.
+
+Deux hypothèses réelles restent ouvertes, à départager avec le prochain test : (a) le mailer par défaut Supabase a un problème de fiabilité de livraison indépendant du flow OAuth (b) le lien est bien livré mais perd son fragment en route (client mail qui réécrit les liens) ou est consommé avant le clic (scanner de sécurité). Si le problème persiste après ce diagnostic, envisager un vrai fournisseur SMTP fiable (pas Brevo, jamais résolu — voir plus bas) plutôt que continuer à démonter le mailer par défaut Supabase.
+
+**Aucune action d'écriture (Phases B/C/D) n'a donc pu être testée de bout en bout avec une vraie session** — seulement build + typecheck + repli "accès restreint" vérifiés. À valider dès que la connexion fonctionne.
 
 ## Ce que c'est, et ce que ce n'est PAS
 
