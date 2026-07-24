@@ -165,6 +165,7 @@ export async function getCalendrierFederation(saison: string): Promise<Evenement
     .from('calendrier_federation')
     .select('date, date_fin, libelle, categorie, lieu, domicile')
     .eq('saison', saison)
+    .eq('supprime', false)
     .order('date', { ascending: true });
   if (error) throw error;
   return (data ?? []).map((f) => ({
@@ -174,6 +175,38 @@ export async function getCalendrierFederation(saison: string): Promise<Evenement
     categorie: (f.categorie as string | null) ?? 'Fédération',
     lieu: f.lieu as string | null,
     domicile: f.domicile as boolean | null,
+  }));
+}
+
+export type EvenementFederationAdmin = EvenementFederation & {
+  id: number;
+  concerneClub: boolean;
+  notes: string | null;
+};
+
+/** Variante avec `id` pour l'écran de gestion CA (/federation) — la lecture
+ *  publique (getCalendrierFederation ci-dessus) n'a pas besoin de l'id
+ *  puisqu'elle ne fait qu'afficher. Passe par le même client public : la
+ *  policy de lecture reste ouverte à tous (0001_init.sql), seule l'écriture
+ *  est réservée au CA (0012_ecriture_federation.sql). */
+export async function getCalendrierFederationAdmin(saison: string): Promise<EvenementFederationAdmin[]> {
+  const { data, error } = await supabase
+    .from('calendrier_federation')
+    .select('id, date, date_fin, libelle, categorie, lieu, domicile, concerne_club, notes')
+    .eq('saison', saison)
+    .eq('supprime', false)
+    .order('date', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((f) => ({
+    id: f.id as number,
+    date: f.date as string,
+    dateFin: (f.date_fin as string | null) ?? (f.date as string),
+    libelle: f.libelle as string,
+    categorie: (f.categorie as string | null) ?? 'Fédération',
+    lieu: f.lieu as string | null,
+    domicile: f.domicile as boolean | null,
+    concerneClub: !!f.concerne_club,
+    notes: f.notes as string | null,
   }));
 }
 

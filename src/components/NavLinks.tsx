@@ -9,6 +9,7 @@ export const LIENS_PRINCIPAUX = [
   { href: '/calendrier', label: 'Calendrier' },
   { href: '/manifestations', label: 'Manifestations' },
   { href: '/conges', label: 'Congés' },
+  { href: '/federation', label: 'Fédération' },
   { href: '/membres', label: 'Membres' },
 ];
 
