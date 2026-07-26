@@ -91,6 +91,7 @@ export default async function BenevoleManifestationPage({ params }: { params: Pr
                 creneauId={c.creneauId}
                 affectations={c.affectations}
                 postesPrevus={c.postesPrevus}
+                monNom={monNom}
               />
             </div>
           );

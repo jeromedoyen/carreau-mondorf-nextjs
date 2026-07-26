@@ -6,22 +6,39 @@ import { Users, X } from 'lucide-react';
 import { ajouterAffectation, retirerAffectation } from '@/lib/actions/manifestations';
 import type { Creneau } from '@/lib/manifestations';
 
+function sansAccents(s: string) {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 export function CreneauAffectations({
   manifestationId,
   creneauId,
   affectations,
   postesPrevus,
+  monNom,
 }: {
   manifestationId: number;
   creneauId: number;
   affectations: Creneau['affectations'];
   postesPrevus: number;
+  /** Nom canonique du licencié connecté (page Bénévole) — quand fourni,
+   *  remplace le formulaire de saisie libre par un simple bouton
+   *  d'auto-inscription : pas la peine de retaper son propre nom pour
+   *  s'ajouter à une tâche (retour Jérôme, 26/07/2026). Laissé absent sur
+   *  le détail de manifestation (CA), où on inscrit souvent quelqu'un
+   *  d'autre. */
+  monNom?: string | null;
 }) {
   const router = useRouter();
   const [nom, setNom] = useState('');
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const postesRestants = postesPrevus - affectations.length;
+  const dejaInscrit = !!monNom && affectations.some((a) => sansAccents(a.nom) === sansAccents(monNom));
 
   async function sInscrire(e: FormEvent) {
     e.preventDefault();
@@ -35,6 +52,19 @@ export function CreneauAffectations({
       return;
     }
     setNom('');
+    router.refresh();
+  }
+
+  async function sAjouterSoiMeme() {
+    if (!monNom) return;
+    setErreur(null);
+    setEnCours(true);
+    const resultat = await ajouterAffectation(manifestationId, creneauId, monNom);
+    setEnCours(false);
+    if (!resultat.ok) {
+      setErreur(resultat.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -74,21 +104,34 @@ export function CreneauAffectations({
         </span>
       </div>
 
-      <form onSubmit={sInscrire} className="mt-2.5 flex gap-2">
-        <input
-          value={nom}
-          onChange={(e) => setNom(e.target.value)}
-          placeholder="S'inscrire (prénom nom)"
-          className="flex-1 rounded-lg border border-ligne bg-sable px-3 py-1.5 text-[13px] outline-none focus:border-terracotta"
-        />
-        <button
-          type="submit"
-          disabled={enCours || !nom.trim()}
-          className="rounded-lg bg-pin px-3.5 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {enCours ? '…' : "S'ajouter à la tâche"}
-        </button>
-      </form>
+      {monNom ? (
+        !dejaInscrit && (
+          <button
+            type="button"
+            onClick={sAjouterSoiMeme}
+            disabled={enCours}
+            className="mt-2.5 rounded-lg bg-pin px-3.5 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {enCours ? '…' : "S'ajouter à la tâche"}
+          </button>
+        )
+      ) : (
+        <form onSubmit={sInscrire} className="mt-2.5 flex gap-2">
+          <input
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
+            placeholder="S'inscrire (prénom nom)"
+            className="flex-1 rounded-lg border border-ligne bg-sable px-3 py-1.5 text-[13px] outline-none focus:border-terracotta"
+          />
+          <button
+            type="submit"
+            disabled={enCours || !nom.trim()}
+            className="rounded-lg bg-pin px-3.5 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {enCours ? '…' : "S'ajouter à la tâche"}
+          </button>
+        </form>
+      )}
       {erreur && <p className="mt-1.5 text-[12px] text-danger">{erreur}</p>}
     </div>
   );
