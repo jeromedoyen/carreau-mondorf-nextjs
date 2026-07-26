@@ -3,8 +3,10 @@ import Link from 'next/link';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
 import { NouvelleManifestationForm } from '@/components/NouvelleManifestationForm';
+import { CalendrierManifestations } from '@/components/CalendrierManifestations';
 import { getManifestations, estUtilisateurAutorise } from '@/lib/manifestations';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
+import { getRencontresD2, getCalendrierFederation, fusionnerCalendrier } from '@/lib/data';
 
 export const metadata: Metadata = { title: 'Manifestations' };
 
@@ -46,7 +48,14 @@ export default async function ManifestationsPage({
     getSaisonActive(),
   ]);
   const saison = saisonDemandee ?? saisonActive;
-  const manifestations = await getManifestations(saison);
+  const [manifestations, rencontres, federation] = await Promise.all([
+    getManifestations(saison),
+    getRencontresD2(saison),
+    getCalendrierFederation(saison),
+  ]);
+  const evenementsChampionnat = fusionnerCalendrier(rencontres, federation).filter(
+    (e) => e.categorie === 'National D2' || e.categorie === 'Promotion'
+  );
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-12">
@@ -57,6 +66,8 @@ export default async function ManifestationsPage({
         </div>
         <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
+
+      <CalendrierManifestations manifestations={manifestations} evenementsChampionnat={evenementsChampionnat} />
 
       <NouvelleManifestationForm />
 
