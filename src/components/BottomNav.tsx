@@ -2,13 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Trophy, Medal, CalendarDays, Users } from 'lucide-react';
+import { Home, Trophy, CalendarDays, Users, HeartHandshake } from 'lucide-react';
 
+/** Bénévole ajouté ici le 26/07/2026 (retour Jérôme : "bénévole n'apparaît
+ *  pas" sur mobile — cette barre ne dérive pas de LIENS_PRINCIPAUX, il faut
+ *  l'y déclarer explicitement). Promotion retirée de la barre pour tenir la
+ *  règle "≤5 onglets" : National D2 reste seul en vitrine mobile, Promotion
+ *  demeure accessible depuis le menu Championnat en desktop et depuis
+ *  l'accueil. */
 const ONGLETS = [
   { href: '/', label: 'Accueil', Icon: Home },
   { href: '/national-d2', label: 'D2', Icon: Trophy },
-  { href: '/promotion', label: 'Promotion', Icon: Medal },
   { href: '/calendrier', label: 'Calendrier', Icon: CalendarDays },
+  { href: '/benevole', label: 'Bénévole', Icon: HeartHandshake },
   { href: '/membres', label: 'Membres', Icon: Users },
 ];
 

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Mail, Navigation, Users, UserPlus, LogIn } from 'lucide-react';
 import { CLUB, DISCIPLINES, COMITE, ITINERAIRES } from '@/lib/club';
+import { FlagIcon } from '@/components/FlagIcon';
 
 export const metadata: Metadata = {
   title: 'Le Club',
@@ -169,7 +170,7 @@ export default function ClubPage() {
               key={it.pays}
               className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]"
             >
-              <span className="text-xl">{it.drapeau}</span>
+              <FlagIcon pays={it.drapeau} />
               <p className="font-display mt-1.5 text-[14.5px]">{it.pays}</p>
               <p className="text-[12px] text-encre-douce">{it.via}</p>
               <div className="mt-3 flex gap-5">

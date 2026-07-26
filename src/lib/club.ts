@@ -66,7 +66,7 @@ export const ITINERAIRES = [
     duree: '~25 min',
     route: "Via l'A31 puis la N16 (route de Remich) jusqu'à Mondorf-les-Bains.",
     origine: 'Thionville',
-    drapeau: '🇫🇷',
+    drapeau: 'FR' as const,
   },
   {
     pays: "Depuis l'Allemagne",
@@ -75,7 +75,7 @@ export const ITINERAIRES = [
     duree: '~45 min',
     route: "Via l'A1/A64 direction Luxembourg, puis l'A13 vers Mondorf-les-Bains.",
     origine: 'Trier',
-    drapeau: '🇩🇪',
+    drapeau: 'DE' as const,
   },
   {
     pays: 'Depuis la Belgique',
@@ -84,7 +84,7 @@ export const ITINERAIRES = [
     duree: '~50 min',
     route: "Via l'E411/A6 puis l'A13 direction Mondorf-les-Bains.",
     origine: 'Arlon',
-    drapeau: '🇧🇪',
+    drapeau: 'BE' as const,
   },
   {
     pays: 'Depuis Luxembourg-Ville',
@@ -93,6 +93,6 @@ export const ITINERAIRES = [
     duree: '~27 min',
     route: 'Via l’A3 direction Dudelange/Frisange, puis la N13 vers Mondorf-les-Bains.',
     origine: 'Luxembourg',
-    drapeau: '🇱🇺',
+    drapeau: 'LU' as const,
   },
 ];
