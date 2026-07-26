@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 export const LIENS_PRINCIPAUX = [
   { href: '/calendrier', label: 'Calendrier' },
   { href: '/manifestations', label: 'Manifestations' },
+  { href: '/benevole', label: 'Bénévole' },
   { href: '/conges', label: 'Congés', reserveCA: true },
   { href: '/membres', label: 'Membres', reserveCA: true },
 ];

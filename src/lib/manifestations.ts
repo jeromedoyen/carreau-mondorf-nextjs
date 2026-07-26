@@ -59,6 +59,78 @@ export async function getManifestations(saison: string): Promise<Manifestation[]
   }));
 }
 
+export type CreneauAPourvoir = {
+  manifestationId: number;
+  manifestationNom: string;
+  creneauId: number;
+  tache: string;
+  categorie: string;
+  date: string;
+  heureDebut: string | null;
+  heureFin: string | null;
+  finImprecise: boolean;
+  postesPrevus: number;
+  affectations: { id: number; nom: string; statut: string; estMembre: boolean }[];
+};
+
+/** Vue transversale pense-bête #17 : plutôt que de parcourir chaque
+ *  manifestation une à une pour trouver où il manque du monde, liste
+ *  directement tous les créneaux à venir dont postes_prevus > nb
+ *  d'affectations actives, tous saisons/manifestations confondues. */
+export async function getCreneauxAPourvoir(): Promise<CreneauAPourvoir[]> {
+  const supabase = await createClient();
+  const aujourdHui = new Date().toISOString().slice(0, 10);
+
+  const { data: creneauxData, error: errC } = await supabase
+    .from('creneaux')
+    .select(
+      'id, tache, categorie, date, heure_debut, heure_fin, fin_imprecise, postes_prevus, manifestation_id, manifestations!inner(id, nom, statut, supprime)'
+    )
+    .eq('supprime', false)
+    .gte('date', aujourdHui)
+    .neq('manifestations.statut', 'Annulée')
+    .eq('manifestations.supprime', false)
+    .order('date', { ascending: true });
+  if (errC) throw errC;
+
+  const idsCreneaux = (creneauxData ?? []).map((c) => c.id);
+  const { data: affectationsData, error: errA } = idsCreneaux.length
+    ? await supabase
+        .from('affectations')
+        .select('id, creneau_id, nom, statut, est_membre')
+        .in('creneau_id', idsCreneaux)
+        .eq('supprime', false)
+    : { data: [], error: null };
+  if (errA) throw errA;
+
+  const affectationsParCreneau = new Map<number, CreneauAPourvoir['affectations']>();
+  (affectationsData ?? []).forEach((a) => {
+    const liste = affectationsParCreneau.get(a.creneau_id) ?? [];
+    liste.push({ id: a.id, nom: a.nom, statut: a.statut, estMembre: a.est_membre });
+    affectationsParCreneau.set(a.creneau_id, liste);
+  });
+
+  return (creneauxData ?? [])
+    .map((c) => {
+      const manifestation = Array.isArray(c.manifestations) ? c.manifestations[0] : c.manifestations;
+      const affectations = affectationsParCreneau.get(c.id) ?? [];
+      return {
+        manifestationId: c.manifestation_id,
+        manifestationNom: manifestation?.nom ?? '',
+        creneauId: c.id,
+        tache: c.tache,
+        categorie: c.categorie,
+        date: c.date,
+        heureDebut: c.heure_debut,
+        heureFin: c.heure_fin,
+        finImprecise: c.fin_imprecise,
+        postesPrevus: c.postes_prevus,
+        affectations,
+      };
+    })
+    .filter((c) => c.affectations.length < c.postesPrevus);
+}
+
 export async function getManifestationDetail(
   id: number
 ): Promise<{ manifestation: Manifestation; creneaux: Creneau[] } | null> {
