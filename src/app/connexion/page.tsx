@@ -18,29 +18,32 @@ export default function ConnexionPage() {
           <HeroAnimationConnexion />
         </div>
 
-        <div className="entree flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:text-left" style={{ animationDelay: '0.2s' }}>
-          <Link href="/" className="shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Carreau Mondorf"
-              width={500}
-              height={261}
-              priority
-              className="h-16 w-auto sm:h-24"
-            />
-          </Link>
+        <div className="entree" style={{ animationDelay: '0.2s' }}>
+          <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:text-left">
+            <Link href="/" className="shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Carreau Mondorf"
+                width={500}
+                height={261}
+                priority
+                className="h-16 w-auto sm:h-24"
+              />
+            </Link>
 
-          <div>
-            <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">CONNEXION</p>
-            <h1 className="font-display mt-1 text-4xl italic">Espace privé</h1>
-            <p className="mx-auto mt-2 max-w-md text-[13.5px] text-encre-douce sm:mx-0">
-              Réservé aux licenciés, membres et comité du club. Entrez votre
-              email, vous recevrez un code de connexion valable quelques
-              minutes.
-            </p>
-            <div className="mt-6">
-              <ConnexionForm />
+            <div className="min-w-0 flex-1">
+              <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">CONNEXION</p>
+              <h1 className="font-display mt-1 text-4xl italic">Espace privé</h1>
+              <p className="mx-auto mt-2 max-w-md text-[13.5px] text-encre-douce sm:mx-0">
+                Réservé aux licenciés, membres et comité du club. Entrez
+                votre email, vous recevrez un code de connexion valable
+                quelques minutes.
+              </p>
             </div>
+          </div>
+
+          <div className="mt-6">
+            <ConnexionForm />
           </div>
         </div>
       </div>

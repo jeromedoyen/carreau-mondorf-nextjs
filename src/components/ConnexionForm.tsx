@@ -64,7 +64,7 @@ export function ConnexionForm() {
   }
 
   return (
-    <div className="mx-auto max-w-sm rounded-2xl border border-ligne bg-sable-carte p-7 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+    <div className="rounded-2xl border border-ligne bg-sable-carte p-7 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
       {envoye ? (
         <form onSubmit={validerCode} className="flex flex-col gap-4">
           <div className="text-center">
