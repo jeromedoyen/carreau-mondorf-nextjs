@@ -86,8 +86,13 @@ export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion
       if (droitImage === 'non' && p.droitImage) return false;
       if (paiement === 'cotisation-oui' && !p.adhesion?.cotisationPayee) return false;
       if (paiement === 'cotisation-non' && p.adhesion?.cotisationPayee) return false;
-      if (paiement === 'licence-oui' && !p.adhesion?.licencePayee) return false;
-      if (paiement === 'licence-non' && p.adhesion?.licencePayee) return false;
+      // La licence n'existe que pour les licenciés — un membre non-licencié
+      // n'a rien "d'impayé", le concept ne s'applique simplement pas à lui.
+      // Sans le garde p.adhesion?.licence, il apparaissait à tort dans
+      // "Licence impayée" (licencePayee y est faux/vide comme pour un
+      // licencié qui doit vraiment payer).
+      if (paiement === 'licence-oui' && !(p.adhesion?.licence && p.adhesion.licencePayee)) return false;
+      if (paiement === 'licence-non' && !(p.adhesion?.licence && !p.adhesion.licencePayee)) return false;
       return true;
     });
   }, [personnes, recherche, type, categorie, classe, nationalite, droitImage, paiement]);
