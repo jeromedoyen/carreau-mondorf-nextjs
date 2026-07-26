@@ -53,13 +53,22 @@ export default async function BenevolePage() {
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-12">
-      <header className="entree mb-9">
-        <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">BÉNÉVOLAT</p>
-        <h1 className="font-display mt-1 text-4xl italic">Se déclarer bénévole</h1>
-        <p className="mt-3 text-[13.5px] text-encre-douce">
-          Les manifestations à venir où il manque encore du monde. Clique sur une manifestation pour voir
-          les postes disponibles.
-        </p>
+      <header className="entree mb-9 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">BÉNÉVOLAT</p>
+          <h1 className="font-display mt-1 text-4xl italic">Se déclarer bénévole</h1>
+          <p className="mt-3 max-w-md text-[13.5px] text-encre-douce">
+            Les manifestations à venir où il manque encore du monde. Clique sur une manifestation pour voir
+            les postes disponibles.
+          </p>
+        </div>
+        <Link
+          href="/benevole/moi"
+          className="inline-flex items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta"
+        >
+          <HeartHandshake size={15} />
+          Mes participations
+        </Link>
       </header>
 
       {manifestations.length === 0 ? (
