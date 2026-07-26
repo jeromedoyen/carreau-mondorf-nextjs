@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, CalendarRange } from 'lucide-react';
 import { CreneauAffectations } from '@/components/CreneauAffectations';
 import { getCreneauxAPourvoir, estUtilisateurAutorise } from '@/lib/manifestations';
 import { getMonNomBenevole, memeNom } from '@/lib/benevolat';
@@ -39,9 +39,18 @@ export default async function BenevoleManifestationPage({ params }: { params: Pr
         ← Bénévole
       </Link>
 
-      <header className="entree mt-4 mb-9">
-        <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">POSTES À POURVOIR</p>
-        <h1 className="font-display mt-1 text-3xl italic">{nomManifestation}</h1>
+      <header className="entree mt-4 mb-9 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">POSTES À POURVOIR</p>
+          <h1 className="font-display mt-1 text-3xl italic">{nomManifestation}</h1>
+        </div>
+        <Link
+          href={`/manifestations/${manifestationId}/planning`}
+          className="inline-flex items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta"
+        >
+          <CalendarRange size={15} />
+          Voir le planning complet
+        </Link>
       </header>
 
       <div className="flex flex-col gap-3">
