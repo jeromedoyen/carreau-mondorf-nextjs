@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { MapPin, Mail, Navigation, Users } from 'lucide-react';
+import Link from 'next/link';
+import { MapPin, Mail, Navigation, Users, UserPlus } from 'lucide-react';
 import { CLUB, DISCIPLINES, COMITE, ITINERAIRES } from '@/lib/club';
 
 export const metadata: Metadata = {
@@ -49,6 +50,13 @@ export default function ClubPage() {
           {CLUB.baseline}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link
+            href="/inscription"
+            className="inline-flex items-center gap-2 rounded-full bg-terracotta px-5 py-2.5 text-[13.5px] font-medium text-white transition-transform hover:-translate-y-0.5"
+          >
+            <UserPlus size={16} />
+            S&apos;inscrire au club
+          </Link>
           <a
             href={CLUB.facebook}
             target="_blank"

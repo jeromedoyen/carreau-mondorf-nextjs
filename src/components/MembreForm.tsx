@@ -3,9 +3,27 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { creerMembre, modifierPersonne, enregistrerAdhesion } from '@/lib/actions/membres';
+import { marquerDemandeTraitee } from '@/lib/actions/demandes';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
 const TYPES_ADHESION = ['Licencié', 'Membre (non-licencié)'];
+
+/** Préremplissage en mode création à partir d'une demande d'adhésion
+ *  (/membres/demandes) — sous-ensemble des champs de PersonneAvecAdhesion,
+ *  sans id/adhesion puisque rien n'existe encore en base à ce stade. */
+export type PrefillDemande = {
+  nom: string;
+  prenom: string;
+  sexe: string | null;
+  dateNaissance: string;
+  nationalite: string | null;
+  adresse: string;
+  codePostalVille: string;
+  telephone: string;
+  email: string;
+  droitImage: boolean;
+  typeAdhesionSouhaite: string | null;
+};
 
 /** Formulaire unique pour la création ET l'édition d'une fiche membre —
  *  mêmes champs, seule l'action déclenchée au submit change. Champ
@@ -16,15 +34,22 @@ const TYPES_ADHESION = ['Licencié', 'Membre (non-licencié)'];
  *  au hasard côté saisie non plus). */
 export function MembreForm({
   personne,
+  prefill,
+  demandeId,
   saisonActuelle,
 }: {
   personne?: PersonneAvecAdhesion;
+  prefill?: PrefillDemande;
+  demandeId?: number;
   saisonActuelle: string;
 }) {
   const router = useRouter();
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const modeEdition = !!personne;
+  // Sert uniquement de source de valeurs par défaut (édition OU
+  // préremplissage depuis une demande) — jamais les deux en même temps.
+  const valeurs = personne ?? prefill;
 
   async function soumettre(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,6 +92,12 @@ export function MembreForm({
       setErreur(resultat.error);
       return;
     }
+    // Créé depuis une demande d'adhésion (/membres/demandes) : la classe
+    // traitée une fois la fiche membre effectivement créée — jamais avant,
+    // pour ne pas perdre la trace d'une demande si la création échoue.
+    if (demandeId && !modeEdition && 'id' in resultat && resultat.id) {
+      await marquerDemandeTraitee(demandeId, resultat.id);
+    }
     router.push('/membres');
     router.refresh();
   }
@@ -79,14 +110,14 @@ export function MembreForm({
           <input
             name="nom"
             required
-            defaultValue={personne?.nom}
+            defaultValue={valeurs?.nom}
             placeholder="Nom"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
           <input
             name="prenom"
             required
-            defaultValue={personne?.prenom}
+            defaultValue={valeurs?.prenom}
             placeholder="Prénom"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
@@ -94,7 +125,7 @@ export function MembreForm({
         <div className="grid grid-cols-3 gap-3">
           <select
             name="sexe"
-            defaultValue={personne?.sexe ?? ''}
+            defaultValue={valeurs?.sexe ?? ''}
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           >
             <option value="">Sexe…</option>
@@ -104,13 +135,13 @@ export function MembreForm({
           <input
             type="date"
             name="dateNaissance"
-            defaultValue={personne?.dateNaissance ?? ''}
+            defaultValue={valeurs?.dateNaissance ?? ''}
             aria-label="Date de naissance"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
           <input
             name="nationalite"
-            defaultValue={personne?.nationalite ?? ''}
+            defaultValue={valeurs?.nationalite ?? ''}
             placeholder="Nationalité"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
@@ -121,13 +152,13 @@ export function MembreForm({
         <h3 className="font-display text-[15px]">Coordonnées</h3>
         <input
           name="adresse"
-          defaultValue={personne?.adresse ?? ''}
+          defaultValue={valeurs?.adresse ?? ''}
           placeholder="Adresse"
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         />
         <input
           name="codePostalVille"
-          defaultValue={personne?.codePostalVille ?? ''}
+          defaultValue={valeurs?.codePostalVille ?? ''}
           placeholder="Code postal / Ville"
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         />
@@ -136,14 +167,14 @@ export function MembreForm({
             type="text"
             inputMode="tel"
             name="telephone"
-            defaultValue={personne?.telephone ?? ''}
+            defaultValue={valeurs?.telephone ?? ''}
             placeholder="Téléphone (ex. +352 691 123 456)"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
           <input
             type="email"
             name="email"
-            defaultValue={personne?.email ?? ''}
+            defaultValue={valeurs?.email ?? ''}
             placeholder="Email"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
@@ -156,7 +187,7 @@ export function MembreForm({
           <select
             name="type"
             required
-            defaultValue={personne?.adhesion?.type ?? ''}
+            defaultValue={personne?.adhesion?.type ?? prefill?.typeAdhesionSouhaite ?? ''}
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           >
             <option value="" disabled>
@@ -206,7 +237,7 @@ export function MembreForm({
           <input
             type="checkbox"
             name="droitImage"
-            defaultChecked={personne?.droitImage ?? false}
+            defaultChecked={personne?.droitImage ?? prefill?.droitImage ?? false}
             className="h-4 w-4 accent-terracotta"
           />
           Droit à l&apos;image accordé

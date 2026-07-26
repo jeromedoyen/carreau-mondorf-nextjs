@@ -1,12 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { MembreForm } from '@/components/MembreForm';
+import { MembreForm, type PrefillDemande } from '@/components/MembreForm';
 import { estMembreCA } from '@/lib/membres';
 import { getSaisonActive } from '@/lib/saisons';
+import { getDemande } from '@/lib/demandes';
 
 export const metadata: Metadata = { title: 'Nouveau membre' };
 
-export default async function NouveauMembrePage() {
+export default async function NouveauMembrePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ demandeId?: string }>;
+}) {
   const ca = await estMembreCA();
 
   if (!ca) {
@@ -24,7 +29,29 @@ export default async function NouveauMembrePage() {
     );
   }
 
-  const saisonActive = await getSaisonActive();
+  const [{ demandeId }, saisonActive] = await Promise.all([searchParams, getSaisonActive()]);
+
+  let prefill: PrefillDemande | undefined;
+  let demandeIdNum: number | undefined;
+  if (demandeId) {
+    const demande = await getDemande(Number(demandeId));
+    if (demande && demande.statut === 'a_traiter') {
+      demandeIdNum = demande.id;
+      prefill = {
+        nom: demande.nom,
+        prenom: demande.prenom,
+        sexe: demande.sexe,
+        dateNaissance: demande.dateNaissance,
+        nationalite: demande.nationalite,
+        adresse: demande.adresse,
+        codePostalVille: demande.codePostalVille,
+        telephone: demande.telephone,
+        email: demande.email,
+        droitImage: demande.droitImage,
+        typeAdhesionSouhaite: demande.typeAdhesionSouhaite,
+      };
+    }
+  }
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-12">
@@ -32,10 +59,12 @@ export default async function NouveauMembrePage() {
         ← Membres
       </Link>
       <header className="entree mt-4 mb-8">
-        <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">RÉSERVÉ AU CA</p>
+        <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
+          {prefill ? 'DEMANDE À TRAITER · ' : ''}RÉSERVÉ AU CA
+        </p>
         <h1 className="font-display mt-1 text-3xl italic">Nouveau membre</h1>
       </header>
-      <MembreForm saisonActuelle={saisonActive} />
+      <MembreForm saisonActuelle={saisonActive} prefill={prefill} demandeId={demandeIdNum} />
     </main>
   );
 }

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Inbox } from 'lucide-react';
 import { RegistreMembres } from '@/components/RegistreMembres';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
 import { getRegistreMembres, estMembreCA } from '@/lib/membres';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
+import { getDemandesEnAttente } from '@/lib/demandes';
 
 export const metadata: Metadata = { title: 'Membres & licenciés' };
 
@@ -34,10 +35,11 @@ export default async function MembresPage({
     );
   }
 
-  const [{ saison: saisonDemandee }, saisons, saisonActive] = await Promise.all([
+  const [{ saison: saisonDemandee }, saisons, saisonActive, demandes] = await Promise.all([
     searchParams,
     getSaisons(),
     getSaisonActive(),
+    getDemandesEnAttente(),
   ]);
   const saison = saisonDemandee ?? saisonActive;
   const personnes = await getRegistreMembres(saison);
@@ -54,13 +56,25 @@ export default async function MembresPage({
         <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap gap-3">
         <Link
           href="/membres/nouveau"
           className="inline-flex items-center gap-2 rounded-full bg-terracotta px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
         >
           <Plus size={15} />
           Nouveau membre
+        </Link>
+        <Link
+          href="/membres/demandes"
+          className="inline-flex items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre transition-colors hover:border-terracotta"
+        >
+          <Inbox size={15} />
+          Demandes d&apos;adhésion
+          {demandes.length > 0 && (
+            <span className="rounded-full bg-terracotta px-1.5 py-0.5 text-[11px] font-semibold text-white">
+              {demandes.length}
+            </span>
+          )}
         </Link>
       </div>
 
