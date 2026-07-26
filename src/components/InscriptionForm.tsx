@@ -3,8 +3,13 @@
 import { useState, type FormEvent } from 'react';
 import { soumettreDemandeAdhesion } from '@/lib/actions/demandes';
 
+/** Réinscription retirée de ce formulaire public (26/07/2026, Jérôme) :
+ *  une inscription est par nature une démarche libre, la réinscription
+ *  suivra un flux différent (à construire) plutôt que de partager ce même
+ *  formulaire — soumettreDemandeAdhesion()/demandes_adhesion gardent le
+ *  champ `typeDemande` prêt pour ça, seul le sélecteur disparaît ici. */
 export function InscriptionForm() {
-  const [mode, setMode] = useState<'Inscription' | 'Réinscription'>('Inscription');
+  const mode = 'Inscription' as const;
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoye, setEnvoye] = useState(false);
@@ -55,21 +60,6 @@ export function InscriptionForm() {
 
   return (
     <form onSubmit={soumettre} className="flex flex-col gap-5">
-      <div className="flex gap-2">
-        {(['Inscription', 'Réinscription'] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMode(m)}
-            className={`rounded-full px-4 py-2 text-[13px] font-medium transition-colors ${
-              mode === m ? 'bg-terracotta text-white' : 'border border-ligne bg-sable-carte text-encre-douce'
-            }`}
-          >
-            {m === 'Inscription' ? 'Nouvelle inscription' : 'Réinscription'}
-          </button>
-        ))}
-      </div>
-
       <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-sable-carte p-5">
         <h3 className="font-display text-[15px]">Identité</h3>
         <div className="grid grid-cols-2 gap-3">
