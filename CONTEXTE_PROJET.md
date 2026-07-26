@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : 24/07/2026, feuille de route "développement total" (6 phases) — Phases 0, A, B, C, D toutes livrées (voir section dédiée en fin de fichier). Reste bloqué : connexion réelle jamais validée de bout en bout (voir section auth ci-dessous), Phase E (RGPD) et Phase F pas commencées.
+Dernière mise à jour : 26/07/2026 (grosse session pense-bête + retours de test sur compte fictif — voir section dédiée en fin de fichier). Connexion réelle validée depuis (OTP à 6 chiffres saisi manuellement, plus de lien cliquable). Prochaine tâche prioritaire, actée explicitement par Jérôme pour la prochaine session : page personnelle "mon espace" après connexion (cotisation, participations, bénévolat, stats joueur) — voir mémoire Claude `project_nextjs_page_perso.md`.
 
 ## Session du 24/07/2026 — Phases 0 à D de la feuille de route
 
@@ -270,3 +270,53 @@ Jérôme a donné carte blanche ("tu es l'expert", tests/qualité/visuel/fonctio
 - **Favicon, titres de page, accessibilité** : `icon.png` (recadré depuis le logo, les deux boules) remplace le favicon par défaut de Next.js — jamais changé depuis le scaffold initial. Titre d'onglet dynamique par page (`title.template` dans `layout.tsx`). `aria-label` ajoutés sur les champs de `FeuilleDeMatch.tsx` (seuls des `placeholder` existaient).
 - Dark mode explicitement écarté par Jérôme ("point de détail") — ne pas y revenir sans demande explicite.
 - Commits de cette dernière passe : `fd67365`.
+
+## Session du 26/07/2026 — pense-bête #14-20, module Bénévole, paiements, tests sur compte fictif
+
+Grosse session à base de retours ponctuels de Jérôme (pense-bête `C:\Temp\pense-bete.md`), traités un par un, chacun commité + poussé individuellement (17 commits ce jour, `0d65d41` → `f624e07`). Résumé par thème plutôt que chronologique.
+
+### Pense-bête #14-16 (manifestations)
+- Lieu par défaut ("Boulodrome Carreau Mondorf") ne se demande plus à la création d'une manifestation ; `type` passé en liste déroulante + option "Autre" en saisie libre.
+- Bug de fond corrigé au passage : `CATEGORIES` de créneau dupliquée localement dans plusieurs composants avec des valeurs fausses (ne correspondaient pas aux vraies données importées) — remplacé partout par l'unique source `src/lib/categoriesCreneau.ts`. **Leçon** : ne plus jamais redéfinir une liste de catégories localement.
+- Planning de manifestation déplacé de "tout en bas du détail" vers sa propre page `/manifestations/[id]/planning`, avec un bouton "Voir le planning" dédié.
+
+### Module Bénévole (pense-bête #17, puis étendu sur plusieurs retours)
+Nouvel onglet complet, construit en plusieurs passes suite aux retours de Jérôme :
+- `/benevole` : liste des **manifestations** (pas des créneaux à plat) ayant des postes non pourvus, avec date et compteur — clic → `/benevole/[id]`.
+- `/benevole/[id]` : postes à pourvoir de cette manifestation, badge "Tu y participes déjà" (comparaison par nom canonique), bouton "Voir le planning complet" (réutilise `/manifestations/[id]/planning`), et **inscription en un clic** sans ressaisir son nom (le formulaire à saisie libre reste réservé au détail de manifestation, où le CA inscrit parfois quelqu'un d'autre).
+- `/benevole/moi` : tableau de bord personnel (chiffres clés, répartition par année/type de tâche en barres maison, historique + à venir) — scoping strict par la session courante, jamais un nom en paramètre.
+- **RPC `mon_nom_benevole()`** (migration `0020`) : résout email de session → nom canonique (`personnes`, sinon repli `acces.nom`) en `security definer`, parce que `personnes` est en lecture CA-only et qu'un licencié non-CA ne peut pas lire sa propre fiche autrement.
+
+### Paiements / QR SEPA (pense-bête #8, puis étendu à la demande de Jérôme)
+- `src/lib/sepaQr.ts` : génération du payload QR EPC v002, fonction pure (IBAN/BIC/bénéficiaire passés en paramètre, plus rien en dur).
+- Backend complet en base (migration `0021`) plutôt qu'un simple générateur manuel, à la demande explicite de Jérôme ("je vais continuer à développer cette partie... un backend pour produire un QR lors d'une demande de cotisation") :
+  - `parametres_club` (IBAN/BIC/bénéficiaire, une ligne, CA-only).
+  - `appels_paiement` (type Cotisation/Licence/Autre, montant, description, référence unique auto-générée `COT-{id}`/`LIC-{id}`/`AUT-{id}`, statut en_attente/payee/annulee, lien optionnel vers `personnes`, journalisé dans l'audit existant).
+- Page CA `/outils/paiements` : édition des coordonnées bancaires, création d'appels, génération QR à la volée à partir d'un appel, marquage payé/annulé.
+- **⚠️ IBAN/BIC actuellement en base sont des données fictives de dev** (fournies par Jérôme explicitement à cette fin) — à remplacer par les vraies coordonnées du club avant tout usage réel.
+
+### Calendriers (retour Jérôme : "c'était clair en v1, ça l'est moins en v2")
+- **Calendrier unifié `/calendrier`** : `fusionnerCalendrier()` passe de 2 à 4 sources — ajout des **manifestations du club** et des **congés CA** (en plus de National D2 + calendrier fédération déjà là). Dégradation silencieuse selon le rôle du visiteur via RLS (`manifestations` = licencié, `conges` = CA), testé sans session : ni erreur ni fuite, juste absent de la liste.
+- **`/conges`** : nouvelle grille mensuelle (`CalendrierConges.tsx`, port de la "Vue calendrier" de `Conges.html` v1) — une ligne par membre du CA, une colonne par jour, cellule teintée par motif, pastilles pour les manifestations/rencontres/journées Promotion du jour.
+- **`/manifestations`** : nouvelle grille mensuelle classique (`CalendrierManifestations.tsx`, port de la page "Calendrier" de `Evenements.html` v1) — semaines Lun→Dim, puces cliquables par manifestation, repères championnat. Liste plate en dessous réordonnée (prochaine manifestation en premier, continue jusqu'à fin d'année, reprend au 1er janvier pour les passées — même logique que le calendrier unifié depuis le pense-bête #13).
+
+### Avatars CA (pense-bête #18)
+Marie-Jean Flammang, Michel Prybyla, Paul Vitali, Osvaldo Brunetta recadrés en portrait carré à partir de photos sources de meilleure qualité (certaines fournies par Jérôme, d'autres extraites/recadrées depuis des photos de groupe du club après confirmation explicite de qui était qui — jamais deviné). Dominique Rousset non traité (pas signalé par Jérôme).
+
+### Drapeaux (pense-bête #19)
+Emoji drapeau (🇫🇷🇩🇪🇧🇪🇱🇺) remplacés par des SVG dessinés à la main sur `/club` — les emoji ne se rendent pas comme des drapeaux sur Windows/Chrome desktop (affichage "FR"/"DE" en texte), contrairement à iOS/Android où ils apparaissaient déjà correctement.
+
+### Tests sur compte fictif "Jean TESTEUR" — plusieurs corrections en cascade
+Jérôme a demandé un compte non-CA pour comparer ce que voit un licencié vs le CA, **sans jamais impersonner un vrai membre ni modifier son propre compte admin** (deux approches proposées puis écartées) — solution retenue : nouvelle ligne `acces` fictive (`info@carreau-mondorf.com` / "Jean TESTEUR", `est_ca=false`). En testant avec ce compte, plusieurs trous UX/sécurité découverts et corrigés dans la foulée :
+- **Bouton "Demandes d'adhésion" retiré** de `/membres` — pas de vrai flux de demande utilisable depuis cette page actuellement (relève du futur workflow pense-bête #6/#11, pas encore conçu). Route `/membres/demandes` et formulaire public `/inscription` laissés en place, juste plus reliés.
+- **Statistiques National D2** : un non-CA voyait "réservé au comité" — remplacé par **ses propres statistiques** via une nouvelle RPC `mes_parties_d2()` (migration `0022`, `security definer`, ne renvoie que les lignes où son nom apparaît — `parties_d2` dans son ensemble reste CA-only).
+- **Statistiques Promotion** : sa ligne mise en évidence (badge "Toi") dans le classement déjà public à tout licencié.
+- **"Nouvelle manifestation" et "Ajouter un créneau"** : n'étaient accessibles qu'aux licenciés connectés (RLS `est_utilisateur_autorise()`, hérité de la Phase B), alors que ce sont des actions d'organisation — resserrés au CA (boutons masqués + policies RLS + Server Actions, migrations `0023`/`0024`). Les affectations (s'ajouter à une tâche comme bénévole) restent ouvertes à tout licencié.
+- **Licencié vs membre, enfin implémenté** : `est_licencie()` (migration `0025`), documentée comme "pas encore fait" depuis `0004_registre_membres.sql` faute de données réelles à l'époque — vérifie `adhesions.type = 'Licencié'` pour la saison, sans exposer `personnes`/`adhesions` en lecture directe. Retour Jérôme : "la seule différence entre un membre et un licencié, c'est les statistiques de championnat" — un membre non-licencié ne voit plus les stats D2 (message dédié) ni l'onglet Statistiques Promotion (disparaît entièrement), tout le reste (calendrier, manifestations, congés, bénévolat) identique aux deux profils. **Point de vigilance signalé à Jérôme** : `est_licencie()` dépend d'une correspondance exacte email `acces` ↔ email `personnes` — écart déjà documenté comme possible entre les deux listes ; en cas de doute, l'accès est refusé par défaut plutôt qu'accordé par erreur, donc un vrai licencié pourrait se retrouver bloqué à tort si son email diffère entre les deux tables. À surveiller.
+- **Bug de connexion découvert et diagnostiqué** (fix hors de portée de Claude, à faire par Jérôme dans le Dashboard Supabase) : à la toute première connexion d'un nouvel email, Supabase envoie d'abord un email de confirmation de compte générique *avant* le vrai code OTP à 6 chiffres — double saisie d'email inutile puisque l'app n'autorise déjà que les emails de la table `acces`. Fix : **Dashboard Supabase → Authentication → Sign In / Providers → Email → désactiver "Confirm email"**.
+
+### Prochaine tâche actée pour la prochaine session
+Jérôme, après avoir vu le tableau de bord bénévole : "je voudrais qu'il serait bon que j'arrive sur ma page personnelle... une sorte de tableau de bord de mes informations" (cotisation, participations manifestations, bénévolat déjà fait, stats joueur). Explicitement mis de côté ("pas maintenant, garde-le pour demain, il faut le faire") — sauvegardé dans la mémoire Claude (`project_nextjs_page_perso.md`), à proposer en premier à la reprise. Complexité principale anticipée : `personnes`/`adhesions` restent CA-only, il faudra une RPC `security definer` du même principe que `mon_nom_benevole()`/`mes_parties_d2()` pour que chacun lise sa propre ligne d'adhésion sans ouvrir tout le registre.
+
+### Migrations en attente de confirmation d'application par Jérôme
+`0020` à `0025` — Jérôme a confirmé avoir appliqué `0020` à `0025` en cours de session (dernier message : "j'ai exécuté le SQL vingt-deux et vingt-trois", plus les précédentes au fil de l'eau) ; à revérifier en début de prochaine session si un doute apparaît (comportement en base ne correspondant pas au code déployé).
