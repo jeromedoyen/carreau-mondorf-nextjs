@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { MapPin } from 'lucide-react';
+import { MapPin, CalendarRange } from 'lucide-react';
 import { NouveauCreneauForm } from '@/components/NouveauCreneauForm';
 import { CreneauAffectations } from '@/components/CreneauAffectations';
-import { PlanningManifestation } from '@/components/PlanningManifestation';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
 import { couleurCategorie } from '@/lib/categoriesCreneau';
 
@@ -56,7 +55,18 @@ export default async function ManifestationDetailPage({
         {manifestation.notes && <p className="mt-3 text-[13.5px] leading-relaxed text-encre-douce">{manifestation.notes}</p>}
       </header>
 
-      <h2 className="font-display mb-4 text-xl italic">Créneaux &amp; bénévoles</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-xl italic">Créneaux &amp; bénévoles</h2>
+        {creneaux.length > 0 && (
+          <Link
+            href={`/manifestations/${manifestation.id}/planning`}
+            className="inline-flex items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta"
+          >
+            <CalendarRange size={15} />
+            Voir le planning
+          </Link>
+        )}
+      </div>
 
       <NouveauCreneauForm manifestationId={manifestation.id} />
 
@@ -93,12 +103,6 @@ export default async function ManifestationDetailPage({
               />
             </div>
           ))}
-        </div>
-      )}
-
-      {creneaux.length > 0 && (
-        <div className="mt-10">
-          <PlanningManifestation manifestation={manifestation} creneaux={creneaux} />
         </div>
       )}
     </main>

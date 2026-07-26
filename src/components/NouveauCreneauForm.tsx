@@ -4,8 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
 import { creerCreneau } from '@/lib/actions/manifestations';
-
-const CATEGORIES = ['Buvette', 'Cuisine', 'Terrain', 'Accueil', 'Autre'];
+import { CATEGORIES_CRENEAU } from '@/lib/categoriesCreneau';
 
 export function NouveauCreneauForm({ manifestationId }: { manifestationId: number }) {
   const router = useRouter();
@@ -77,7 +76,7 @@ export function NouveauCreneauForm({ manifestationId }: { manifestationId: numbe
           name="categorie"
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         >
-          {CATEGORIES.map((c) => (
+          {CATEGORIES_CRENEAU.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>

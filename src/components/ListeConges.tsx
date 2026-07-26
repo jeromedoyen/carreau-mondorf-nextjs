@@ -1,8 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Users } from 'lucide-react';
 import { supprimerConge } from '@/lib/actions/conges';
+import { MEMBRES_CA } from '@/lib/membresCA';
 import type { Conge } from '@/lib/conges';
 
 function formatPeriode(dateDebut: string, dateFin: string) {
@@ -12,6 +14,14 @@ function formatPeriode(dateDebut: string, dateFin: string) {
   const fin = new Date(dateFin).toLocaleDateString('fr-FR', { ...opts, year: 'numeric' });
   return `${debut} – ${fin}`;
 }
+
+/** Couleurs de statut de congé — charte graphique v1 (Vacances = bleu,
+ *  Indisponible ponctuel = ambre, Autre = gris), portées sur les tokens
+ *  v2 les plus proches (marine/laiton/encre-douce). */
+const COULEUR_MOTIF: Record<string, string> = {
+  Vacances: 'bg-marine/15 text-marine',
+  Indisponible: 'bg-laiton/20 text-laiton',
+};
 
 export function ListeConges({ conges }: { conges: Conge[] }) {
   const router = useRouter();
@@ -27,26 +37,51 @@ export function ListeConges({ conges }: { conges: Conge[] }) {
 
   return (
     <div className="divide-y divide-ligne overflow-hidden rounded-2xl border border-ligne bg-sable-carte">
-      {conges.map((c) => (
-        <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div>
-            <span className="font-display text-[14.5px]">{c.personne}</span>
-            {c.motif && <span className="ml-2 text-[12.5px] text-encre-douce">{c.motif}</span>}
-            {c.note && <p className="mt-0.5 text-[12px] text-encre-douce">{c.note}</p>}
+      {conges.map((c) => {
+        const membre = MEMBRES_CA.find((m) => m.nom === c.personne);
+        return (
+          <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-ligne bg-sable">
+                {membre?.photo ? (
+                  <Image src={membre.photo} alt="" width={40} height={40} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Users size={16} className="text-encre-douce" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-[14.5px]">{c.personne}</span>
+                  {c.motif && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        COULEUR_MOTIF[c.motif] ?? 'bg-encre-douce/15 text-encre-douce'
+                      }`}
+                    >
+                      {c.motif}
+                    </span>
+                  )}
+                </div>
+                {membre?.role && <p className="text-[11.5px] text-encre-douce/70">{membre.role}</p>}
+                {c.note && <p className="mt-0.5 text-[12px] text-encre-douce">{c.note}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[13px] text-encre-douce">{formatPeriode(c.dateDebut, c.dateFin)}</span>
+              <button
+                type="button"
+                onClick={() => supprimer(c.id)}
+                aria-label={`Supprimer le congé de ${c.personne}`}
+                className="text-encre-douce/60 hover:text-danger"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[13px] text-encre-douce">{formatPeriode(c.dateDebut, c.dateFin)}</span>
-            <button
-              type="button"
-              onClick={() => supprimer(c.id)}
-              aria-label={`Supprimer le congé de ${c.personne}`}
-              className="text-encre-douce/60 hover:text-danger"
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

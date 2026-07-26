@@ -5,23 +5,36 @@ import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
 import { creerManifestation } from '@/lib/actions/manifestations';
 
+/** Toujours au boulodrome du club en pratique (confirmé sur les données
+ *  existantes, 26/07/2026) — plus la peine de le demander à chaque
+ *  création, ça évite une saisie répétitive sans valeur ajoutée. */
+const LIEU_PAR_DEFAUT = 'Boulodrome Carreau Mondorf';
+
+/** Types déjà rencontrés dans les données du club — liste déroulante pour
+ *  éviter les variantes orthographiques ("Concours international" vs
+ *  "Concours international — Boules lyonnaises"), avec repli "Autre" en
+ *  texte libre pour ne jamais bloquer un cas non prévu. */
+const TYPES_CONNUS = ['Concours international', 'Tournoi interne', 'Festif', 'Championnat'];
+
 export function NouvelleManifestationForm() {
   const router = useRouter();
   const [ouvert, setOuvert] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [typeAutre, setTypeAutre] = useState(false);
 
   async function soumettre(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErreur(null);
     setEnCours(true);
     const formData = new FormData(e.currentTarget);
+    const typeChoisi = String(formData.get('type') || '');
     const resultat = await creerManifestation({
       nom: String(formData.get('nom') || ''),
       dateDebut: String(formData.get('dateDebut') || ''),
       dateFin: String(formData.get('dateFin') || formData.get('dateDebut') || ''),
-      lieu: String(formData.get('lieu') || ''),
-      type: String(formData.get('type') || ''),
+      lieu: LIEU_PAR_DEFAUT,
+      type: typeChoisi === 'Autre' ? String(formData.get('typeAutre') || '') : typeChoisi,
       notes: String(formData.get('notes') || ''),
     });
     setEnCours(false);
@@ -91,17 +104,31 @@ export function NouvelleManifestationForm() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          name="lieu"
-          placeholder="Lieu"
-          className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
-        />
-        <input
+      <div>
+        <label className="mb-1 block text-[11.5px] text-encre-douce">Type</label>
+        <select
           name="type"
-          placeholder="Type (ex. Concours, Journée conviviale)"
-          className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
-        />
+          defaultValue=""
+          onChange={(e) => setTypeAutre(e.target.value === 'Autre')}
+          className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+        >
+          <option value="" disabled>
+            Choisir un type…
+          </option>
+          {TYPES_CONNUS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+          <option value="Autre">Autre…</option>
+        </select>
+        {typeAutre && (
+          <input
+            name="typeAutre"
+            placeholder="Préciser le type"
+            className="mt-2 w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+          />
+        )}
       </div>
 
       <textarea
