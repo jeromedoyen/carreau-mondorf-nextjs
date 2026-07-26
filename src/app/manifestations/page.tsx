@@ -57,6 +57,17 @@ export default async function ManifestationsPage({
     (e) => e.categorie === 'National D2' || e.categorie === 'Promotion'
   );
 
+  /** Même réordonnancement que CalendrierUnifie.tsx (pense-bête #13) :
+   *  démarre à la prochaine manifestation à venir, continue jusqu'à fin
+   *  décembre, puis reprend au 1er janvier jusqu'à la veille d'aujourd'hui
+   *  — plutôt qu'un tri chronologique brut qui remonterait tout en haut
+   *  les manifestations déjà passées de janvier (retour Jérôme, 26/07/2026). */
+  const aujourdHui = new Date().toISOString().slice(0, 10);
+  const manifestationsOrdonnees = [...manifestations].sort((a, b) => {
+    const rang = (date: string) => (date >= aujourdHui ? date : `9${date}`);
+    return rang(a.dateDebut).localeCompare(rang(b.dateDebut));
+  });
+
   return (
     <main className="mx-auto max-w-5xl px-5 py-12">
       <header className="entree mb-9 flex flex-wrap items-end justify-between gap-4">
@@ -75,11 +86,13 @@ export default async function ManifestationsPage({
         <p className="text-[14px] text-encre-douce">Aucune manifestation enregistrée pour cette saison.</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {manifestations.map((m) => (
+          {manifestationsOrdonnees.map((m) => (
             <Link
               key={m.id}
               href={`/manifestations/${m.id}`}
-              className="flex flex-col gap-2 rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] transition-transform hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between"
+              className={`flex flex-col gap-2 rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] transition-transform hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between ${
+                m.dateFin < aujourdHui ? 'opacity-50' : ''
+              }`}
             >
               <div>
                 <div className="flex items-center gap-2">
