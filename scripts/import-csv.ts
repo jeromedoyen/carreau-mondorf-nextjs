@@ -13,6 +13,10 @@
  *                      --parties data/parties_d2.csv \
  *                      --personnes data/personnes.csv \
  *                      --adhesions data/adhesions.csv \
+ *                      --manifestations data/manifestations.csv \
+ *                      --creneaux data/creneaux.csv \
+ *                      --affectations data/affectations.csv \
+ *                      --conges data/conges.csv \
  *                      [--dry-run]
  *
  * Chaque CSV doit avoir exactement les en-têtes de la feuille Google Sheets
@@ -47,6 +51,19 @@
  *                       Classe, Supprimé, Cotisation payée, Cotisation date,
  *                       Cotisation montant, Cotisation mode, Licence payée,
  *                       Licence date, Licence montant.
+ *   - manifestations  : Id, Nom, Date début, Date fin, Lieu, Type, Statut,
+ *                       Notes, Supprimé. `saison` (colonne v2, absente ici)
+ *                       dérivée de l'année de Date début.
+ *   - creneaux        : Id, Id_Manifestation, Tâche, Catégorie, Date,
+ *                       Heure début, Heure fin, Fin imprécise, Postes prévus,
+ *                       Notes, Supprimé (Id_Manifestation résolu via
+ *                       source_id — --manifestations importé au préalable).
+ *   - affectations    : Id, Id_Creneau, Nom, Statut, Est membre, Supprimé
+ *                       (Id_Creneau résolu via source_id — --creneaux
+ *                       importé au préalable).
+ *   - conges          : Id, Personne, Date début, Date fin, Motif, Note,
+ *                       Créé par, Supprimé. `saison` dérivée de l'année de
+ *                       Date début, comme --manifestations.
  *
  * --dry-run : parse et affiche les compteurs sans rien écrire dans Supabase
  * (utile pour valider un export avant de configurer les identifiants).
@@ -94,6 +111,10 @@ async function main() {
     acces: argument('acces'),
     personnes: argument('personnes'),
     adhesions: argument('adhesions'),
+    manifestations: argument('manifestations'),
+    creneaux: argument('creneaux'),
+    affectations: argument('affectations'),
+    conges: argument('conges'),
   };
 
   if (
@@ -104,7 +125,11 @@ async function main() {
     !chemins.parties &&
     !chemins.acces &&
     !chemins.personnes &&
-    !chemins.adhesions
+    !chemins.adhesions &&
+    !chemins.manifestations &&
+    !chemins.creneaux &&
+    !chemins.affectations &&
+    !chemins.conges
   ) {
     console.error(
       'Aucun fichier CSV fourni. Voir l’en-tête de scripts/import-csv.ts pour l’usage.'
@@ -365,6 +390,138 @@ async function main() {
       console.log(
         `adhesions : ${lignes.length} lignes (après filtre Supprimé) — résolution Id_Personne non vérifiée en --dry-run.`
       );
+    }
+  }
+
+  // --- Manifestations ---
+  if (chemins.manifestations) {
+    const lignes = lireCsv(chemins.manifestations).filter(nonSupprime);
+    const rows = lignes.map((l) => ({
+      source_id: l['Id'],
+      saison: (parseDateSouple(l['Date début']) || '').slice(0, 4),
+      nom: l['Nom'],
+      date_debut: parseDateSouple(l['Date début']),
+      date_fin: parseDateSouple(l['Date fin']),
+      lieu: l['Lieu'] || null,
+      type: l['Type'] || null,
+      statut: l['Statut'] || 'Planifiée',
+      notes: l['Notes'] || null,
+    }));
+    console.log(`manifestations : ${rows.length} lignes.`);
+    if (!dryRun && supabase) {
+      const { error } = await supabase.from('manifestations').insert(rows as never[]);
+      if (error) throw error;
+    }
+  }
+
+  // --- Créneaux (résolution Id_Manifestation -> manifestations.id via source_id) ---
+  if (chemins.creneaux) {
+    const lignes = lireCsv(chemins.creneaux).filter(nonSupprime);
+    if (!dryRun && supabase) {
+      const { data: manifs, error: errM } = await supabase
+        .from('manifestations')
+        .select('id, source_id');
+      if (errM) throw errM;
+      const idParSourceId = new Map(
+        ((manifs ?? []) as { id: number; source_id: string | null }[]).map((m) => [
+          String(m.source_id),
+          m.id,
+        ])
+      );
+
+      const rows: Record<string, unknown>[] = [];
+      const introuvables = new Set<string>();
+      for (const l of lignes) {
+        const manifestationId = idParSourceId.get(String(l['Id_Manifestation']));
+        if (!manifestationId) {
+          introuvables.add(l['Id_Manifestation']);
+          continue;
+        }
+        rows.push({
+          source_id: l['Id'],
+          manifestation_id: manifestationId,
+          tache: l['Tâche'],
+          categorie: l['Catégorie'] || 'Autre',
+          date: parseDateSouple(l['Date']),
+          heure_debut: l['Heure début'] || null,
+          heure_fin: l['Heure fin'] || null,
+          fin_imprecise: parseBooleanOuiNon(l['Fin imprécise']) ?? false,
+          postes_prevus: parseEntierOuNull(l['Postes prévus']) ?? 1,
+          notes: l['Notes'] || null,
+        });
+      }
+      if (introuvables.size) {
+        console.warn(
+          `creneaux : ${introuvables.size} Id_Manifestation introuvable(s) (lignes ignorées) : ${[...introuvables].join(', ')}`
+        );
+      }
+      console.log(`creneaux : ${rows.length} lignes (après résolution manifestation).`);
+      const { error } = await supabase.from('creneaux').insert(rows as never[]);
+      if (error) throw error;
+    } else {
+      console.log(`creneaux : ${lignes.length} lignes — résolution Id_Manifestation non vérifiée en --dry-run.`);
+    }
+  }
+
+  // --- Affectations (résolution Id_Creneau -> creneaux.id via source_id) ---
+  if (chemins.affectations) {
+    const lignes = lireCsv(chemins.affectations).filter(nonSupprime);
+    if (!dryRun && supabase) {
+      const { data: crens, error: errC } = await supabase.from('creneaux').select('id, source_id');
+      if (errC) throw errC;
+      const idParSourceId = new Map(
+        ((crens ?? []) as { id: number; source_id: string | null }[]).map((c) => [
+          String(c.source_id),
+          c.id,
+        ])
+      );
+
+      const rows: Record<string, unknown>[] = [];
+      const introuvables = new Set<string>();
+      for (const l of lignes) {
+        const creneauId = idParSourceId.get(String(l['Id_Creneau']));
+        if (!creneauId) {
+          introuvables.add(l['Id_Creneau']);
+          continue;
+        }
+        rows.push({
+          source_id: l['Id'],
+          creneau_id: creneauId,
+          nom: l['Nom'],
+          statut: l['Statut'] || 'Confirmé',
+          est_membre: parseBooleanOuiNon(l['Est membre']) ?? false,
+        });
+      }
+      if (introuvables.size) {
+        console.warn(
+          `affectations : ${introuvables.size} Id_Creneau introuvable(s) (lignes ignorées) : ${[...introuvables].join(', ')}`
+        );
+      }
+      console.log(`affectations : ${rows.length} lignes (après résolution créneau).`);
+      const { error } = await supabase.from('affectations').insert(rows as never[]);
+      if (error) throw error;
+    } else {
+      console.log(`affectations : ${lignes.length} lignes — résolution Id_Creneau non vérifiée en --dry-run.`);
+    }
+  }
+
+  // --- Congés CA ---
+  if (chemins.conges) {
+    const lignes = lireCsv(chemins.conges).filter(nonSupprime);
+    const rows = lignes.map((l) => ({
+      source_id: l['Id'],
+      saison: (parseDateSouple(l['Date début']) || '').slice(0, 4),
+      personne: l['Personne'],
+      date_debut: parseDateSouple(l['Date début']),
+      date_fin: parseDateSouple(l['Date fin']),
+      motif: l['Motif'] || null,
+      note: l['Note'] || null,
+      cree_par: l['Créé par'] || null,
+    }));
+    console.log(`conges : ${rows.length} lignes.`);
+    if (!dryRun && supabase) {
+      const { error } = await supabase.from('conges').insert(rows as never[]);
+      if (error) throw error;
     }
   }
 
