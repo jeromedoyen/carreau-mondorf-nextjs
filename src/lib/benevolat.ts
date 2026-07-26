@@ -31,21 +31,41 @@ function dureeHeures(heureDebut: string | null, heureFin: string | null): number
   return minutes > 0 ? minutes / 60 : 0;
 }
 
-/** Relie la session auth (email) à un nom canonique via `personnes`, puis
- *  retrouve les affectations enregistrées sous ce nom — même schéma que
- *  nomCanoniqueEtEstMembre() dans actions/manifestations.ts, mais dans le
- *  sens email → nom plutôt que nom saisi → nom canonique. Pense-bête
+/** RPC security definer (migration 0020) : un licencié non-CA ne peut pas
+ *  lire `personnes` (RLS "lecture CA uniquement"), donc la résolution
+ *  email → nom canonique doit passer par une fonction serveur plutôt
+ *  qu'une requête directe sur `personnes` depuis ce client. Toujours dérivé
+ *  de la session courante, jamais un nom passé en paramètre (pense-bête
  *  Jérôme, 26/07/2026 : "les données que je vois sont celles qui
- *  correspondent à mon login" — jamais de nom passé en paramètre. */
+ *  correspondent à mon login"). */
+export async function getMonNomBenevole(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: nom, error } = await supabase.rpc('mon_nom_benevole');
+  if (error) return null;
+  return nom ?? null;
+}
+
+/** Comparaison insensible aux accents/casse — même principe que
+ *  normaliser() dans actions/manifestations.ts (pas exportée de là,
+ *  dupliquée ici plutôt que sortie dans un fichier partagé pour une seule
+ *  ligne de logique). */
+export function memeNom(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  const normaliser = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  return normaliser(a) === normaliser(b);
+}
+
+/** Retrouve les affectations enregistrées sous ce nom canonique. */
 export async function getMonTableauDeBordBenevole(): Promise<TableauDeBordBenevole | null> {
   const supabase = await createClient();
-
-  /** RPC security definer (migration 0020) : un licencié non-CA ne peut
-   *  pas lire `personnes` (RLS "lecture CA uniquement"), donc la
-   *  résolution email → nom canonique doit passer par une fonction serveur
-   *  plutôt qu'une requête directe sur `personnes` depuis ce client. */
-  const { data: nom, error: errNom } = await supabase.rpc('mon_nom_benevole');
-  if (errNom || !nom) return null;
+  const nom = await getMonNomBenevole();
+  if (!nom) return null;
 
   const { data: affectations, error } = await supabase
     .from('affectations')
