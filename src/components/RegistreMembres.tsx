@@ -1,4 +1,9 @@
-import { MessageSquareText } from 'lucide-react';
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { MessageSquareText, Pencil, Trash2 } from 'lucide-react';
+import { supprimerMembre } from '@/lib/actions/membres';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
 function formatDate(iso: string | null) {
@@ -7,11 +12,18 @@ function formatDate(iso: string | null) {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-/** Server Component pur (pas de tri/filtre interactif pour l'instant,
- *  contrairement aux tableaux de stats) — le registre est déjà réservé au
- *  CA via la RLS, pas besoin d'ajouter de complexité tant que le besoin
- *  précis (recherche ? export ?) n'est pas exprimé. */
+/** Passé en Client Component (édition/suppression, Phase E) — la RLS
+ *  ("lecture CA uniquement") continue de protéger les données, ce
+ *  composant ne fait qu'afficher ce que le serveur lui a déjà transmis. */
 export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion[] }) {
+  const router = useRouter();
+
+  async function supprimer(id: number, nomComplet: string) {
+    if (!window.confirm(`Retirer ${nomComplet} du registre ?`)) return;
+    await supprimerMembre(id);
+    router.refresh();
+  }
+
   if (!personnes.length) {
     return (
       <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce">
@@ -32,6 +44,7 @@ export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion
             <th className="px-4 py-3 font-medium">Contact</th>
             <th className="px-4 py-3 font-medium">Cotisation</th>
             <th className="px-4 py-3 font-medium">Licence</th>
+            <th className="px-4 py-3 font-medium" />
           </tr>
         </thead>
         <tbody>
@@ -75,6 +88,25 @@ export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion
                 ) : (
                   <span className="text-encre-douce/50">—</span>
                 )}
+              </td>
+              <td className="px-4 py-2.5">
+                <div className="flex items-center gap-2.5">
+                  <Link
+                    href={`/membres/${p.id}`}
+                    aria-label={`Modifier ${p.nom} ${p.prenom}`}
+                    className="text-encre-douce/60 hover:text-terracotta"
+                  >
+                    <Pencil size={14} />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => supprimer(p.id, `${p.prenom} ${p.nom}`)}
+                    aria-label={`Retirer ${p.nom} ${p.prenom}`}
+                    className="text-encre-douce/60 hover:text-danger"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

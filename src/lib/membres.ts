@@ -54,36 +54,63 @@ export async function getRegistreMembres(annee: string): Promise<PersonneAvecAdh
     ((adhesionsData ?? []) as LigneAdhesion[]).map((a) => [a.personne_id, a])
   );
 
-  return personnes.map((p) => {
-    const a = adhesionParPersonne.get(p.id);
-    return {
-      id: p.id,
-      nom: p.nom,
-      prenom: p.prenom,
-      sexe: p.sexe,
-      dateNaissance: p.date_naissance,
-      nationalite: p.nationalite,
-      adresse: p.adresse,
-      codePostalVille: p.code_postal_ville,
-      telephone: p.telephone,
-      email: p.email,
-      droitImage: p.droit_image,
-      notes: p.notes,
-      adhesion: a
-        ? {
-            id: a.id,
-            personneId: a.personne_id,
-            annee: a.annee,
-            type: a.type,
-            licence: a.licence,
-            categorie: a.categorie,
-            classe: a.classe,
-            cotisationPayee: a.cotisation_payee,
-            licencePayee: a.licence_payee,
-          }
-        : null,
-    };
-  });
+  return personnes.map((p) => versPersonneAvecAdhesion(p, adhesionParPersonne.get(p.id)));
+}
+
+function versPersonneAvecAdhesion(p: LignePersonne, a?: LigneAdhesion): PersonneAvecAdhesion {
+  return {
+    id: p.id,
+    nom: p.nom,
+    prenom: p.prenom,
+    sexe: p.sexe,
+    dateNaissance: p.date_naissance,
+    nationalite: p.nationalite,
+    adresse: p.adresse,
+    codePostalVille: p.code_postal_ville,
+    telephone: p.telephone,
+    email: p.email,
+    droitImage: p.droit_image,
+    notes: p.notes,
+    adhesion: a
+      ? {
+          id: a.id,
+          personneId: a.personne_id,
+          annee: a.annee,
+          type: a.type,
+          licence: a.licence,
+          categorie: a.categorie,
+          classe: a.classe,
+          cotisationPayee: a.cotisation_payee,
+          licencePayee: a.licence_payee,
+        }
+      : null,
+  };
+}
+
+/** Fiche d'une personne, avec son adhésion pour l'année donnée si elle
+ *  existe — utilisé par l'écran d'édition (/membres/[id]). */
+export async function getPersonne(id: number, annee: string): Promise<PersonneAvecAdhesion | null> {
+  const supabase = await createClient();
+
+  const { data: p, error: errP } = await supabase
+    .from('personnes')
+    .select('id, nom, prenom, sexe, date_naissance, nationalite, adresse, code_postal_ville, telephone, email, droit_image, notes')
+    .eq('id', id)
+    .eq('supprime', false)
+    .maybeSingle();
+  if (errP) throw errP;
+  if (!p) return null;
+
+  const { data: a, error: errA } = await supabase
+    .from('adhesions')
+    .select('id, personne_id, annee, type, licence, categorie, classe, cotisation_payee, licence_payee')
+    .eq('personne_id', id)
+    .eq('annee', annee)
+    .eq('supprime', false)
+    .maybeSingle();
+  if (errA) throw errA;
+
+  return versPersonneAvecAdhesion(p as LignePersonne, (a as LigneAdhesion) ?? undefined);
 }
 
 export async function estMembreCA(): Promise<boolean> {

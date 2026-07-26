@@ -1,13 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { RegistreMembres } from '@/components/RegistreMembres';
+import { SaisonSwitcher } from '@/components/SaisonSwitcher';
 import { getRegistreMembres, estMembreCA } from '@/lib/membres';
+import { getSaisons, getSaisonActive } from '@/lib/saisons';
 
 export const metadata: Metadata = { title: 'Membres & licenciés' };
 
-const ANNEE_ACTUELLE = '2026';
-
-export default async function MembresPage() {
+export default async function MembresPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saison?: string }>;
+}) {
   const ca = await estMembreCA();
 
   if (!ca) {
@@ -29,16 +34,36 @@ export default async function MembresPage() {
     );
   }
 
-  const personnes = await getRegistreMembres(ANNEE_ACTUELLE);
+  const [{ saison: saisonDemandee }, saisons, saisonActive] = await Promise.all([
+    searchParams,
+    getSaisons(),
+    getSaisonActive(),
+  ]);
+  const saison = saisonDemandee ?? saisonActive;
+  const personnes = await getRegistreMembres(saison);
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-12">
-      <header className="entree mb-9">
-        <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
-          SAISON {ANNEE_ACTUELLE} · RÉSERVÉ AU CA
-        </p>
-        <h1 className="font-display mt-1 text-4xl italic">Membres &amp; licenciés</h1>
+      <header className="entree mb-9 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
+            SAISON {saison} · RÉSERVÉ AU CA
+          </p>
+          <h1 className="font-display mt-1 text-4xl italic">Membres &amp; licenciés</h1>
+        </div>
+        <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
+
+      <div className="mb-6">
+        <Link
+          href="/membres/nouveau"
+          className="inline-flex items-center gap-2 rounded-full bg-terracotta px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+        >
+          <Plus size={15} />
+          Nouveau membre
+        </Link>
+      </div>
+
       <RegistreMembres personnes={personnes} />
     </main>
   );
