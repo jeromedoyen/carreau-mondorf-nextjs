@@ -105,7 +105,7 @@ export async function creerCreneau(
   }
 ): Promise<Resultat> {
   const supabase = await createClient();
-  if (!(await verifierAutorise(supabase))) return { ok: false, error: 'Action réservée aux licenciés connectés.' };
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
   if (!data.tache || !data.date) return { ok: false, error: 'Tâche et date obligatoires.' };
 
   const { error } = await supabase.from('creneaux').insert({

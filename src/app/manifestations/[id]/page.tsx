@@ -6,6 +6,7 @@ import { NouveauCreneauForm } from '@/components/NouveauCreneauForm';
 import { CreneauAffectations } from '@/components/CreneauAffectations';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
 import { couleurCategorie } from '@/lib/categoriesCreneau';
+import { estMembreCA } from '@/lib/membres';
 
 export const metadata: Metadata = { title: 'Détail manifestation' };
 
@@ -31,7 +32,7 @@ export default async function ManifestationDetailPage({
   }
 
   const { id } = await params;
-  const detail = await getManifestationDetail(Number(id));
+  const [detail, ca] = await Promise.all([getManifestationDetail(Number(id)), estMembreCA()]);
   if (!detail) notFound();
   const { manifestation, creneaux } = detail;
 
@@ -68,7 +69,7 @@ export default async function ManifestationDetailPage({
         )}
       </div>
 
-      <NouveauCreneauForm manifestationId={manifestation.id} />
+      {ca && <NouveauCreneauForm manifestationId={manifestation.id} />}
 
       {creneaux.length === 0 ? (
         <p className="text-[14px] text-encre-douce">Aucun créneau enregistré pour cette manifestation.</p>

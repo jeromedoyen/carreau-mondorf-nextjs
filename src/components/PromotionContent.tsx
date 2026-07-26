@@ -22,7 +22,12 @@ export function PromotionContent({ saison }: { saison: string }) {
   const [equipes, setEquipes] = useState<EquipePromotion[]>([]);
   const [stats, setStats] = useState<StatistiquesPromotionData | null>(null);
   const [monNom, setMonNom] = useState<string | null>(null);
+  const [statsVisibles, setStatsVisibles] = useState(false);
 
+  /** Le calendrier reste ouvert à tout licencié/membre autorisé, mais les
+   *  statistiques de championnat sont réservées aux licenciés (ou au CA) —
+   *  "la seule différence entre membre et licencié, c'est les stats"
+   *  (retour Jérôme, 26/07/2026 — même principe que StatistiquesD2.tsx). */
   useEffect(() => {
     const supabase = createClient();
     let annule = false;
@@ -33,15 +38,18 @@ export function PromotionContent({ saison }: { saison: string }) {
         return;
       }
       setEtat('chargement');
-      const [equipesData, statsData, { data: nomData }] = await Promise.all([
+      const [equipesData, statsData, { data: nomData }, { data: estCA }, { data: licencie }] = await Promise.all([
         getEquipesPromotion(supabase, saison),
         getStatistiquesPromotion(supabase, saison),
         supabase.rpc('mon_nom_benevole'),
+        supabase.rpc('est_membre_ca'),
+        supabase.rpc('est_licencie', { p_saison: saison }),
       ]);
       if (annule) return;
       setEquipes(equipesData);
       setStats(statsData);
       setMonNom(nomData ?? null);
+      setStatsVisibles(!!estCA || !!licencie);
       setEtat('pret');
     });
     return () => {
@@ -72,6 +80,10 @@ export function PromotionContent({ saison }: { saison: string }) {
         </Link>
       </div>
     );
+  }
+
+  if (!statsVisibles) {
+    return <CalendrierPromotion equipes={equipes} />;
   }
 
   return (

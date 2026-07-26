@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getStatistiquesJoueursD2, getMesStatistiquesD2 } from '@/lib/stats';
 
 type TriColonne = 'tauxVictoire' | 'joues';
-type Etat = 'verification' | 'mesStats' | 'chargement' | 'pret';
+type Etat = 'verification' | 'mesStats' | 'chargement' | 'pret' | 'nonLicencie';
 
 function formatPct(v: number) {
   return `${Math.round(v * 100)}%`;
@@ -39,25 +39,33 @@ export function StatistiquesD2({ saison }: { saison: string }) {
   /** Un licencié non-CA ne voit plus "réservé au comité" (retour Jérôme,
    *  26/07/2026) mais SES propres statistiques, via mes_parties_d2() —
    *  parties_d2 dans son ensemble reste CA-only (0006_verrouillage_stats.sql),
-   *  seule cette vue individuelle lui est ouverte. */
+   *  seule cette vue individuelle lui est ouverte. Un membre non-licencié
+   *  (est_licencie() false) ne voit pas les stats du tout — "la seule
+   *  différence entre membre et licencié, c'est les stats" (même retour). */
   useEffect(() => {
     const supabase = createClient();
     let annule = false;
     supabase.rpc('est_membre_ca').then(async ({ data: estCA }) => {
       if (annule) return;
-      if (!estCA) {
+      if (estCA) {
         setEtat('chargement');
-        const resultat = await getMesStatistiquesD2(supabase, saison);
+        const resultat = await getStatistiquesJoueursD2(supabase, saison);
         if (annule) return;
-        setMesStats(resultat);
-        setEtat('mesStats');
+        setStats(resultat);
+        setEtat('pret');
+        return;
+      }
+      const { data: licencie } = await supabase.rpc('est_licencie', { p_saison: saison });
+      if (annule) return;
+      if (!licencie) {
+        setEtat('nonLicencie');
         return;
       }
       setEtat('chargement');
-      const resultat = await getStatistiquesJoueursD2(supabase, saison);
+      const resultat = await getMesStatistiquesD2(supabase, saison);
       if (annule) return;
-      setStats(resultat);
-      setEtat('pret');
+      setMesStats(resultat);
+      setEtat('mesStats');
     });
     return () => {
       annule = true;
@@ -77,6 +85,14 @@ export function StatistiquesD2({ saison }: { saison: string }) {
     return (
       <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce">
         Chargement…
+      </div>
+    );
+  }
+
+  if (etat === 'nonLicencie') {
+    return (
+      <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-center text-[13.5px] text-encre-douce">
+        Les statistiques de championnat sont réservées aux licenciés.
       </div>
     );
   }
