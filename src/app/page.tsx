@@ -1,13 +1,17 @@
 import Link from 'next/link';
 import { Trophy, Users2, ArrowUpRight } from 'lucide-react';
 import { getClassementDivisionD2 } from '@/lib/data';
+import { getSaisonActive } from '@/lib/saisons';
 import { CLUB_CARREAU_MONDORF } from '@/lib/types';
 
 export default async function Home() {
   let rangActuel: number | null = null;
   let journeeActuelle: number | null = null;
+  // Repli sur '2026' si la table saisons est injoignable au build — la page
+  // ne doit jamais casser pour ça (même principe que le try/catch plus bas).
+  const saison = await getSaisonActive().catch(() => '2026');
   try {
-    const classement = await getClassementDivisionD2('2026');
+    const classement = await getClassementDivisionD2(saison);
     const evoCM = classement.evolution[CLUB_CARREAU_MONDORF];
     const dernier = evoCM?.[evoCM.length - 1];
     if (dernier) {
@@ -37,7 +41,7 @@ export default async function Home() {
 
       <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-5 py-20">
         <p className="entree font-score text-sm tracking-[0.25em] text-terracotta">
-          NATIONAL D2 · PROMOTION · SAISON 2026
+          NATIONAL D2 · PROMOTION · SAISON {saison}
         </p>
         <h1 className="entree mt-3 max-w-3xl font-display text-[clamp(2.5rem,7vw,5rem)] leading-[0.98] font-semibold italic text-encre">
           Carreau Boules
