@@ -128,3 +128,29 @@ h1, h2, h3, .font-display {
 @media (prefers-reduced-motion: reduce) {
   .boule-flottante, .orbe-pulse { animation: none; }
 }
+
+/* Animation de la page de connexion (boules en orbite autour du
+   cochonnet) — visuel volontairement différent de l'accueil (flottement
+   libre) pour distinguer les deux pages malgré le même vocabulaire visuel. */
+@keyframes orbiter {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.orbite {
+  position: absolute;
+  inset: 0;
+  animation: orbiter var(--duree, 12s) linear infinite;
+  animation-direction: var(--sens, normal);
+}
+
+.orbite-boule {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateX(var(--rayon, 80px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbite { animation: none; }
+}
