@@ -87,8 +87,8 @@ export function ConnexionForm() {
               autoComplete="one-time-code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="123456"
-              maxLength={6}
+              placeholder="12345678"
+              maxLength={12}
               className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-center text-[18px] tracking-[0.3em] text-encre outline-none focus:border-terracotta"
               autoFocus
               required
