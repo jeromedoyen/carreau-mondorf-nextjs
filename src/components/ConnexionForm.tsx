@@ -60,7 +60,10 @@ export function ConnexionForm() {
       setErreur('Code invalide ou expiré. Vérifiez le code reçu par email, ou redemandez-en un.');
       return;
     }
-    router.replace('/');
+    // /club (pas "/") : contient déjà les infos de base du club, et
+    // affiche désormais le menu complet une fois connecté (AppChrome.tsx)
+    // — "/" reste la page d'atterrissage épurée pour les visiteurs anonymes.
+    router.replace('/club');
   }
 
   return (
