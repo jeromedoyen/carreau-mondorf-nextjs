@@ -3,9 +3,12 @@ import Link from 'next/link';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
 import { NouveauCongeForm } from '@/components/NouveauCongeForm';
 import { ListeConges } from '@/components/ListeConges';
+import { CalendrierConges } from '@/components/CalendrierConges';
 import { getConges } from '@/lib/conges';
 import { estMembreCA } from '@/lib/membres';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
+import { getRencontresD2, getCalendrierFederation, fusionnerCalendrier } from '@/lib/data';
+import { getManifestations } from '@/lib/manifestations';
 
 export const metadata: Metadata = { title: 'Congés' };
 
@@ -41,10 +44,16 @@ export default async function CongesPage({
     getSaisonActive(),
   ]);
   const saison = saisonDemandee ?? saisonActive;
-  const conges = await getConges(saison);
+  const [conges, rencontres, federation, manifestations] = await Promise.all([
+    getConges(saison),
+    getRencontresD2(saison),
+    getCalendrierFederation(saison),
+    getManifestations(saison),
+  ]);
+  const evenements = fusionnerCalendrier(rencontres, federation, manifestations);
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-12">
+    <main className="mx-auto max-w-5xl px-5 py-12">
       <header className="entree mb-9 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
@@ -55,8 +64,14 @@ export default async function CongesPage({
         <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
 
-      <NouveauCongeForm />
-      <ListeConges conges={conges} />
+      <div className="mb-8">
+        <CalendrierConges saison={saison} conges={conges} evenements={evenements} />
+      </div>
+
+      <div className="mx-auto max-w-3xl">
+        <NouveauCongeForm />
+        <ListeConges conges={conges} />
+      </div>
     </main>
   );
 }
