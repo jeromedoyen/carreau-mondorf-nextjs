@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Home, Plane } from 'lucide-react';
+import { Home, Plane, Pencil, PenLine } from 'lucide-react';
 import type { RencontreD2 } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
 
@@ -35,34 +35,36 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
           return (
             <div
               key={r.journee}
-              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-ligne py-3 text-[13.5px] first:border-t-0 hover:bg-sable/60"
+              className="flex items-center justify-between gap-3 border-t border-ligne py-3 text-[13px] first:border-t-0 hover:bg-sable/60"
             >
-              <div className="flex items-center gap-3">
-                <span className="font-score w-9 shrink-0 text-encre-douce/70">J{r.journee}</span>
-                <span className="w-11 shrink-0 text-encre-douce">{formatDate(r.date)}</span>
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="font-score w-7 shrink-0 text-encre-douce/70">J{r.journee}</span>
+                <span className="w-12 shrink-0 whitespace-nowrap text-encre-douce">{formatDate(r.date)}</span>
                 {exempt ? (
                   <span className="italic text-encre-douce/60">Exempt ce tour-ci</span>
                 ) : (
-                  <span className="flex items-center gap-2">
+                  <span className="flex min-w-0 items-center gap-1.5">
                     {r.domicile ? (
-                      <Home size={14} className="shrink-0 text-pin" />
+                      <Home size={13} className="shrink-0 text-pin" />
                     ) : (
-                      <Plane size={14} className="shrink-0 text-encre-douce/50" />
+                      <Plane size={13} className="shrink-0 text-encre-douce/50" />
                     )}
-                    <span className={r.statut === 'Prévue' ? 'text-encre-douce/60' : 'font-medium'}>
+                    <span
+                      className={`truncate ${r.statut === 'Prévue' ? 'text-encre-douce/60' : 'font-medium'}`}
+                    >
                       {r.adversaire}
                     </span>
                   </span>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-3">
+              <div className="flex shrink-0 items-center gap-2.5">
                 {joue ? (
                   <span className="flex items-center gap-2">
                     {forfait && (
                       <span className="text-[11px] uppercase tracking-wide text-danger">Forfait</span>
                     )}
                     <span
-                      className={`font-score rounded-lg px-3 py-1 text-base ${
+                      className={`font-score rounded-lg px-2.5 py-0.5 text-[15px] ${
                         gagne ? 'bg-pin/10 text-pin' : 'bg-danger/10 text-danger'
                       }`}
                     >
@@ -70,16 +72,17 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
                     </span>
                   </span>
                 ) : !exempt ? (
-                  <span className="text-[12px] uppercase tracking-wide text-encre-douce/50">
+                  <span className="text-[11px] uppercase tracking-wide text-encre-douce/50">
                     à venir
                   </span>
                 ) : null}
                 {estCA && !exempt && (
                   <Link
                     href={`/national-d2/rencontres/${r.id}`}
-                    className="text-[12px] text-terracotta underline hover:opacity-80"
+                    aria-label={joue ? 'Modifier le résultat' : 'Saisir le résultat'}
+                    className="text-encre-douce/60 hover:text-terracotta"
                   >
-                    {joue ? 'Modifier' : 'Saisir'}
+                    {joue ? <Pencil size={14} /> : <PenLine size={14} />}
                   </Link>
                 )}
               </div>
