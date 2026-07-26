@@ -102,3 +102,29 @@ h1, h2, h3, .font-display {
 @media (prefers-reduced-motion: reduce) {
   .entree { animation: none; }
 }
+
+/* Animation héro de la page d'accueil (boules qui flottent) — pure CSS,
+   pas de dépendance JS d'animation (GSAP/Framer absent du projet, pas
+   nécessaire pour un mouvement aussi simple). */
+@keyframes flotter {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(6deg); }
+}
+
+@keyframes pulser {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 0.75; }
+}
+
+.boule-flottante {
+  animation: flotter var(--duree, 5s) ease-in-out infinite;
+  animation-delay: var(--delai, 0s);
+}
+
+.orbe-pulse {
+  animation: pulser 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boule-flottante, .orbe-pulse { animation: none; }
+}

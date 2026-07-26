@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Mail, Navigation, Users, UserPlus } from 'lucide-react';
+import { MapPin, Mail, Navigation, Users, UserPlus, LogIn } from 'lucide-react';
 import { CLUB, DISCIPLINES, COMITE, ITINERAIRES } from '@/lib/club';
 
 export const metadata: Metadata = {
@@ -35,6 +35,15 @@ export default function ClubPage() {
     <main className="mx-auto max-w-5xl px-5 py-14">
       {/* ---------- Hero ---------- */}
       <header className="entree mb-16 text-center">
+        <div className="mb-2 flex justify-end">
+          <Link
+            href="/connexion"
+            className="inline-flex items-center gap-1.5 text-[12.5px] text-encre-douce transition-colors hover:text-terracotta"
+          >
+            <LogIn size={13} />
+            Connexion licenciés
+          </Link>
+        </div>
         <Image
           src="/logo.png"
           alt="Carreau Mondorf"

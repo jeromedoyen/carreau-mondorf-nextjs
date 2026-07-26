@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Bebas_Neue, Work_Sans } from "next/font/google";
-import { NavBar } from "@/components/NavBar";
-import { BottomNav } from "@/components/BottomNav";
+import { AppChrome } from "@/components/AppChrome";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -50,12 +49,10 @@ export default function RootLayout({
       lang="fr"
       className={`${fraunces.variable} ${bebas.variable} ${workSans.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-sable pb-[calc(64px+env(safe-area-inset-bottom))] text-encre md:pb-0">
+      <body className="flex min-h-full flex-col bg-sable text-encre">
         <div className="grain" />
         <div className="ribbon" />
-        <NavBar />
-        {children}
-        <BottomNav />
+        <AppChrome>{children}</AppChrome>
       </body>
     </html>
   );
