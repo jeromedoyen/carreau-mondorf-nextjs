@@ -1,19 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { SaisonSwitcher } from '@/components/SaisonSwitcher';
-import { NouvelEvenementFederationForm } from '@/components/NouvelEvenementFederationForm';
-import { ListeEvenementsFederation } from '@/components/ListeEvenementsFederation';
-import { getCalendrierFederationAdmin } from '@/lib/data';
+import { ControleFederation } from '@/components/ControleFederation';
 import { estMembreCA } from '@/lib/membres';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
+import { getHistoriqueControlesFederation } from '@/lib/federation';
 
-export const metadata: Metadata = { title: 'Calendrier fédération' };
+export const metadata: Metadata = { title: 'Contrôle fédération' };
 
-export default async function FederationPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ saison?: string }>;
-}) {
+/** Port de Federation.html (v1, 26/07/2026) : upload d'un fichier Excel
+ *  fourni par la fédération, comparaison avec le registre des licenciés
+ *  du club. Remplace l'ancien contenu de /federation (gestion du calendrier
+ *  fédération — fonctionnalité différente, déplacée sur
+ *  /federation/calendrier, les deux restant groupées sous "Outils"). */
+export default async function FederationPage() {
   const ca = await estMembreCA();
 
   if (!ca) {
@@ -35,36 +34,29 @@ export default async function FederationPage({
     );
   }
 
-  const [{ saison: saisonDemandee }, saisons, saisonActive] = await Promise.all([
-    searchParams,
+  const [saisons, saisonActive, historique] = await Promise.all([
     getSaisons(),
     getSaisonActive(),
+    getHistoriqueControlesFederation(),
   ]);
-  const saison = saisonDemandee ?? saisonActive;
-  const evenements = await getCalendrierFederationAdmin(saison);
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-12">
-      <header className="entree mb-9 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
-            SAISON {saison} · RÉSERVÉ AU CA
-          </p>
-          <h1 className="font-display mt-1 text-4xl italic">Calendrier fédération</h1>
-          <p className="mt-2 max-w-md text-[13px] text-encre-douce">
-            Tournois, championnats individuels, Coupe de Luxembourg et journées Promotion — saisis
-            ici chaque saison à partir du calendrier officiel FLBP, visibles ensuite sur{' '}
-            <Link href="/calendrier" className="text-terracotta hover:underline">
-              le calendrier public
-            </Link>
-            .
-          </p>
-        </div>
-        <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
+    <main className="mx-auto max-w-4xl px-5 py-12">
+      <header className="entree mb-9">
+        <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">RÉSERVÉ AU CA</p>
+        <h1 className="font-display mt-1 text-4xl italic">Contrôle fédération</h1>
+        <p className="mt-2 max-w-xl text-[13.5px] text-encre-douce">
+          Compare le registre des licenciés du club avec le fichier officiel de la FLBP pour
+          détecter les écarts (licence, catégorie, classe...) et les licenciés manquants d&apos;un
+          côté ou de l&apos;autre.
+        </p>
       </header>
 
-      <NouvelEvenementFederationForm />
-      <ListeEvenementsFederation evenements={evenements} />
+      <ControleFederation
+        saisons={saisons.map((s) => s.libelle)}
+        saisonActive={saisonActive}
+        historique={historique}
+      />
     </main>
   );
 }
