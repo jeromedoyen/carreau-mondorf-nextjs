@@ -48,6 +48,9 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
 
   const filtres = items.filter((i) => actives.has(i.categorie));
 
+  const aujourdhui = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const moisCourant = aujourdhui.slice(0, 7); // yyyy-mm
+
   const groupes = useMemo(() => {
     const map = new Map<string, ItemCalendrier[]>();
     filtres.forEach((i) => {
@@ -55,8 +58,14 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
       if (!map.has(cle)) map.set(cle, []);
       map.get(cle)!.push(i);
     });
-    return Array.from(map.entries());
-  }, [filtres]);
+    // Réordonne du mois en cours à décembre, puis janvier au mois précédent
+    // le mois en cours — plutôt que janvier -> décembre chronologique brut,
+    // pour que la saison en cours démarre en haut de page.
+    return Array.from(map.entries()).sort(([a], [b]) => {
+      const rang = (cle: string) => (cle >= moisCourant ? cle : `9${cle}`);
+      return rang(a).localeCompare(rang(b));
+    });
+  }, [filtres, moisCourant]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,10 +105,14 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
                 {formatMois(evenements[0].date)}
               </h3>
               <div className="rounded-2xl border border-ligne bg-sable-carte shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-                {evenements.map((e, i) => (
+                {evenements.map((e, i) => {
+                  const passe = e.date < aujourdhui;
+                  return (
                   <div
                     key={`${e.date}-${e.titre}-${i}`}
-                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-ligne px-5 py-3 text-[13.5px] first:border-t-0 hover:bg-sable/60"
+                    className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-ligne px-5 py-3 text-[13.5px] first:border-t-0 hover:bg-sable/60 ${
+                      passe ? 'opacity-45' : ''
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="font-score w-9 shrink-0 text-encre-douce/70">
@@ -126,7 +139,8 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
                         ))}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
