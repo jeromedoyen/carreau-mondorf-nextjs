@@ -98,7 +98,7 @@ export default async function ManifestationDetailPage({
 
       {creneaux.length > 0 && (
         <div className="mt-10">
-          <PlanningManifestation creneaux={creneaux} />
+          <PlanningManifestation manifestation={manifestation} creneaux={creneaux} />
         </div>
       )}
     </main>

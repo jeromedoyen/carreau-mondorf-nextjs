@@ -1,122 +1,76 @@
 'use client';
 
-import { useMemo } from 'react';
-import { DayPilot, DayPilotScheduler } from '@daypilot/daypilot-lite-react';
-import { Printer } from 'lucide-react';
+import { useState } from 'react';
+import { Printer, FileDown } from 'lucide-react';
+import { pdf } from '@react-pdf/renderer';
 import { CATEGORIES_CRENEAU, couleurCategorie } from '@/lib/categoriesCreneau';
-import type { Creneau } from '@/lib/manifestations';
+import { construirePlanning, HEURE_DEBUT, HEURE_FIN, HEURES } from '@/lib/planningModel';
+import type { Creneau, Manifestation } from '@/lib/manifestations';
+import { PlanningPdf } from './PlanningPdf';
 
-/** Planning visuel des créneaux d'une manifestation (26/07/2026, demande
- *  Jérôme) — une timeline horaire par jour (DayPilot Lite, Apache-2.0,
- *  https://github.com/DayPilotCode/daypilot-react-scheduler-open-source),
- *  une ligne par tâche, barres colorées par catégorie : même esprit que le
- *  planning imprimé produit à la main pour le concours Vitali-Brunetta
- *  (Planning_benevoles_Concours_Vitali-Brunetta.pdf). Vient EN COMPLÉMENT
- *  de la liste des créneaux existante (édition), pas à sa place — cette
- *  vue est faite pour visualiser/imprimer, pas pour saisir. */
-
-function formatJour(date: string) {
-  const d = new Date(date + 'T00:00:00');
-  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
-}
-
-/** Convertit "HH:MM" + date en DayPilot.Date. Sans heure de fin : bloc de
- *  15 min si l'horaire est un simple point (ex. "Remise des prix 17h",
- *  comme les repères ◆ du PDF) ; bloc de 1h si l'horaire est volontairement
- *  imprécis (ex. "8h → fin à préciser"), avec "…" dans le libellé. */
-function creneauVersEvenement(c: Creneau) {
-  if (!c.heureDebut) return null;
-  const debut = new DayPilot.Date(`${c.date}T${c.heureDebut}:00`);
-  let fin: DayPilot.Date;
-  let suffixe = '';
-  if (c.heureFin) {
-    fin = new DayPilot.Date(`${c.date}T${c.heureFin}:00`);
-  } else if (c.finImprecise) {
-    fin = debut.addHours(1);
-    suffixe = '…';
-  } else {
-    fin = debut.addMinutes(15);
-  }
-
-  const noms = c.affectations.map((a) => a.nom).join(', ');
-  const texte = noms ? `${c.tache}${suffixe} — ${noms}` : `${c.tache}${suffixe}`;
-
-  return {
-    id: c.id,
-    resource: c.tache,
-    start: debut,
-    end: fin,
-    text: texte,
-    backColor: couleurCategorie(c.categorie),
-    fontColor: '#fff',
-    borderColor: 'darker',
-  };
-}
-
-function PlanningJour({ date, creneaux }: { date: string; creneaux: Creneau[] }) {
-  const resources = useMemo(() => {
-    const vues = new Set<string>();
-    const liste: { id: string; name: string }[] = [];
-    creneaux.forEach((c) => {
-      if (!vues.has(c.tache)) {
-        vues.add(c.tache);
-        liste.push({ id: c.tache, name: c.tache });
-      }
-    });
-    return liste;
-  }, [creneaux]);
-
-  const events = useMemo(
-    () => creneaux.map(creneauVersEvenement).filter((e): e is NonNullable<typeof e> => e !== null),
-    [creneaux]
-  );
-
-  return (
-    <div className="planning-jour rounded-2xl border border-ligne bg-sable-carte p-5">
-      <h3 className="font-display mb-3 text-[15px] text-terracotta">{formatJour(date)}</h3>
-      <DayPilotScheduler
-        startDate={new DayPilot.Date(`${date}T00:00:00`)}
-        days={1}
-        scale="Hour"
-        businessBeginsHour={7}
-        businessEndsHour={22}
-        locale="fr-fr"
-        rowHeaderWidth={160}
-        eventHeight={30}
-        heightSpec="Auto"
-        resources={resources}
-        events={events}
-      />
-    </div>
-  );
-}
-
-export function PlanningManifestation({ creneaux }: { creneaux: Creneau[] }) {
-  const parJour = useMemo(() => {
-    const map = new Map<string, Creneau[]>();
-    creneaux.forEach((c) => {
-      if (!map.has(c.date)) map.set(c.date, []);
-      map.get(c.date)!.push(c);
-    });
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [creneaux]);
+/** Planning visuel consolidé d'une manifestation (26/07/2026, demande
+ *  Jérôme — v2 après retour "pas 3 vues pour 3 jours") : UN document
+ *  continu (pas un widget par jour), même esprit que le planning imprimé
+ *  à la main pour le concours Vitali-Brunetta — bandes colorées par
+ *  catégorie sur une grille horaire 7h→22h, personnes affectées en
+ *  colonne dédiée. Vient EN COMPLÉMENT de la liste des créneaux existante
+ *  (édition), pas à sa place. Le PDF téléchargeable (PlanningPdf.tsx)
+ *  partage exactement le même modèle de données (planningModel.ts). */
+export function PlanningManifestation({
+  manifestation,
+  creneaux,
+}: {
+  manifestation: Manifestation;
+  creneaux: Creneau[];
+}) {
+  const [genereEnCours, setGenereEnCours] = useState(false);
 
   if (creneaux.length === 0) return null;
 
+  const jours = construirePlanning(creneaux);
   const categoriesPresentes = CATEGORIES_CRENEAU.filter((cat) => creneaux.some((c) => c.categorie === cat));
+  const nbHeures = HEURE_FIN - HEURE_DEBUT;
+
+  async function telechargerPdf() {
+    setGenereEnCours(true);
+    try {
+      const blob = await pdf(<PlanningPdf manifestation={manifestation} jours={jours} categoriesPresentes={categoriesPresentes} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Planning-${manifestation.nom.replace(/[^a-zA-Z0-9]+/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setGenereEnCours(false);
+    }
+  }
 
   return (
     <div className="planning-impression flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl italic">Planning</h2>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta print:hidden"
-        >
-          <Printer size={15} />
-          Imprimer
-        </button>
+        <div className="flex gap-2 print:hidden">
+          <button
+            type="button"
+            onClick={telechargerPdf}
+            disabled={genereEnCours}
+            className="inline-flex items-center gap-2 rounded-full bg-terracotta px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <FileDown size={15} />
+            {genereEnCours ? 'Génération…' : 'Télécharger le PDF'}
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta"
+          >
+            <Printer size={15} />
+            Imprimer
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -131,10 +85,59 @@ export function PlanningManifestation({ creneaux }: { creneaux: Creneau[] }) {
         ))}
       </div>
 
-      <div className="flex flex-col gap-4">
-        {parJour.map(([date, creneauxJour]) => (
-          <PlanningJour key={date} date={date} creneaux={creneauxJour} />
-        ))}
+      <div className="overflow-x-auto rounded-2xl border border-ligne bg-sable-carte">
+        <div className="min-w-[900px]">
+          {jours.map((jour, iJour) => (
+            <div key={jour.date} className={iJour > 0 ? 'border-t border-ligne' : ''}>
+              <div className="bg-marine px-4 py-2 text-[12.5px] font-semibold tracking-wide text-white">
+                {jour.label}
+              </div>
+
+              <div className="grid grid-cols-[180px_140px_220px_1fr] border-b border-ligne text-[10.5px] font-medium uppercase tracking-wide text-encre-douce/60">
+                <div className="px-3 py-1.5">Tâche</div>
+                <div className="px-3 py-1.5">Horaire</div>
+                <div className="px-3 py-1.5">Personnes</div>
+                <div className="relative grid px-0" style={{ gridTemplateColumns: `repeat(${nbHeures}, 1fr)` }}>
+                  {HEURES.slice(0, -1).map((h) => (
+                    <div key={h} className="border-l border-ligne/70 px-1 py-1.5">
+                      {h}h
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {jour.lignes.map((ligne) => (
+                <div key={ligne.id} className="grid grid-cols-[180px_140px_220px_1fr] border-b border-ligne text-[12.5px] last:border-b-0 hover:bg-sable/60">
+                  <div className="flex items-center gap-1.5 px-3 py-2">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: couleurCategorie(ligne.categorie) }} />
+                    <span className="font-medium text-encre">{ligne.tache}</span>
+                  </div>
+                  <div className="flex items-center px-3 py-2 text-encre-douce">{ligne.horaireLabel}</div>
+                  <div className="flex items-center px-3 py-2 text-encre-douce">{ligne.personnes}</div>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${nbHeures}, 1fr)` }}>
+                      {HEURES.slice(0, -1).map((h) => (
+                        <div key={h} className="border-l border-ligne/40" />
+                      ))}
+                    </div>
+                    {ligne.segment && (
+                      <div
+                        className={`absolute top-1/2 h-4 -translate-y-1/2 rounded-sm ${ligne.segment.point ? 'rounded-full' : ''}`}
+                        style={{
+                          left: `${(ligne.segment.debut / nbHeures) * 100}%`,
+                          width: `${((ligne.segment.fin - ligne.segment.debut) / nbHeures) * 100}%`,
+                          background: couleurCategorie(ligne.categorie),
+                          opacity: ligne.segment.imprecise ? 0.55 : 1,
+                        }}
+                        title={ligne.horaireLabel}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

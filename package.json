@@ -10,7 +10,7 @@
     "import": "tsx scripts/import-csv.ts"
   },
   "dependencies": {
-    "@daypilot/daypilot-lite-react": "^5.10.0",
+    "@react-pdf/renderer": "^4.5.1",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "csv-parse": "^7.0.1",
