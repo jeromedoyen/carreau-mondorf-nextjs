@@ -10,7 +10,7 @@ const SOUS_MENU = [
   { href: '/saisons', label: 'Saisons' },
   { href: '/federation', label: 'Contrôle fédération' },
   { href: '/federation/calendrier', label: 'Calendrier fédération' },
-  { href: '/outils/qr-cotisation', label: 'QR Cotisation' },
+  { href: '/outils/paiements', label: 'Paiements' },
 ];
 
 /** Regroupe les outils d'administration technique du CA (26/07/2026,
