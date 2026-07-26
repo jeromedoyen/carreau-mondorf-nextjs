@@ -4,16 +4,11 @@ import { notFound } from 'next/navigation';
 import { MapPin } from 'lucide-react';
 import { NouveauCreneauForm } from '@/components/NouveauCreneauForm';
 import { CreneauAffectations } from '@/components/CreneauAffectations';
+import { PlanningManifestation } from '@/components/PlanningManifestation';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
+import { couleurCategorie } from '@/lib/categoriesCreneau';
 
 export const metadata: Metadata = { title: 'Détail manifestation' };
-
-const CATEGORIE_COULEUR: Record<string, string> = {
-  Buvette: 'bg-terracotta/15 text-terracotta-dark',
-  Cuisine: 'bg-laiton/20 text-laiton',
-  Terrain: 'bg-pin/15 text-pin',
-  Accueil: 'bg-marine/15 text-marine',
-};
 
 export default async function ManifestationDetailPage({
   params,
@@ -78,9 +73,8 @@ export default async function ManifestationDetailPage({
                 <div className="flex items-center gap-2">
                   <span className="font-display text-[15px]">{c.tache}</span>
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                      CATEGORIE_COULEUR[c.categorie] ?? 'bg-encre-douce/15 text-encre-douce'
-                    }`}
+                    className="rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white"
+                    style={{ background: couleurCategorie(c.categorie) }}
                   >
                     {c.categorie}
                   </span>
@@ -99,6 +93,12 @@ export default async function ManifestationDetailPage({
               />
             </div>
           ))}
+        </div>
+      )}
+
+      {creneaux.length > 0 && (
+        <div className="mt-10">
+          <PlanningManifestation creneaux={creneaux} />
         </div>
       )}
     </main>

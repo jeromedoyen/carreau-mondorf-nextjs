@@ -5,7 +5,7 @@ import { NavLinks } from './NavLinks';
 
 export function NavBar() {
   return (
-    <nav className="sticky top-0 z-30 border-b border-ligne/70 bg-sable/85 backdrop-blur-md">
+    <nav className="sticky top-0 z-30 border-b border-ligne/70 bg-sable/85 backdrop-blur-md print:hidden">
       <div className="relative mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3.5">
         <Link href="/" className="flex min-w-0 items-center gap-2.5">
           <Image
