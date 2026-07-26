@@ -13,22 +13,27 @@ export const metadata: Metadata = { title: 'Connexion' };
 export default function ConnexionPage() {
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-5 py-16">
-      <div className="mx-auto w-full max-w-4xl">
-        <Link href="/" className="entree mb-10 flex items-center justify-center gap-2.5">
-          <Image src="/logo.png" alt="Carreau Mondorf" width={500} height={261} priority className="h-14 w-auto" />
-        </Link>
+      <div className="mx-auto grid w-full max-w-4xl grid-cols-1 items-center gap-10 sm:grid-cols-2">
+        <div className="entree" style={{ animationDelay: '0.1s' }}>
+          <HeroAnimationConnexion />
+        </div>
 
-        <div className="grid grid-cols-1 items-center gap-10 sm:grid-cols-2">
-          <div className="entree" style={{ animationDelay: '0.1s' }}>
-            <HeroAnimationConnexion />
-          </div>
+        <div className="entree flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:text-left" style={{ animationDelay: '0.2s' }}>
+          <Link href="/" className="shrink-0">
+            <Image
+              src="/logo.png"
+              alt="Carreau Mondorf"
+              width={500}
+              height={261}
+              priority
+              className="h-16 w-auto sm:h-24"
+            />
+          </Link>
 
-          <div className="entree" style={{ animationDelay: '0.2s' }}>
-            <p className="text-center font-score text-[13px] tracking-[0.2em] text-terracotta sm:text-left">
-              CONNEXION
-            </p>
-            <h1 className="font-display mt-1 text-center text-4xl italic sm:text-left">Espace privé</h1>
-            <p className="mx-auto mt-2 max-w-md text-center text-[13.5px] text-encre-douce sm:mx-0 sm:text-left">
+          <div>
+            <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">CONNEXION</p>
+            <h1 className="font-display mt-1 text-4xl italic">Espace privé</h1>
+            <p className="mx-auto mt-2 max-w-md text-[13.5px] text-encre-douce sm:mx-0">
               Réservé aux licenciés, membres et comité du club. Entrez votre
               email, vous recevrez un code de connexion valable quelques
               minutes.
