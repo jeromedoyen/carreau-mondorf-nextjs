@@ -10,6 +10,16 @@ const COULEUR_CATEGORIE: Record<string, string> = {
   Tournoi: 'var(--laiton)',
   'Coupe de Luxembourg': 'var(--marine)',
   'Championnat national': 'var(--marine-clair)',
+  // Types de manifestations internes (NouvelleManifestationForm.tsx) —
+  // ajoutés le 26/07/2026 pour que le calendrier unifié les distingue des
+  // rencontres/événements fédération plutôt que de tout regrouper sous une
+  // seule couleur générique "Manifestation club".
+  'Concours international': 'var(--terracotta-dark)',
+  'Tournoi interne': 'var(--laiton)',
+  Festif: 'var(--succes)',
+  Championnat: 'var(--marine-clair)',
+  'Manifestation club': 'var(--encre-douce)',
+  'Congé CA': 'var(--danger)',
 };
 
 function couleurCategorie(categorie: string) {

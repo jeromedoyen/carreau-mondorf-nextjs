@@ -219,13 +219,21 @@ export type ItemCalendrier = {
   domicile: boolean | null;
 };
 
-/** Port simplifié de getCalendrierUnifie() (CalendrierFederation.gs) : mêmes
- *  deux sources (rencontres D2 + calendrier fédération), triées
- *  chronologiquement — les manifestations internes du club (3ᵉ source côté
- *  Apps Script) sont hors périmètre de ce prototype, cf. CONTEXTE_PROJET.md. */
+/** Port de getCalendrierUnifie() (CalendrierFederation.gs), complété le
+ *  26/07/2026 (retour Jérôme : "il manque des visualisations calendrier
+ *  claires... événements du club, concours, journées championnat mélangés
+ *  avec les congés du CA — c'était clair en v1, ça l'est moins en v2") —
+ *  fusionne désormais 4 sources au lieu de 2 : rencontres D2, calendrier
+ *  fédération, manifestations internes du club, et congés CA. `manifestations`
+ *  vient de getManifestations() (RLS "lecture licenciés" — vide si non
+ *  connecté, pas d'erreur) et `conges` de getConges() (RLS "lecture CA" —
+ *  vide si non-CA) : les deux se dégradent silencieusement selon qui
+ *  regarde, pas besoin de vérifier le rôle ici. */
 export function fusionnerCalendrier(
   rencontres: RencontreD2[],
-  federation: EvenementFederation[]
+  federation: EvenementFederation[],
+  manifestations: { id: number; nom: string; dateDebut: string; dateFin: string; lieu: string | null; type: string | null }[] = [],
+  conges: { id: number; personne: string; dateDebut: string; dateFin: string; motif: string | null }[] = []
 ): ItemCalendrier[] {
   const items: ItemCalendrier[] = [];
   rencontres
@@ -251,6 +259,26 @@ export function fusionnerCalendrier(
       categorie: f.categorie,
       lieu: f.lieu,
       domicile: f.domicile,
+    });
+  });
+  manifestations.forEach((m) => {
+    items.push({
+      date: m.dateDebut,
+      dateFin: m.dateFin,
+      titre: m.nom,
+      categorie: m.type ?? 'Manifestation club',
+      lieu: m.lieu,
+      domicile: null,
+    });
+  });
+  conges.forEach((c) => {
+    items.push({
+      date: c.dateDebut,
+      dateFin: c.dateFin,
+      titre: `${c.personne} — ${c.motif ?? 'Congé'}`,
+      categorie: 'Congé CA',
+      lieu: null,
+      domicile: null,
     });
   });
   items.sort((a, b) => a.date.localeCompare(b.date));
