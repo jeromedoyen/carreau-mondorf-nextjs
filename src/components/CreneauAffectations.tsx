@@ -86,7 +86,7 @@ export function CreneauAffectations({
           disabled={enCours || !nom.trim()}
           className="rounded-lg bg-pin px-3.5 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {enCours ? '…' : "S'inscrire"}
+          {enCours ? '…' : "S'ajouter à la tâche"}
         </button>
       </form>
       {erreur && <p className="mt-1.5 text-[12px] text-danger">{erreur}</p>}
