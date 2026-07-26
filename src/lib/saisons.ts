@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 export type Saison = {
+  id: number;
   libelle: string;
   dateDebut: string;
   dateFin: string;
@@ -13,10 +14,11 @@ export type Saison = {
 export async function getSaisons(): Promise<Saison[]> {
   const { data, error } = await supabase
     .from('saisons')
-    .select('libelle, date_debut, date_fin, active')
+    .select('id, libelle, date_debut, date_fin, active')
     .order('libelle', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((s) => ({
+    id: s.id,
     libelle: s.libelle,
     dateDebut: s.date_debut,
     dateFin: s.date_fin,

@@ -10,6 +10,7 @@ export const LIENS_PRINCIPAUX = [
   { href: '/conges', label: 'Congés' },
   { href: '/federation', label: 'Fédération' },
   { href: '/membres', label: 'Membres' },
+  { href: '/saisons', label: 'Saisons' },
 ];
 
 /** Liens de nav desktop avec indicateur d'état actif — extrait de NavBar.tsx
