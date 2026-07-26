@@ -1,6 +1,8 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { LogIn, Eye } from 'lucide-react';
 import { HeroAnimation } from '@/components/HeroAnimation';
+import { CLUB } from '@/lib/club';
 
 /** Page d'atterrissage (26/07/2026) — volontairement sans navigation
  *  (AppChrome.tsx la masque pour "/"), sans référence à un module précis
@@ -21,11 +23,21 @@ export default function Home() {
       />
 
       <div className="mx-auto w-full max-w-4xl text-center">
-        <h1 className="entree font-display text-[clamp(2.5rem,8vw,5.5rem)] leading-[0.98] font-semibold italic text-encre">
-          Carreau Boules
-          <br />
-          &amp; Pétanque Mondorf
-        </h1>
+        <div className="entree flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Image
+            src="/logo.png"
+            alt="Carreau Mondorf"
+            width={500}
+            height={261}
+            priority
+            className="h-16 w-auto shrink-0 sm:h-24"
+          />
+          <h1 className="font-display text-[clamp(2.2rem,7vw,5rem)] leading-[0.98] font-semibold italic text-encre">
+            Carreau Boules
+            <br />
+            &amp; Pétanque Mondorf
+          </h1>
+        </div>
 
         <div className="mt-12 grid grid-cols-1 items-center gap-10 sm:grid-cols-2 sm:text-left">
           <div className="entree" style={{ animationDelay: '0.1s' }}>
@@ -50,6 +62,12 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <footer className="relative mt-16 text-center text-[11.5px] leading-relaxed text-encre-douce/50">
+        {CLUB.nomComplet} — {CLUB.rcs}
+        <br />
+        {CLUB.siegeSocial}
+      </footer>
     </main>
   );
 }

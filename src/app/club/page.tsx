@@ -41,7 +41,7 @@ export default function ClubPage() {
             className="inline-flex items-center gap-1.5 text-[12.5px] text-encre-douce transition-colors hover:text-terracotta"
           >
             <LogIn size={13} />
-            Connexion licenciés
+            Connexion
           </Link>
         </div>
         <Image
