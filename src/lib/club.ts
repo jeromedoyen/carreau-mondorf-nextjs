@@ -49,7 +49,7 @@ export type MembreComite = {
 };
 
 export const COMITE: MembreComite[] = [
-  { initiales: 'PV', nom: 'Paul Vitali', role: 'Président' },
+  { initiales: 'PV', nom: 'Paul Vitali', role: 'Président', photo: '/comite/paul-vitali.jpg' },
   { initiales: 'JB', nom: 'John Bravaccini', role: 'Vice-président', photo: '/comite/john-bravaccini.jpg' },
   { initiales: 'MP', nom: 'Michel Prybyla', role: 'Secrétaire', photo: '/comite/michel-prybyla.jpg' },
   { initiales: 'DR', nom: 'Dominique Rousset', role: 'Trésorier', photo: '/comite/dominique-rousset.jpg' },
