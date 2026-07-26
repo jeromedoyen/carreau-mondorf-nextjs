@@ -10,6 +10,11 @@ async function verifierAutorise(supabase: Awaited<ReturnType<typeof createClient
   return !!data;
 }
 
+async function verifierCA(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data } = await supabase.rpc('est_membre_ca');
+  return !!data;
+}
+
 /** Nom canonique "Prénom Nom" si `nom` correspond à un membre connu dans le
  *  registre, sinon le nom saisi tel quel — port simplifié de
  *  nomCanonique_()/isNomMembreConnu_() (carreau-mondorf-app/Code.gs:1208
@@ -62,7 +67,7 @@ export async function creerManifestation(data: {
   notes?: string;
 }): Promise<Resultat> {
   const supabase = await createClient();
-  if (!(await verifierAutorise(supabase))) return { ok: false, error: 'Action réservée aux licenciés connectés.' };
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
   if (!data.nom || !data.dateDebut) return { ok: false, error: 'Nom et date de début obligatoires.' };
 
   const saison = data.dateDebut.slice(0, 4);

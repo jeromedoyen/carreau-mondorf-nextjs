@@ -21,6 +21,7 @@ export function PromotionContent({ saison }: { saison: string }) {
   const [etat, setEtat] = useState<Etat>('verification');
   const [equipes, setEquipes] = useState<EquipePromotion[]>([]);
   const [stats, setStats] = useState<StatistiquesPromotionData | null>(null);
+  const [monNom, setMonNom] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -32,13 +33,15 @@ export function PromotionContent({ saison }: { saison: string }) {
         return;
       }
       setEtat('chargement');
-      const [equipesData, statsData] = await Promise.all([
+      const [equipesData, statsData, { data: nomData }] = await Promise.all([
         getEquipesPromotion(supabase, saison),
         getStatistiquesPromotion(supabase, saison),
+        supabase.rpc('mon_nom_benevole'),
       ]);
       if (annule) return;
       setEquipes(equipesData);
       setStats(statsData);
+      setMonNom(nomData ?? null);
       setEtat('pret');
     });
     return () => {
@@ -74,7 +77,7 @@ export function PromotionContent({ saison }: { saison: string }) {
   return (
     <Tabs labels={['Calendrier', 'Statistiques']}>
       <CalendrierPromotion key="calendrier" equipes={equipes} />
-      <StatistiquesPromotion key="stats" stats={stats!} />
+      <StatistiquesPromotion key="stats" stats={stats!} monNom={monNom} />
     </Tabs>
   );
 }

@@ -7,6 +7,7 @@ import { CalendrierManifestations } from '@/components/CalendrierManifestations'
 import { getManifestations, estUtilisateurAutorise } from '@/lib/manifestations';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
 import { getRencontresD2, getCalendrierFederation, fusionnerCalendrier } from '@/lib/data';
+import { estMembreCA } from '@/lib/membres';
 
 export const metadata: Metadata = { title: 'Manifestations' };
 
@@ -48,10 +49,11 @@ export default async function ManifestationsPage({
     getSaisonActive(),
   ]);
   const saison = saisonDemandee ?? saisonActive;
-  const [manifestations, rencontres, federation] = await Promise.all([
+  const [manifestations, rencontres, federation, ca] = await Promise.all([
     getManifestations(saison),
     getRencontresD2(saison),
     getCalendrierFederation(saison),
+    estMembreCA(),
   ]);
   const evenementsChampionnat = fusionnerCalendrier(rencontres, federation).filter(
     (e) => e.categorie === 'National D2' || e.categorie === 'Promotion'
@@ -80,7 +82,7 @@ export default async function ManifestationsPage({
 
       <CalendrierManifestations manifestations={manifestations} evenementsChampionnat={evenementsChampionnat} />
 
-      <NouvelleManifestationForm />
+      {ca && <NouvelleManifestationForm />}
 
       {manifestations.length === 0 ? (
         <p className="text-[14px] text-encre-douce">Aucune manifestation enregistrée pour cette saison.</p>

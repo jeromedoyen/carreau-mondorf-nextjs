@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import type { StatistiquesD2 as StatistiquesD2Data } from '@/lib/types';
+import type { StatistiquesD2 as StatistiquesD2Data, StatJoueurD2 } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { getStatistiquesJoueursD2 } from '@/lib/stats';
+import { getStatistiquesJoueursD2, getMesStatistiquesD2 } from '@/lib/stats';
 
 type TriColonne = 'tauxVictoire' | 'joues';
-type Etat = 'verification' | 'refuse' | 'chargement' | 'pret';
+type Etat = 'verification' | 'mesStats' | 'chargement' | 'pret';
 
 function formatPct(v: number) {
   return `${Math.round(v * 100)}%`;
@@ -33,16 +32,25 @@ const COLONNES: [TriColonne, string][] = [
 export function StatistiquesD2({ saison }: { saison: string }) {
   const [etat, setEtat] = useState<Etat>('verification');
   const [stats, setStats] = useState<StatistiquesD2Data | null>(null);
+  const [mesStats, setMesStats] = useState<StatJoueurD2 | null>(null);
   const [tri, setTri] = useState<TriColonne>('tauxVictoire');
   const [ouvert, setOuvert] = useState<string | null>(null);
 
+  /** Un licencié non-CA ne voit plus "réservé au comité" (retour Jérôme,
+   *  26/07/2026) mais SES propres statistiques, via mes_parties_d2() —
+   *  parties_d2 dans son ensemble reste CA-only (0006_verrouillage_stats.sql),
+   *  seule cette vue individuelle lui est ouverte. */
   useEffect(() => {
     const supabase = createClient();
     let annule = false;
     supabase.rpc('est_membre_ca').then(async ({ data: estCA }) => {
       if (annule) return;
       if (!estCA) {
-        setEtat('refuse');
+        setEtat('chargement');
+        const resultat = await getMesStatistiquesD2(supabase, saison);
+        if (annule) return;
+        setMesStats(resultat);
+        setEtat('mesStats');
         return;
       }
       setEtat('chargement');
@@ -73,21 +81,16 @@ export function StatistiquesD2({ saison }: { saison: string }) {
     );
   }
 
-  if (etat === 'refuse') {
-    return (
-      <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-center text-[13.5px] text-encre-douce">
-        <p className="mb-3">
-          Les statistiques individuelles sont réservées au comité
-          d&apos;administration.
-        </p>
-        <Link
-          href="/connexion"
-          className="inline-block rounded-lg bg-terracotta px-4 py-2 text-[13px] text-white transition-opacity hover:opacity-90"
-        >
-          Se connecter
-        </Link>
-      </div>
-    );
+  if (etat === 'mesStats') {
+    if (!mesStats) {
+      return (
+        <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-center text-[13.5px] text-encre-douce">
+          Aucune partie trouvée à ton nom pour cette saison — les statistiques individuelles détaillées
+          restent réservées au comité d&apos;administration.
+        </div>
+      );
+    }
+    return <CarteMesStatistiques joueur={mesStats} />;
   }
 
   if (!stats || !stats.joueurs.length) {
@@ -211,6 +214,52 @@ export function StatistiquesD2({ saison }: { saison: string }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Vue individuelle pour un licencié non-CA — mêmes informations que le
+ *  détail dépliable de la vue CA (par type de partie, dernières parties),
+ *  sans le classement global des autres joueurs. */
+function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
+  return (
+    <div className="rounded-2xl border border-ligne bg-sable-carte p-6 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <h3 className="font-display m-0 text-xl">Mes statistiques — {joueur.nom}</h3>
+        <span className="font-score text-2xl text-terracotta">{formatPct(joueur.tauxVictoire)}</span>
+      </div>
+      <p className="mb-5 text-[13px] text-encre-douce">{joueur.joues} partie(s) jouée(s) cette saison.</p>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div>
+          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Par type de partie</p>
+          <div className="flex flex-col gap-1">
+            {Object.entries(joueur.parType).map(([type, t]) => (
+              <div key={type} className="flex items-center justify-between text-[12.5px]">
+                <span className="text-encre-douce">{type}</span>
+                <span className="text-encre">
+                  {t.victoires}/{t.joues} ({formatPct(t.joues ? t.victoires / t.joues : 0)})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Dernières parties</p>
+          <div className="flex flex-col gap-1">
+            {joueur.parties.slice(0, 8).map((p) => (
+              <div key={`${p.idRencontre}-${p.phase}-${p.type}`} className="flex items-center justify-between gap-3 text-[12.5px]">
+                <span className="truncate text-encre-douce">
+                  J{p.journee} · {formatDate(p.date)} · {p.adversaireClub}
+                </span>
+                <span className={p.gagne ? 'shrink-0 text-pin' : 'shrink-0 text-danger'}>
+                  {p.scoreCM}-{p.scoreAdverse}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

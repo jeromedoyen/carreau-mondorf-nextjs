@@ -76,6 +76,35 @@ export async function getStatistiquesJoueursD2(
   if (errP) throw errP;
   const parties = (partiesData ?? []) as LigneParty[];
 
+  return reduireStatistiquesD2(parties, rencontreParId);
+}
+
+/** Statistiques d'un seul joueur (le licencié connecté), via la RPC
+ *  `mes_parties_d2()` (migration 0022) plutôt qu'une lecture directe de
+ *  `parties_d2` (CA-only) — la RPC ne renvoie déjà que les lignes où le nom
+ *  de la session apparaît, donc `reduireStatistiquesD2` produira au plus
+ *  une entrée dans `joueurs`. Remplace le message "réservé au CA" pour un
+ *  licencié non-CA (retour Jérôme, 26/07/2026). */
+export async function getMesStatistiquesD2(
+  supabase: SupabaseClient,
+  saison: string
+): Promise<StatJoueurD2 | null> {
+  const { data, error } = await supabase.rpc('mes_parties_d2', { p_saison: saison });
+  if (error) throw error;
+  const lignes = (data ?? []) as (LigneParty & { journee: number; date: string; club_adverse: string | null })[];
+  if (!lignes.length) return null;
+
+  const rencontreParId = new Map(
+    lignes.map((l) => [l.rencontre_id, { id: l.rencontre_id, journee: l.journee, date: l.date, club_adverse: l.club_adverse }])
+  );
+  const { joueurs } = reduireStatistiquesD2(lignes, rencontreParId);
+  return joueurs[0] ?? null;
+}
+
+function reduireStatistiquesD2(
+  parties: LigneParty[],
+  rencontreParId: Map<number, LigneRencontre>
+): StatistiquesD2 {
   type StatBrute = {
     nomAffiche: string;
     parType: Record<string, { joues: number; victoires: number }>;

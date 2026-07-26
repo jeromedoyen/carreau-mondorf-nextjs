@@ -14,10 +14,28 @@ const COLONNES: [TriColonne, string][] = [
   ['participations', 'Journées jouées'],
 ];
 
+function sansAccents(s: string) {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 /** Pas de drill-down par partie ici (contrairement au National D2) : seul le
  *  bilan du trio par journée a été importé, pas le détail individuel — voir
- *  le commentaire de getStatistiquesPromotion() dans src/lib/stats.ts. */
-export function StatistiquesPromotion({ stats }: { stats: StatistiquesPromotionData }) {
+ *  le commentaire de getStatistiquesPromotion() dans src/lib/stats.ts.
+ *  `monNom` (optionnel) met en évidence la ligne du licencié connecté dans
+ *  le classement déjà public (promotion_equipes est lisible par tout
+ *  licencié, contrairement à parties_d2 côté National D2 — pas besoin
+ *  d'une vue séparée ici, retour Jérôme 26/07/2026). */
+export function StatistiquesPromotion({
+  stats,
+  monNom,
+}: {
+  stats: StatistiquesPromotionData;
+  monNom?: string | null;
+}) {
   const [tri, setTri] = useState<TriColonne>('tauxVictoire');
 
   const joueursTries = useMemo(
@@ -60,21 +78,33 @@ export function StatistiquesPromotion({ stats }: { stats: StatistiquesPromotionD
           </div>
         </div>
         <div className="flex flex-col">
-          {joueursTries.map((j, i) => (
-            <div
-              key={j.nom}
-              className="grid grid-cols-[28px_1fr_110px_70px] items-center gap-3 border-t border-ligne py-2.5 text-[13px] first:border-t-0"
-            >
-              <span className="font-score text-encre-douce/70">{i + 1}</span>
-              <span className="font-medium text-encre">{j.nom}</span>
-              <span className="text-encre-douce">
-                {j.participations} journée{j.participations > 1 ? 's' : ''}
-              </span>
-              <span className="font-score text-base text-terracotta">
-                {formatPct(j.tauxVictoire)}
-              </span>
-            </div>
-          ))}
+          {joueursTries.map((j, i) => {
+            const cToi = !!monNom && sansAccents(j.nom) === sansAccents(monNom);
+            return (
+              <div
+                key={j.nom}
+                className={`grid grid-cols-[28px_1fr_110px_70px] items-center gap-3 border-t border-ligne py-2.5 text-[13px] first:border-t-0 ${
+                  cToi ? 'rounded-lg bg-pin/5 px-2' : ''
+                }`}
+              >
+                <span className="font-score text-encre-douce/70">{i + 1}</span>
+                <span className="font-medium text-encre">
+                  {j.nom}
+                  {cToi && (
+                    <span className="ml-2 rounded-full bg-pin px-2 py-0.5 text-[10px] font-medium text-sable-carte">
+                      Toi
+                    </span>
+                  )}
+                </span>
+                <span className="text-encre-douce">
+                  {j.participations} journée{j.participations > 1 ? 's' : ''}
+                </span>
+                <span className="font-score text-base text-terracotta">
+                  {formatPct(j.tauxVictoire)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
