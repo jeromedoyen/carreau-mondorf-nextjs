@@ -116,12 +116,12 @@ export function emailAppelPaiement({
         </tr>
         <tr>
           <td style="padding:32px;">
-            <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:${COULEURS.terracotta};font-weight:600;">Appel de paiement</p>
+            <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:${COULEURS.terracotta};font-weight:600;">Appel à cotisation</p>
             <h1 style="margin:0 0 20px;font-size:24px;line-height:1.3;color:${COULEURS.encre};font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;">
               Bonjour ${prenom},
             </h1>
             <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${COULEURS.encreDouce};">
-              Voici le détail de ta demande de paiement pour le
+              Voici le détail concernant l'appel à cotisation pour le
               <strong style="color:${COULEURS.encre};">Carreau Boules et Pétanque Mondorf</strong> — scanne le QR
               ci-dessous avec ton application bancaire, ou effectue un virement avec les coordonnées indiquées.
             </p>

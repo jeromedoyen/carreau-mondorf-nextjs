@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { envoyerEmail, chargerLogoClub } from '@/lib/email';
 import { emailAppelPaiement } from '@/lib/emailTemplates';
 import { genererPayloadSepaQr } from '@/lib/sepaQr';
+import { genererCommunicationAppelPaiement } from '@/lib/communicationPaiement';
 import type { TypeAppelPaiement } from '@/lib/paiements';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
@@ -84,14 +85,16 @@ export async function envoyerAppelPaiementEmail(id: number): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
 
-  const [{ data: appel, error: errAppel }, { data: parametres, error: errParametres }] = await Promise.all([
-    supabase
-      .from('appels_paiement')
-      .select('id, description, montant, reference, personnes(prenom, email)')
-      .eq('id', id)
-      .single(),
-    supabase.from('parametres_club').select('nom_beneficiaire, iban, bic').eq('id', 1).maybeSingle(),
-  ]);
+  const [{ data: appel, error: errAppel }, { data: parametres, error: errParametres }, { data: saison }] =
+    await Promise.all([
+      supabase
+        .from('appels_paiement')
+        .select('id, type, description, montant, personne_id, personnes(nom, prenom, email)')
+        .eq('id', id)
+        .single(),
+      supabase.from('parametres_club').select('nom_beneficiaire, iban, bic').eq('id', 1).maybeSingle(),
+      supabase.from('saisons').select('libelle').eq('active', true).maybeSingle(),
+    ]);
   if (errAppel || !appel) return { ok: false, error: errAppel?.message ?? 'Appel de paiement introuvable.' };
   if (errParametres) return { ok: false, error: errParametres.message };
   if (!parametres) return { ok: false, error: 'Coordonnées bancaires du club non renseignées.' };
@@ -99,24 +102,30 @@ export async function envoyerAppelPaiementEmail(id: number): Promise<Resultat> {
   const personne = Array.isArray(appel.personnes) ? appel.personnes[0] : appel.personnes;
   if (!personne?.email) return { ok: false, error: 'Aucun email associé à cet appel de paiement.' };
 
+  const communication = genererCommunicationAppelPaiement({
+    type: appel.type,
+    annee: saison?.libelle ?? String(new Date().getFullYear()),
+    personneNom: `${personne.prenom} ${personne.nom}`,
+  });
+
   const payload = genererPayloadSepaQr({
     nomBeneficiaire: parametres.nom_beneficiaire,
     iban: parametres.iban,
     bic: parametres.bic,
     montant: appel.montant,
-    communication: `${appel.description} (${appel.reference})`,
+    communication,
   });
   const qrBuffer = await QRCode.toBuffer(payload, { width: 400, margin: 2 });
 
   try {
     await envoyerEmail({
       destinataire: personne.email,
-      sujet: `Appel de paiement — ${appel.description}`,
+      sujet: `Appel à cotisation — ${appel.description}`,
       html: emailAppelPaiement({
         prenom: personne.prenom,
         description: appel.description,
         montant: appel.montant,
-        reference: appel.reference ?? '',
+        reference: communication,
         nomBeneficiaire: parametres.nom_beneficiaire,
         iban: parametres.iban,
         bic: parametres.bic,

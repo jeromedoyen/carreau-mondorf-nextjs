@@ -6,6 +6,7 @@ import QRCode from 'qrcode';
 import { QrCode, Check, X, Download, Mail } from 'lucide-react';
 import { marquerAppelPaye, annulerAppelPaiement, envoyerAppelPaiementEmail } from '@/lib/actions/paiements';
 import { genererPayloadSepaQr } from '@/lib/sepaQr';
+import { genererCommunicationAppelPaiement } from '@/lib/communicationPaiement';
 import type { AppelPaiement, ParametresClub } from '@/lib/paiements';
 
 const STATUT_COULEUR: Record<string, string> = {
@@ -22,9 +23,11 @@ const STATUT_LABEL: Record<string, string> = {
 export function ListeAppelsPaiement({
   appels,
   parametres,
+  saisonActive,
 }: {
   appels: AppelPaiement[];
   parametres: ParametresClub | null;
+  saisonActive: string;
 }) {
   const router = useRouter();
   const [qrOuvert, setQrOuvert] = useState<{ appel: AppelPaiement; dataUrl: string } | null>(null);
@@ -38,7 +41,11 @@ export function ListeAppelsPaiement({
       iban: parametres.iban,
       bic: parametres.bic,
       montant: appel.montant,
-      communication: `${appel.description} (${appel.reference})`,
+      communication: genererCommunicationAppelPaiement({
+        type: appel.type,
+        annee: saisonActive,
+        personneNom: appel.personneNom,
+      }),
     });
     const dataUrl = await QRCode.toDataURL(payload, { width: 480, margin: 2 });
     setQrOuvert({ appel, dataUrl });

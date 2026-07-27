@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { estMembreCA } from '@/lib/membres';
 import { getParametresClub, getAppelsPaiement } from '@/lib/paiements';
+import { getSaisonActive } from '@/lib/saisons';
 import { ParametresClubForm } from '@/components/ParametresClubForm';
 import { NouvelAppelPaiementForm } from '@/components/NouvelAppelPaiementForm';
 import { ListeAppelsPaiement } from '@/components/ListeAppelsPaiement';
@@ -28,9 +29,10 @@ export default async function PaiementsPage() {
   }
 
   const supabase = await createClient();
-  const [parametres, appels, { data: personnesData }] = await Promise.all([
+  const [parametres, appels, saisonActive, { data: personnesData }] = await Promise.all([
     getParametresClub(),
     getAppelsPaiement(),
+    getSaisonActive(),
     supabase.from('personnes').select('id, nom, prenom').eq('supprime', false).order('nom', { ascending: true }),
   ]);
   const personnes = (personnesData ?? []).map((p) => ({ id: p.id, nom: `${p.prenom} ${p.nom}` }));
@@ -53,7 +55,7 @@ export default async function PaiementsPage() {
         <NouvelAppelPaiementForm personnes={personnes} />
       </div>
 
-      <ListeAppelsPaiement appels={appels} parametres={parametres} />
+      <ListeAppelsPaiement appels={appels} parametres={parametres} saisonActive={saisonActive} />
     </main>
   );
 }
