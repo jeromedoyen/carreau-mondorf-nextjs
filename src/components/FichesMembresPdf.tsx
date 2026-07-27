@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, type ViewProps } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet, type ViewProps } from '@react-pdf/renderer';
 import { CLUB } from '@/lib/club';
 import type { FicheMembre } from '@/lib/fichesMembres';
 
@@ -16,6 +16,8 @@ const DANGER_FOND = '#f3ddd8';
 
 const styles = StyleSheet.create({
   page: { padding: 34, fontSize: 11, fontFamily: 'Helvetica', color: ENCRE },
+  entete: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  logo: { width: 52, height: 27 },
   club: { fontSize: 13, fontWeight: 700, color: MARINE },
   titre: { fontSize: 15, fontWeight: 700, color: TERRACOTTA, marginTop: 3 },
   sous: { fontSize: 9.5, color: ENCRE_DOUCE, marginTop: 3 },
@@ -91,9 +93,14 @@ export function FichesMembresPdf({ fiches, annee }: { fiches: FicheMembre[]; ann
     <Document>
       {fiches.map((f) => (
         <Page key={f.id} size="A4" style={styles.page}>
-          <Text style={styles.club}>{CLUB.nomComplet}</Text>
-          <Text style={styles.titre}>Fiche membre — Saison {annee}</Text>
-          <Text style={styles.sous}>Générée le {genereLe} · usage interne CA</Text>
+          <View style={styles.entete}>
+            <Image src="/logo.png" style={styles.logo} />
+            <View>
+              <Text style={styles.club}>{CLUB.nomComplet}</Text>
+              <Text style={styles.titre}>Fiche membre — Saison {annee}</Text>
+              <Text style={styles.sous}>Générée le {genereLe} · usage interne CA</Text>
+            </View>
+          </View>
 
           <Text style={styles.bandeau}>
             {f.nom} {f.prenom}
