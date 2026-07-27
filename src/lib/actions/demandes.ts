@@ -97,7 +97,12 @@ export async function marquerDemandeTraitee(demandeId: number, personneId: numbe
  *  envoie l'email de bienvenue — dans cet ordre : un envoi qui échoue ne
  *  doit jamais empêcher l'accès d'exister, mais on ne veut pas non plus
  *  prévenir quelqu'un qui n'a en fait pas d'accès. */
-export async function creerAccesEtEnvoyerBienvenue(nom: string, prenom: string, email: string): Promise<Resultat> {
+export async function creerAccesEtEnvoyerBienvenue(
+  nom: string,
+  prenom: string,
+  email: string,
+  estLicencie: boolean
+): Promise<Resultat> {
   const client = await createClient();
   if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
 
@@ -111,7 +116,7 @@ export async function creerAccesEtEnvoyerBienvenue(nom: string, prenom: string, 
     await envoyerEmail({
       destinataire: email,
       sujet: 'Bienvenue au Carreau Boules et Pétanque Mondorf',
-      html: emailBienvenue({ prenom, email }),
+      html: emailBienvenue({ prenom, email, estLicencie }),
     });
   } catch (e) {
     // L'accès existe déjà à ce stade (create côté RPC a réussi) — un email

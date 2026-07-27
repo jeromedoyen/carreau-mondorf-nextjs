@@ -104,7 +104,8 @@ export function MembreForm({
         const resultatAcces = await creerAccesEtEnvoyerBienvenue(
           donneesPersonne.nom,
           donneesPersonne.prenom,
-          donneesPersonne.email
+          donneesPersonne.email,
+          donneesAdhesion.type === 'Licencié'
         );
         if (!resultatAcces.ok) {
           // La fiche membre existe déjà à ce stade — on affiche
