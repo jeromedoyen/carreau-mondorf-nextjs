@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
+import { envoyerEmail } from '@/lib/email';
 
 type Resultat = { ok: true } | { ok: false; error: string };
 
@@ -85,6 +86,47 @@ export async function marquerDemandeTraitee(demandeId: number, personneId: numbe
   if (error) return { ok: false, error: error.message };
 
   revalidatePath('/membres/demandes');
+  return { ok: true };
+}
+
+/** Phase A du workflow adhésion : appelée depuis MembreForm.tsx juste
+ *  après marquerDemandeTraitee(), uniquement pour une Inscription initiale
+ *  (pas une Réinscription — la personne a déjà un accès dans ce cas).
+ *  Crée la ligne `acces` (RPC creer_acces_licencie(), migration 0028) puis
+ *  envoie l'email de bienvenue — dans cet ordre : un envoi qui échoue ne
+ *  doit jamais empêcher l'accès d'exister, mais on ne veut pas non plus
+ *  prévenir quelqu'un qui n'a en fait pas d'accès. */
+export async function creerAccesEtEnvoyerBienvenue(nom: string, prenom: string, email: string): Promise<Resultat> {
+  const client = await createClient();
+  if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
+
+  const { error: errAcces } = await client.rpc('creer_acces_licencie', {
+    p_email: email,
+    p_nom: `${prenom} ${nom}`,
+  });
+  if (errAcces) return { ok: false, error: errAcces.message };
+
+  try {
+    await envoyerEmail({
+      destinataire: email,
+      sujet: 'Bienvenue au Carreau Boules et Pétanque Mondorf',
+      html: `
+        <p>Bonjour ${prenom},</p>
+        <p>Ton adhésion au Carreau Boules et Pétanque Mondorf a été validée — bienvenue au club !</p>
+        <p>Tu peux dès maintenant te connecter à l'espace licenciés avec cette adresse email (${email}) :
+          <a href="https://carreau-mondorf.com/connexion">carreau-mondorf.com/connexion</a>.
+          Un code de connexion à 6 chiffres te sera envoyé par email à chaque connexion, aucun mot de passe à retenir.</p>
+        <p>À bientôt au boulodrome !</p>
+        <p>Le comité du Carreau Boules et Pétanque Mondorf</p>
+      `,
+    });
+  } catch (e) {
+    // L'accès existe déjà à ce stade (create côté RPC a réussi) — un email
+    // qui échoue (SMTP indisponible...) ne doit pas faire perdre au CA le
+    // travail déjà fait, juste le prévenir pour qu'il informe autrement.
+    return { ok: false, error: `Accès créé, mais l'email de bienvenue n'a pas pu être envoyé : ${(e as Error).message}` };
+  }
+
   return { ok: true };
 }
 

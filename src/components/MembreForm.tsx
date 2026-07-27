@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { creerMembre, modifierPersonne, enregistrerAdhesion } from '@/lib/actions/membres';
-import { marquerDemandeTraitee } from '@/lib/actions/demandes';
+import { marquerDemandeTraitee, creerAccesEtEnvoyerBienvenue } from '@/lib/actions/demandes';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
 const TYPES_ADHESION = ['Licencié', 'Membre (non-licencié)'];
@@ -46,6 +47,7 @@ export function MembreForm({
   const router = useRouter();
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [avertissement, setAvertissement] = useState<string | null>(null);
   const modeEdition = !!personne;
   // Sert uniquement de source de valeurs par défaut (édition OU
   // préremplissage depuis une demande) — jamais les deux en même temps.
@@ -97,6 +99,23 @@ export function MembreForm({
     // pour ne pas perdre la trace d'une demande si la création échoue.
     if (demandeId && !modeEdition && 'id' in resultat && resultat.id) {
       await marquerDemandeTraitee(demandeId, resultat.id);
+
+      if (fd.get('creerAcces') === 'on') {
+        const resultatAcces = await creerAccesEtEnvoyerBienvenue(
+          donneesPersonne.nom,
+          donneesPersonne.prenom,
+          donneesPersonne.email
+        );
+        if (!resultatAcces.ok) {
+          // La fiche membre existe déjà à ce stade — on affiche
+          // l'avertissement et on laisse le CA revenir manuellement,
+          // plutôt que de naviguer tout de suite et faire disparaître le
+          // message avant qu'il ait pu le lire.
+          setAvertissement(resultatAcces.error);
+          router.refresh();
+          return;
+        }
+      }
     }
     router.push('/membres');
     router.refresh();
@@ -251,7 +270,26 @@ export function MembreForm({
         />
       </section>
 
+      {demandeId && !modeEdition && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-pin/5 p-5">
+          <h3 className="font-display text-[15px]">Accès à l&apos;application</h3>
+          <label className="flex items-center gap-2 text-[13px] text-encre-douce">
+            <input type="checkbox" name="creerAcces" defaultChecked className="h-4 w-4 accent-terracotta" />
+            Créer l&apos;accès de connexion et envoyer un email de bienvenue
+          </label>
+        </section>
+      )}
+
       {erreur && <p className="text-[13px] text-danger">{erreur}</p>}
+      {avertissement && (
+        <div className="rounded-lg bg-laiton/10 p-3 text-[13px] text-laiton">
+          <p>{avertissement}</p>
+          <p className="mt-1">La fiche membre a bien été créée.</p>
+          <Link href="/membres" className="mt-1 inline-block underline">
+            Retour à Membres
+          </Link>
+        </div>
+      )}
 
       <button
         type="submit"
