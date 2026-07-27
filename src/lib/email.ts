@@ -29,12 +29,17 @@ export async function envoyerEmail({
   destinataire,
   sujet,
   html,
+  attachments,
 }: {
   destinataire: string;
   sujet: string;
   html: string;
+  /** Pièces jointes intégrées (ex. QR code en `cid:` référencé depuis le
+   *  HTML) — plus fiable qu'une image en `data:` URI, que certains clients
+   *  mail de bureau (Outlook) suppriment silencieusement. */
+  attachments?: { filename: string; content: Buffer; cid: string }[];
 }) {
   const transporteur = creerTransporteur();
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;
-  await transporteur.sendMail({ from, to: destinataire, subject: sujet, html });
+  await transporteur.sendMail({ from, to: destinataire, subject: sujet, html, attachments });
 }

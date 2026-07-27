@@ -11,6 +11,7 @@ export type AppelPaiement = {
   id: number;
   personneId: number | null;
   personneNom: string | null;
+  personneEmail: string | null;
   type: 'Cotisation' | 'Licence' | 'Autre';
   montant: number;
   description: string;
@@ -19,6 +20,7 @@ export type AppelPaiement = {
   modePaiement: string | null;
   creeLe: string;
   payeeLe: string | null;
+  emailEnvoyeLe: string | null;
 };
 
 export async function getParametresClub(): Promise<ParametresClub | null> {
@@ -42,7 +44,7 @@ export async function getAppelsPaiement(): Promise<AppelPaiement[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('appels_paiement')
-    .select('id, personne_id, type, montant, description, reference, statut, mode_paiement, cree_le, payee_le, personnes(nom, prenom)')
+    .select('id, personne_id, type, montant, description, reference, statut, mode_paiement, cree_le, payee_le, email_envoye_le, personnes(nom, prenom, email)')
     .eq('supprime', false)
     .order('cree_le', { ascending: false });
   if (error) throw error;
@@ -52,6 +54,7 @@ export async function getAppelsPaiement(): Promise<AppelPaiement[]> {
       id: a.id,
       personneId: a.personne_id,
       personneNom: personne ? `${personne.prenom} ${personne.nom}` : null,
+      personneEmail: personne?.email ?? null,
       type: a.type,
       montant: a.montant,
       description: a.description,
@@ -60,6 +63,7 @@ export async function getAppelsPaiement(): Promise<AppelPaiement[]> {
       modePaiement: a.mode_paiement,
       creeLe: a.cree_le,
       payeeLe: a.payee_le,
+      emailEnvoyeLe: a.email_envoye_le,
     };
   });
 }

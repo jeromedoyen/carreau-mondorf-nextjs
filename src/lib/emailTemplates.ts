@@ -81,6 +81,79 @@ export function emailBienvenue({
 </table>`;
 }
 
+/** Appel de paiement individuel (/outils/paiements) — envoyé à la demande
+ *  du CA plutôt qu'automatiquement, avec le QR SEPA en pièce jointe `cid:`
+ *  (voir src/lib/actions/paiements.ts) : plus fiable dans les clients mail
+ *  de bureau qu'une image en `data:` URI. */
+export function emailAppelPaiement({
+  prenom,
+  description,
+  montant,
+  reference,
+  nomBeneficiaire,
+  iban,
+  bic,
+}: {
+  prenom: string;
+  description: string;
+  montant: number;
+  reference: string;
+  nomBeneficiaire: string;
+  iban: string;
+  bic: string | null;
+}): string {
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COULEURS.sable};padding:32px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" style="max-width:480px;background:${COULEURS.sableCarte};border-radius:16px;overflow:hidden;border:1px solid ${COULEURS.ligne};">
+        <tr>
+          <td style="background:${COULEURS.sable};padding:28px 32px;text-align:center;border-bottom:1px solid ${COULEURS.ligne};">
+            <img src="https://carreau-mondorf.com/logo.png" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:${COULEURS.terracotta};font-weight:600;">Appel de paiement</p>
+            <h1 style="margin:0 0 20px;font-size:24px;line-height:1.3;color:${COULEURS.encre};font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;">
+              Bonjour ${prenom},
+            </h1>
+            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${COULEURS.encreDouce};">
+              Voici le détail de ta demande de paiement pour le
+              <strong style="color:${COULEURS.encre};">Carreau Boules et Pétanque Mondorf</strong> — scanne le QR
+              ci-dessous avec ton application bancaire, ou effectue un virement avec les coordonnées indiquées.
+            </p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border:1px solid ${COULEURS.ligne};border-radius:12px;">
+              <tr>
+                <td style="padding:20px;text-align:center;">
+                  <img src="cid:qr-cotisation" alt="QR code SEPA" width="200" height="200" style="display:block;margin:0 auto 16px;" />
+                  <p style="margin:0 0 4px;font-size:13px;color:${COULEURS.encreDouce};">${description}</p>
+                  <p style="margin:0;font-size:22px;font-weight:700;color:${COULEURS.terracotta};">${montant.toFixed(2)} €</p>
+                </td>
+              </tr>
+            </table>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:${COULEURS.encreDouce};">
+              <tr><td style="padding:3px 0;">Bénéficiaire</td><td style="padding:3px 0;text-align:right;color:${COULEURS.encre};">${nomBeneficiaire}</td></tr>
+              <tr><td style="padding:3px 0;">IBAN</td><td style="padding:3px 0;text-align:right;color:${COULEURS.encre};">${iban}</td></tr>
+              ${bic ? `<tr><td style="padding:3px 0;">BIC</td><td style="padding:3px 0;text-align:right;color:${COULEURS.encre};">${bic}</td></tr>` : ''}
+              <tr><td style="padding:3px 0;">Communication</td><td style="padding:3px 0;text-align:right;color:${COULEURS.encre};">${reference}</td></tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px;border-top:1px solid ${COULEURS.ligne};">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:${COULEURS.encreDouce};">
+              Merci pour ta confiance !<br />
+              <strong style="color:${COULEURS.pin};">Le comité du Carreau Boules et Pétanque Mondorf</strong>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
 /** Relance de renouvellement (Phase E du workflow adhésion) — envoyée en
  *  masse aux membres de la saison précédente qui n'ont pas encore
  *  d'adhésion pour la saison cible. Pointe vers /moncaro/renouveler

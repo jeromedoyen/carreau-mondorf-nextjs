@@ -1,7 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import QRCode from 'qrcode';
 import { createClient } from '@/lib/supabase/server';
+import { envoyerEmail } from '@/lib/email';
+import { emailAppelPaiement } from '@/lib/emailTemplates';
+import { genererPayloadSepaQr } from '@/lib/sepaQr';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -62,6 +66,70 @@ export async function creerAppelPaiement(data: {
 
   revalidatePath('/outils/paiements');
   return { ok: true, id: inserted.id };
+}
+
+/** Retour Jérôme (27/07/2026) : "je crée une demande de paiement et basta,
+ *  ça ne va pas" — il faut pouvoir envoyer la demande par email. Une fois
+ *  envoyée, l'appel passe visuellement dans une seconde liste
+ *  ("relances envoyées", cf. email_envoye_le en migration 0031) pendant
+ *  que le trésorier suit les paiements reçus ; un appel jamais relancé
+ *  (paiement en main propre, QR flashé sur place) reste marquable payé
+ *  directement, sans jamais passer par ici. */
+export async function envoyerAppelPaiementEmail(id: number): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+
+  const [{ data: appel, error: errAppel }, { data: parametres, error: errParametres }] = await Promise.all([
+    supabase
+      .from('appels_paiement')
+      .select('id, description, montant, reference, personnes(prenom, email)')
+      .eq('id', id)
+      .single(),
+    supabase.from('parametres_club').select('nom_beneficiaire, iban, bic').eq('id', 1).maybeSingle(),
+  ]);
+  if (errAppel || !appel) return { ok: false, error: errAppel?.message ?? 'Appel de paiement introuvable.' };
+  if (errParametres) return { ok: false, error: errParametres.message };
+  if (!parametres) return { ok: false, error: 'Coordonnées bancaires du club non renseignées.' };
+
+  const personne = Array.isArray(appel.personnes) ? appel.personnes[0] : appel.personnes;
+  if (!personne?.email) return { ok: false, error: 'Aucun email associé à cet appel de paiement.' };
+
+  const payload = genererPayloadSepaQr({
+    nomBeneficiaire: parametres.nom_beneficiaire,
+    iban: parametres.iban,
+    bic: parametres.bic,
+    montant: appel.montant,
+    communication: `${appel.description} (${appel.reference})`,
+  });
+  const qrBuffer = await QRCode.toBuffer(payload, { width: 400, margin: 2 });
+
+  try {
+    await envoyerEmail({
+      destinataire: personne.email,
+      sujet: `Appel de paiement — ${appel.description}`,
+      html: emailAppelPaiement({
+        prenom: personne.prenom,
+        description: appel.description,
+        montant: appel.montant,
+        reference: appel.reference ?? '',
+        nomBeneficiaire: parametres.nom_beneficiaire,
+        iban: parametres.iban,
+        bic: parametres.bic,
+      }),
+      attachments: [{ filename: 'qr-paiement.png', content: qrBuffer, cid: 'qr-cotisation' }],
+    });
+  } catch (e) {
+    return { ok: false, error: `Échec de l'envoi : ${(e as Error).message}` };
+  }
+
+  const { error: errUpdate } = await supabase
+    .from('appels_paiement')
+    .update({ email_envoye_le: new Date().toISOString() })
+    .eq('id', id);
+  if (errUpdate) return { ok: false, error: errUpdate.message };
+
+  revalidatePath('/outils/paiements');
+  return { ok: true };
 }
 
 export async function marquerAppelPaye(id: number, modePaiement: string): Promise<Resultat> {
