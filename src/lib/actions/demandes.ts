@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
 import { envoyerEmail } from '@/lib/email';
+import { emailBienvenue } from '@/lib/emailTemplates';
 
 type Resultat = { ok: true } | { ok: false; error: string };
 
@@ -110,15 +111,7 @@ export async function creerAccesEtEnvoyerBienvenue(nom: string, prenom: string, 
     await envoyerEmail({
       destinataire: email,
       sujet: 'Bienvenue au Carreau Boules et Pétanque Mondorf',
-      html: `
-        <p>Bonjour ${prenom},</p>
-        <p>Ton adhésion au Carreau Boules et Pétanque Mondorf a été validée — bienvenue au club !</p>
-        <p>Tu peux dès maintenant te connecter à l'espace licenciés avec cette adresse email (${email}) :
-          <a href="https://carreau-mondorf.com/connexion">carreau-mondorf.com/connexion</a>.
-          Un code de connexion à 6 chiffres te sera envoyé par email à chaque connexion, aucun mot de passe à retenir.</p>
-        <p>À bientôt au boulodrome !</p>
-        <p>Le comité du Carreau Boules et Pétanque Mondorf</p>
-      `,
+      html: emailBienvenue({ prenom, email }),
     });
   } catch (e) {
     // L'accès existe déjà à ce stade (create côté RPC a réussi) — un email
