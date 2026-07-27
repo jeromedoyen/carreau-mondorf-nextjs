@@ -14,6 +14,7 @@ const SOUS_MENU = [
   { href: '/outils/paiements-en-attente', label: 'Paiements en attente' },
   { href: '/outils/renouvellement', label: 'Renouvellement' },
   { href: '/outils/journal', label: 'Journal des actions' },
+  { href: '/outils/signatures', label: 'Signatures électroniques' },
 ];
 
 /** Regroupe les outils d'administration technique du CA (26/07/2026,
