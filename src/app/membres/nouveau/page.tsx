@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MembreForm, type PrefillDemande } from '@/components/MembreForm';
-import { estMembreCA } from '@/lib/membres';
+import { estMembreCA, getPersonneParEmail } from '@/lib/membres';
 import { getSaisonActive } from '@/lib/saisons';
 import { getDemande } from '@/lib/demandes';
+import type { PersonneAvecAdhesion } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Nouveau membre' };
 
@@ -33,23 +34,39 @@ export default async function NouveauMembrePage({
 
   let prefill: PrefillDemande | undefined;
   let demandeIdNum: number | undefined;
+  let personneExistante: PersonneAvecAdhesion | undefined;
+  let estReinscription = false;
+
   if (demandeId) {
     const demande = await getDemande(Number(demandeId));
     if (demande && demande.statut === 'a_traiter') {
       demandeIdNum = demande.id;
-      prefill = {
-        nom: demande.nom,
-        prenom: demande.prenom,
-        sexe: demande.sexe,
-        dateNaissance: demande.dateNaissance,
-        nationalite: demande.nationalite,
-        adresse: demande.adresse,
-        codePostalVille: demande.codePostalVille,
-        telephone: demande.telephone,
-        email: demande.email,
-        droitImage: demande.droitImage,
-        typeAdhesionSouhaite: demande.typeAdhesionSouhaite,
-      };
+      estReinscription = demande.typeDemande === 'Réinscription';
+
+      // Une Réinscription concerne une personne déjà connue (elle a déjà un
+      // accès de connexion) : on édite sa fiche existante — retrouvée par
+      // email — plutôt que d'en créer une nouvelle. Si aucune fiche ne
+      // correspond (cas anormal), on retombe sur le flux Inscription
+      // classique plutôt que de bloquer le traitement de la demande.
+      if (estReinscription) {
+        personneExistante = (await getPersonneParEmail(demande.email, saisonActive)) ?? undefined;
+      }
+
+      if (!personneExistante) {
+        prefill = {
+          nom: demande.nom,
+          prenom: demande.prenom,
+          sexe: demande.sexe,
+          dateNaissance: demande.dateNaissance,
+          nationalite: demande.nationalite,
+          adresse: demande.adresse,
+          codePostalVille: demande.codePostalVille,
+          telephone: demande.telephone,
+          email: demande.email,
+          droitImage: demande.droitImage,
+          typeAdhesionSouhaite: demande.typeAdhesionSouhaite,
+        };
+      }
     }
   }
 
@@ -60,11 +77,18 @@ export default async function NouveauMembrePage({
       </Link>
       <header className="entree mt-4 mb-8">
         <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
-          {prefill ? 'DEMANDE À TRAITER · ' : ''}RÉSERVÉ AU CA
+          {demandeIdNum ? `${estReinscription ? 'RÉINSCRIPTION' : 'DEMANDE'} À TRAITER · ` : ''}RÉSERVÉ AU CA
         </p>
-        <h1 className="font-display mt-1 text-3xl italic">Nouveau membre</h1>
+        <h1 className="font-display mt-1 text-3xl italic">
+          {personneExistante ? `${personneExistante.prenom} ${personneExistante.nom}` : 'Nouveau membre'}
+        </h1>
       </header>
-      <MembreForm saisonActuelle={saisonActive} prefill={prefill} demandeId={demandeIdNum} />
+      <MembreForm
+        saisonActuelle={saisonActive}
+        prefill={prefill}
+        personne={personneExistante}
+        demandeId={demandeIdNum}
+      />
     </main>
   );
 }

@@ -113,6 +113,37 @@ export async function getPersonne(id: number, annee: string): Promise<PersonneAv
   return versPersonneAvecAdhesion(p as LignePersonne, (a as LigneAdhesion) ?? undefined);
 }
 
+/** Retrouve la fiche existante d'un licencié à partir de son email —
+ *  utilisée par le traitement CA d'une demande de Réinscription (Phase C
+ *  du workflow adhésion) : la personne existe déjà, on édite sa fiche au
+ *  lieu d'en créer une nouvelle. null si aucune fiche ne correspond
+ *  (ne devrait pas arriver pour une réinscription légitime, mais la RPC
+ *  soumettre_reinscription() ne garantit pas l'unicité de l'email côté
+ *  base — mieux vaut dégrader que planter). */
+export async function getPersonneParEmail(email: string, annee: string): Promise<PersonneAvecAdhesion | null> {
+  const supabase = await createClient();
+
+  const { data: p, error: errP } = await supabase
+    .from('personnes')
+    .select('id, nom, prenom, sexe, date_naissance, nationalite, adresse, code_postal_ville, telephone, email, droit_image, notes')
+    .ilike('email', email.trim())
+    .eq('supprime', false)
+    .maybeSingle();
+  if (errP) throw errP;
+  if (!p) return null;
+
+  const { data: a, error: errA } = await supabase
+    .from('adhesions')
+    .select('id, personne_id, annee, type, licence, categorie, classe, cotisation_payee, licence_payee')
+    .eq('personne_id', p.id)
+    .eq('annee', annee)
+    .eq('supprime', false)
+    .maybeSingle();
+  if (errA) throw errA;
+
+  return versPersonneAvecAdhesion(p as LignePersonne, (a as LigneAdhesion) ?? undefined);
+}
+
 export async function estMembreCA(): Promise<boolean> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('est_membre_ca');

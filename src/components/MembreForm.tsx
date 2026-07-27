@@ -94,13 +94,17 @@ export function MembreForm({
       setErreur(resultat.error);
       return;
     }
-    // Créé depuis une demande d'adhésion (/membres/demandes) : la classe
-    // traitée une fois la fiche membre effectivement créée — jamais avant,
-    // pour ne pas perdre la trace d'une demande si la création échoue.
-    if (demandeId && !modeEdition && 'id' in resultat && resultat.id) {
-      await marquerDemandeTraitee(demandeId, resultat.id);
+    // Traité depuis une demande d'adhésion (/membres/demandes) : la demande
+    // n'est classée qu'une fois la fiche membre effectivement créée ou mise
+    // à jour — jamais avant, pour ne pas perdre sa trace si ça échoue.
+    // En Réinscription (modeEdition true dans ce cas, cf. page.tsx qui
+    // résout la personne existante par email), la personne a déjà un accès
+    // de connexion : on ne recrée jamais l'accès ni le mail de bienvenue.
+    const personneIdTraitee = modeEdition ? personne!.id : 'id' in resultat ? resultat.id : undefined;
+    if (demandeId && personneIdTraitee) {
+      await marquerDemandeTraitee(demandeId, personneIdTraitee);
 
-      if (fd.get('creerAcces') === 'on') {
+      if (!modeEdition && fd.get('creerAcces') === 'on') {
         const resultatAcces = await creerAccesEtEnvoyerBienvenue(
           donneesPersonne.nom,
           donneesPersonne.prenom,
