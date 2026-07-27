@@ -13,6 +13,7 @@ const SOUS_MENU = [
   { href: '/outils/paiements', label: 'Appel à cotisation' },
   { href: '/outils/paiements-en-attente', label: 'Paiements en attente' },
   { href: '/outils/renouvellement', label: 'Renouvellement' },
+  { href: '/outils/fiches-membres', label: 'Fiches membres' },
   { href: '/outils/journal', label: 'Journal des actions' },
   { href: '/outils/signatures', label: 'Signatures électroniques' },
 ];
