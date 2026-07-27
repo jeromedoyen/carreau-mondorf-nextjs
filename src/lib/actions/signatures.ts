@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { creerSubmissionPdf } from '@/lib/docuseal';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -59,13 +60,16 @@ export async function creerDemandeSignature(data: {
   return { ok: true, id: demande.id };
 }
 
-/** Envoie la demande aux signataires via l'API DocuSeal — nécessite
- *  DOCUSEAL_API_URL et DOCUSEAL_API_KEY (instance auto-hébergée, jamais
- *  configurée dans ce commit : le format exact de l'appel n'a pas pu être
- *  vérifié contre une instance réelle). À finaliser une fois l'instance
- *  DocuSeal déployée par Jérôme (Railway ou équivalent) — voir
- *  CONTEXTE_PROJET.md. */
-export async function envoyerDemandeSignature(_demandeId: number): Promise<Resultat> {
+/** Envoie la demande aux signataires via l'API DocuSeal (instance
+ *  auto-hébergée sur Render, 27/07/2026) — récupère le PDF depuis
+ *  Supabase Storage, l'encode en base64, crée la "submission" DocuSeal
+ *  avec un signataire par ligne (chacun reçoit l'email d'invitation
+ *  directement de DocuSeal, `send_email: true`). Le format exact de la
+ *  réponse DocuSeal n'a pas pu être vérifié contre une vraie instance à
+ *  l'écriture de cette action — si le premier envoi échoue avec une
+ *  erreur de parsing, c'est probablement là qu'il faut regarder
+ *  (creerSubmissionPdf(), src/lib/docuseal.ts). */
+export async function envoyerDemandeSignature(demandeId: number): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
 
@@ -76,7 +80,48 @@ export async function envoyerDemandeSignature(_demandeId: number): Promise<Resul
     };
   }
 
-  return { ok: false, error: 'Envoi DocuSeal pas encore implémenté — à faire une fois l’instance déployée.' };
+  const { data: demande, error: errDemande } = await supabase
+    .from('demandes_signature')
+    .select('id, statut, documents(titre, chemin_storage), demandes_signature_signataires(id, email, nom)')
+    .eq('id', demandeId)
+    .single();
+  if (errDemande || !demande) return { ok: false, error: errDemande?.message ?? 'Demande introuvable.' };
+  if (demande.statut !== 'en_attente') return { ok: false, error: 'Cette demande a déjà été envoyée ou traitée.' };
+
+  const document = Array.isArray(demande.documents) ? demande.documents[0] : demande.documents;
+  if (!document) return { ok: false, error: 'Document introuvable.' };
+
+  const { data: fichier, error: errTelechargement } = await supabase.storage
+    .from('documents-signature')
+    .download(document.chemin_storage);
+  if (errTelechargement || !fichier) {
+    return { ok: false, error: `Impossible de récupérer le PDF : ${errTelechargement?.message}` };
+  }
+  const pdfBase64 = Buffer.from(await fichier.arrayBuffer()).toString('base64');
+
+  try {
+    const { submissionId } = await creerSubmissionPdf({
+      titre: document.titre,
+      pdfBase64,
+      nomFichier: document.chemin_storage,
+      submitters: demande.demandes_signature_signataires,
+    });
+
+    const maintenant = new Date().toISOString();
+    await supabase
+      .from('demandes_signature')
+      .update({ statut: 'en_cours', docuseal_submission_id: submissionId })
+      .eq('id', demandeId);
+    await supabase
+      .from('demandes_signature_signataires')
+      .update({ email_envoye_le: maintenant })
+      .eq('demande_id', demandeId);
+  } catch (e) {
+    return { ok: false, error: `Échec de l'envoi DocuSeal : ${(e as Error).message}` };
+  }
+
+  revalidatePath('/outils/signatures');
+  return { ok: true };
 }
 
 export async function annulerDemandeSignature(id: number): Promise<Resultat> {
