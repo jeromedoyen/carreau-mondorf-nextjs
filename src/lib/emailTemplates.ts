@@ -51,9 +51,9 @@ export function emailBienvenue({
             </p>
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
               <tr>
-                <td style="border-radius:10px;background:${COULEURS.sable};border:1px solid ${COULEURS.terracotta};">
+                <td style="border-radius:10px;background:${COULEURS.terracotta};">
                   <a href="https://carreau-mondorf.com/connexion"
-                     style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:600;color:${COULEURS.terracotta};text-decoration:none;border-radius:10px;">
+                     style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:600;color:#fff;text-decoration:none;border-radius:10px;">
                     Se connecter
                   </a>
                 </td>
