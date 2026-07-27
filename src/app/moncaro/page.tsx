@@ -35,14 +35,19 @@ export default async function MoncaroPage() {
   const [monNom, adhesion, benevolat, { data: ca }, { data: licencie }] = await Promise.all([
     getMonNomBenevole(),
     getMonAdhesion(supabase, saison),
-    getMonTableauDeBordBenevole(),
+    getMonTableauDeBordBenevole().catch(() => null),
     supabase.rpc('est_membre_ca'),
     supabase.rpc('est_licencie', { p_saison: saison }),
   ]);
 
   const statsVisibles = !!ca || !!licencie;
+  // Une RPC manquante ici (migration pas encore appliquée) ne doit jamais
+  // faire planter toute la page — dégrade juste la carte Compétition.
   const [mesStatsD2, statsPromotion] = statsVisibles
-    ? await Promise.all([getMesStatistiquesD2(supabase, saison), getStatistiquesPromotion(supabase, saison)])
+    ? await Promise.all([
+        getMesStatistiquesD2(supabase, saison).catch(() => null),
+        getStatistiquesPromotion(supabase, saison).catch(() => null),
+      ])
     : [null, null];
 
   return (
