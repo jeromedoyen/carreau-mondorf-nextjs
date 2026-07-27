@@ -60,10 +60,11 @@ export function ConnexionForm() {
       setErreur('Code invalide ou expiré. Vérifiez le code reçu par email, ou redemandez-en un.');
       return;
     }
-    // /club (pas "/") : contient déjà les infos de base du club, et
-    // affiche désormais le menu complet une fois connecté (AppChrome.tsx)
-    // — "/" reste la page d'atterrissage épurée pour les visiteurs anonymes.
-    router.replace('/club');
+    // /moncaro (pas /club) : tableau de bord personnel après connexion,
+    // demande explicite de Jérôme le 26/07/2026 — "/" reste la page
+    // d'atterrissage épurée pour les visiteurs anonymes, "/club" reste
+    // accessible depuis le menu mais n'est plus la destination par défaut.
+    router.replace('/moncaro');
   }
 
   return (

@@ -154,3 +154,21 @@ h1, h2, h3, .font-display {
 @media (prefers-reduced-motion: reduce) {
   .orbite { animation: none; }
 }
+
+/* Animation de /moncaro (tableau de bord perso) — troisième variante,
+   distincte du flottement libre (accueil) et de l'orbite (connexion) :
+   les boules montent et descendent verticalement, comme un tir qui
+   rebondit sur le terrain. */
+@keyframes bondir {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(var(--amplitude, -22px)); }
+}
+
+.boule-bondissante {
+  animation: bondir var(--duree, 3.4s) cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: var(--delai, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boule-bondissante { animation: none; }
+}
