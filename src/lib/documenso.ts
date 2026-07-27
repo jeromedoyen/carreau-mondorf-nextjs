@@ -43,7 +43,12 @@ export async function creerEnveloppe({
       role: 'SIGNER',
       fields: [
         {
-          identifier: index,
+          // `identifier` désigne le fichier de l'enveloppe concerné (on
+          // n'en envoie toujours qu'un seul ici), pas le signataire —
+          // erreur "Document data not found" constatée en pratique avec
+          // 2 signataires quand on y mettait l'index du signataire
+          // (27/07/2026).
+          identifier: 0,
           type: 'SIGNATURE',
           page: 1,
           positionX: 10,
