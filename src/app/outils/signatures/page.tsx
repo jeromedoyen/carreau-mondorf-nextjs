@@ -33,8 +33,9 @@ export default async function SignaturesPage() {
         <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">OUTILS</p>
         <h1 className="font-display mt-1 text-4xl italic">Signatures électroniques</h1>
         <p className="mt-3 text-[13.5px] text-encre-douce">
-          Fais signer un PV ou un compte rendu par un ou plusieurs membres du CA. L&apos;envoi effectif se fait
-          via DocuSeal — pas encore configuré, tu peux déjà créer et préparer les demandes en attendant.
+          Fais signer un PV ou un compte rendu par un ou plusieurs membres du CA. Prépare le document et la
+          liste des signataires ici, envoie-le toi-même depuis DocuSeal (gratuit, mais sans lien automatique
+          avec cette page), puis reviens pointer qui a signé.
         </p>
       </header>
 
@@ -42,7 +43,7 @@ export default async function SignaturesPage() {
         <NouvelleDemandeSignatureForm signataires={signataires} />
       </div>
 
-      <ListeDemandesSignature demandes={demandes} />
+      <ListeDemandesSignature demandes={demandes} docusealUrl={process.env.DOCUSEAL_API_URL} />
     </main>
   );
 }

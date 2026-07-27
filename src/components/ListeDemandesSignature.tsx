@@ -2,8 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, X } from 'lucide-react';
-import { envoyerDemandeSignature, annulerDemandeSignature } from '@/lib/actions/signatures';
+import { ExternalLink, Check, X, Download, Upload } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import {
+  marquerDemandeEnvoyee,
+  marquerSignataireSigne,
+  enregistrerPdfSigne,
+  annulerDemandeSignature,
+  obtenirUrlDocument,
+} from '@/lib/actions/signatures';
 import type { DemandeSignature } from '@/lib/signatures';
 
 const STATUT_COULEUR: Record<string, string> = {
@@ -13,29 +20,57 @@ const STATUT_COULEUR: Record<string, string> = {
   annulee: 'bg-encre-douce/15 text-encre-douce',
 };
 const STATUT_LABEL: Record<string, string> = {
-  en_attente: 'En attente',
-  en_cours: 'En cours',
+  en_attente: 'En attente d’envoi',
+  en_cours: 'En cours de signature',
   complete: 'Signé',
   annulee: 'Annulée',
 };
 
-export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignature[] }) {
+/** Flux manuel (27/07/2026, l'API DocuSeal self-hosted étant réservée à
+ *  l'édition Pro) : le CA envoie le document lui-même depuis l'interface
+ *  DocuSeal, puis revient ici pointer qui a signé — soit signataire par
+ *  signataire, soit en téléversant directement le PDF final récupéré
+ *  depuis DocuSeal. */
+export function ListeDemandesSignature({ demandes, docusealUrl }: { demandes: DemandeSignature[]; docusealUrl: string | undefined }) {
   const router = useRouter();
   const [enCours, setEnCours] = useState<number | null>(null);
   const [erreur, setErreur] = useState<{ id: number; message: string } | null>(null);
 
-  async function envoyer(id: number) {
-    setErreur(null);
-    setEnCours(id);
-    const resultat = await envoyerDemandeSignature(id);
-    setEnCours(null);
-    if (!resultat.ok) setErreur({ id, message: resultat.error });
+  async function marquerEnvoyee(id: number) {
+    await marquerDemandeEnvoyee(id);
+    router.refresh();
+  }
+
+  async function marquerSigne(signataireId: number) {
+    await marquerSignataireSigne(signataireId);
     router.refresh();
   }
 
   async function annuler(id: number) {
     await annulerDemandeSignature(id);
     router.refresh();
+  }
+
+  async function televerserSigne(demande: DemandeSignature, fichier: File) {
+    setErreur(null);
+    setEnCours(demande.id);
+    const supabase = createClient();
+    const chemin = `signe-${demande.id}-${Date.now()}.pdf`;
+    const { error: errUpload } = await supabase.storage.from('documents-signature').upload(chemin, fichier);
+    if (errUpload) {
+      setEnCours(null);
+      setErreur({ id: demande.id, message: `Échec de l'upload : ${errUpload.message}` });
+      return;
+    }
+    const resultat = await enregistrerPdfSigne(demande.id, chemin);
+    setEnCours(null);
+    if (!resultat.ok) setErreur({ id: demande.id, message: resultat.error });
+    router.refresh();
+  }
+
+  async function telecharger(chemin: string) {
+    const resultat = await obtenirUrlDocument(chemin);
+    if (resultat.ok) window.open(resultat.url, '_blank');
   }
 
   if (demandes.length === 0) {
@@ -46,7 +81,7 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
     <div className="flex flex-col gap-2.5">
       {demandes.map((d) => (
         <div key={d.id} className="rounded-2xl border border-ligne bg-sable-carte p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-display text-[14.5px]">{d.titre}</span>
@@ -54,32 +89,99 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
                   {STATUT_LABEL[d.statut]}
                 </span>
               </div>
-              <p className="mt-0.5 text-[12px] text-encre-douce">
-                {d.signataires.map((s) => `${s.nom}${s.signeLe ? ' ✓' : ''}`).join(' · ')}
-              </p>
+              <div className="mt-1 flex flex-col gap-0.5">
+                {d.signataires.map((s) => (
+                  <div key={s.id} className="flex items-center gap-2 text-[12.5px] text-encre-douce">
+                    <span>
+                      {s.nom} {s.signeLe ? <span className="text-succes">✓ signé</span> : null}
+                    </span>
+                    {d.statut === 'en_cours' && !s.signeLe && (
+                      <button
+                        type="button"
+                        onClick={() => marquerSigne(s.id)}
+                        className="inline-flex items-center gap-1 rounded-full border border-ligne px-2 py-0.5 text-[11px] text-encre-douce hover:border-succes hover:text-succes"
+                      >
+                        <Check size={11} />
+                        Marquer signé
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
               {erreur?.id === d.id && <p className="mt-1 text-[12px] text-danger">{erreur.message}</p>}
             </div>
-            {d.statut === 'en_attente' && (
+
+            <div className="flex flex-col items-end gap-2">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => envoyer(d.id)}
-                  disabled={enCours === d.id}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-ligne px-3 py-1.5 text-[12.5px] font-medium text-encre transition-colors hover:border-terracotta hover:text-terracotta disabled:opacity-40"
+                  onClick={() => telecharger(d.cheminStorage)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-ligne px-3 py-1.5 text-[12.5px] font-medium text-encre transition-colors hover:border-terracotta hover:text-terracotta"
                 >
-                  <Send size={14} />
-                  {enCours === d.id ? 'Envoi…' : 'Envoyer aux signataires'}
+                  <Download size={13} />
+                  Document
                 </button>
+                {docusealUrl && d.statut === 'en_attente' && (
+                  <a
+                    href={docusealUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-pin px-3 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90"
+                  >
+                    <ExternalLink size={13} />
+                    Ouvrir DocuSeal
+                  </a>
+                )}
+              </div>
+
+              {d.statut === 'en_attente' && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => marquerEnvoyee(d.id)}
+                    className="text-[12px] text-encre-douce underline hover:text-terracotta"
+                  >
+                    Marquer comme envoyée
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => annuler(d.id)}
+                    aria-label="Annuler"
+                    className="text-encre-douce/60 hover:text-danger"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+
+              {d.statut === 'en_cours' && (
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-ligne px-3 py-1.5 text-[12px] text-encre-douce hover:border-terracotta">
+                  <Upload size={13} />
+                  {enCours === d.id ? 'Envoi…' : 'Téléverser le PDF signé'}
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    disabled={enCours === d.id}
+                    onChange={(e) => {
+                      const fichier = e.target.files?.[0];
+                      if (fichier) televerserSigne(d, fichier);
+                    }}
+                  />
+                </label>
+              )}
+
+              {d.statut === 'complete' && d.cheminStorageSigne && (
                 <button
                   type="button"
-                  onClick={() => annuler(d.id)}
-                  aria-label="Annuler"
-                  className="text-encre-douce/60 hover:text-danger"
+                  onClick={() => telecharger(d.cheminStorageSigne as string)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-succes/15 px-3 py-1.5 text-[12.5px] font-medium text-succes hover:opacity-80"
                 >
-                  <X size={18} />
+                  <Download size={13} />
+                  PDF signé
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       ))}
