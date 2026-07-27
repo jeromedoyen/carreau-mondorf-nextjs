@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ExternalLink, Check, X, Download, Upload } from 'lucide-react';
+import { Send, Check, X, Download, Upload } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
-  marquerDemandeEnvoyee,
+  envoyerDemandeSignature,
   marquerSignataireSigne,
   enregistrerPdfSigne,
   annulerDemandeSignature,
@@ -26,18 +26,21 @@ const STATUT_LABEL: Record<string, string> = {
   annulee: 'Annulée',
 };
 
-/** Flux manuel (27/07/2026, l'API DocuSeal self-hosted étant réservée à
- *  l'édition Pro) : le CA envoie le document lui-même depuis l'interface
- *  DocuSeal, puis revient ici pointer qui a signé — soit signataire par
- *  signataire, soit en téléversant directement le PDF final récupéré
- *  depuis DocuSeal. */
-export function ListeDemandesSignature({ demandes, docusealUrl }: { demandes: DemandeSignature[]; docusealUrl: string | undefined }) {
+/** Envoi automatisé via l'API Documenso (27/07/2026, contrairement à
+ *  DocuSeal dont l'API self-hosted est réservée au Pro) — le pointage
+ *  manuel du "qui a signé" reste disponible en complément (pas de webhook
+ *  branché pour l'instant, le CA vérifie dans Documenso puis reporte ici). */
+export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignature[] }) {
   const router = useRouter();
   const [enCours, setEnCours] = useState<number | null>(null);
   const [erreur, setErreur] = useState<{ id: number; message: string } | null>(null);
 
-  async function marquerEnvoyee(id: number) {
-    await marquerDemandeEnvoyee(id);
+  async function envoyer(id: number) {
+    setErreur(null);
+    setEnCours(id);
+    const resultat = await envoyerDemandeSignature(id);
+    setEnCours(null);
+    if (!resultat.ok) setErreur({ id, message: resultat.error });
     router.refresh();
   }
 
@@ -121,27 +124,18 @@ export function ListeDemandesSignature({ demandes, docusealUrl }: { demandes: De
                   <Download size={13} />
                   Document
                 </button>
-                {docusealUrl && d.statut === 'en_attente' && (
-                  <a
-                    href={docusealUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-pin px-3 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90"
-                  >
-                    <ExternalLink size={13} />
-                    Ouvrir DocuSeal
-                  </a>
-                )}
               </div>
 
               {d.statut === 'en_attente' && (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => marquerEnvoyee(d.id)}
-                    className="text-[12px] text-encre-douce underline hover:text-terracotta"
+                    onClick={() => envoyer(d.id)}
+                    disabled={enCours === d.id}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-terracotta px-3 py-1.5 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                   >
-                    Marquer comme envoyée
+                    <Send size={13} />
+                    {enCours === d.id ? 'Envoi…' : 'Envoyer aux signataires'}
                   </button>
                   <button
                     type="button"

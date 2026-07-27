@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { creerEnveloppe } from '@/lib/documenso';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -59,30 +60,55 @@ export async function creerDemandeSignature(data: {
   return { ok: true, id: demande.id };
 }
 
-/** L'API DocuSeal en self-hosted est réservée à l'édition Pro (payante) —
- *  découvert en pratique le 27/07/2026 (404 "This feature is available in
- *  Pro Edition" au premier vrai essai). Retour au flux manuel du plan
- *  d'origine de Jérôme : le membre du CA envoie lui-même le document
- *  depuis l'interface DocuSeal (gratuite), et vient ensuite pointer ici
- *  qui a signé — cette action ne fait que passer la demande à "en_cours"
- *  pour signaler qu'elle a été envoyée en dehors de l'appli. */
-export async function marquerDemandeEnvoyee(demandeId: number): Promise<Resultat> {
+/** Envoie la demande aux signataires via l'API Documenso (instance
+ *  auto-hébergée sur Render, 27/07/2026 — contrairement à DocuSeal,
+ *  l'édition Community de Documenso inclut bien l'API en self-hosted).
+ *  Récupère le PDF depuis Supabase Storage, crée l'"enveloppe" Documenso
+ *  avec un champ signature par signataire (empilés en bas de la page 1,
+ *  déplaçables par le signataire) — chacun reçoit l'invitation par email
+ *  directement depuis Documenso. */
+export async function envoyerDemandeSignature(demandeId: number): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
 
-  const maintenant = new Date().toISOString();
-  const { error: errDemande } = await supabase
+  const { data: demande, error: errDemande } = await supabase
     .from('demandes_signature')
-    .update({ statut: 'en_cours' })
+    .select('id, statut, documents(titre, chemin_storage), demandes_signature_signataires(id, email, nom)')
     .eq('id', demandeId)
-    .eq('statut', 'en_attente');
-  if (errDemande) return { ok: false, error: errDemande.message };
+    .single();
+  if (errDemande || !demande) return { ok: false, error: errDemande?.message ?? 'Demande introuvable.' };
+  if (demande.statut !== 'en_attente') return { ok: false, error: 'Cette demande a déjà été envoyée ou traitée.' };
 
-  await supabase
-    .from('demandes_signature_signataires')
-    .update({ email_envoye_le: maintenant })
-    .eq('demande_id', demandeId)
-    .is('email_envoye_le', null);
+  const document = Array.isArray(demande.documents) ? demande.documents[0] : demande.documents;
+  if (!document) return { ok: false, error: 'Document introuvable.' };
+
+  const { data: fichier, error: errTelechargement } = await supabase.storage
+    .from('documents-signature')
+    .download(document.chemin_storage);
+  if (errTelechargement || !fichier) {
+    return { ok: false, error: `Impossible de récupérer le PDF : ${errTelechargement?.message}` };
+  }
+
+  try {
+    const { envelopeId } = await creerEnveloppe({
+      titre: document.titre,
+      pdfBuffer: Buffer.from(await fichier.arrayBuffer()),
+      nomFichier: document.chemin_storage,
+      signataires: demande.demandes_signature_signataires,
+    });
+
+    const maintenant = new Date().toISOString();
+    await supabase
+      .from('demandes_signature')
+      .update({ statut: 'en_cours', fournisseur_signature_id: envelopeId })
+      .eq('id', demandeId);
+    await supabase
+      .from('demandes_signature_signataires')
+      .update({ email_envoye_le: maintenant })
+      .eq('demande_id', demandeId);
+  } catch (e) {
+    return { ok: false, error: `Échec de l'envoi Documenso : ${(e as Error).message}` };
+  }
 
   revalidatePath('/outils/signatures');
   return { ok: true };
