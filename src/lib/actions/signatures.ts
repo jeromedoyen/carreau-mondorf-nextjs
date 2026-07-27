@@ -238,3 +238,20 @@ export async function annulerDemandeSignature(id: number): Promise<Resultat> {
   revalidatePath('/outils/signatures');
   return { ok: true };
 }
+
+/** Suppression douce (27/07/2026) : masque une demande de test/annulée de
+ *  la liste sans effacer de ligne — même principe que `supprime` sur
+ *  parties_d2, jamais de vrai DELETE. Le trigger existant journalise ce
+ *  changement comme une modification normale (avant/après avec
+ *  `supprime: false → true`), donc la trace demandée par le CA existe déjà
+ *  sans code supplémentaire. */
+export async function supprimerDemandeSignature(id: number): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+
+  const { error } = await supabase.from('demandes_signature').update({ supprime: true }).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/outils/signatures');
+  return { ok: true };
+}

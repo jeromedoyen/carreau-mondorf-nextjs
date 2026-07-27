@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Check, X, Download, Upload, FolderUp, ExternalLink } from 'lucide-react';
+import { Send, Check, X, Download, Upload, FolderUp, ExternalLink, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
   envoyerDemandeSignature,
@@ -11,6 +11,7 @@ import {
   annulerDemandeSignature,
   obtenirUrlDocument,
   archiverDansGoogleDrive,
+  supprimerDemandeSignature,
 } from '@/lib/actions/signatures';
 import type { DemandeSignature } from '@/lib/signatures';
 
@@ -52,6 +53,16 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
 
   async function annuler(id: number) {
     await annulerDemandeSignature(id);
+    router.refresh();
+  }
+
+  async function supprimer(id: number, titre: string) {
+    if (!window.confirm(`Supprimer « ${titre} » de la liste ? L'action reste tracée dans le journal.`)) return;
+    setErreur(null);
+    setEnCours(id);
+    const resultat = await supprimerDemandeSignature(id);
+    setEnCours(null);
+    if (!resultat.ok) setErreur({ id, message: resultat.error });
     router.refresh();
   }
 
@@ -101,6 +112,16 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_COULEUR[d.statut]}`}>
                   {STATUT_LABEL[d.statut]}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => supprimer(d.id, d.titre)}
+                  disabled={enCours === d.id}
+                  aria-label="Supprimer de la liste"
+                  title="Supprimer de la liste"
+                  className="ml-auto text-encre-douce/50 hover:text-danger disabled:opacity-40"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
               <div className="mt-1 flex flex-col gap-0.5">
                 {d.signataires.map((s) => (

@@ -39,6 +39,7 @@ export async function getDemandesSignature(): Promise<DemandeSignature[]> {
     .select(
       'id, document_id, statut, chemin_storage_signe, google_drive_file_id, cree_par_email, cree_le, complete_le, documents(titre, chemin_storage), demandes_signature_signataires(id, email, nom, email_envoye_le, signe_le)'
     )
+    .eq('supprime', false)
     .order('cree_le', { ascending: false });
   if (error) throw error;
 
