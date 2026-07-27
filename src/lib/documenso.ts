@@ -8,9 +8,12 @@ import 'server-only';
  *  SIGNATURE positionné sur la page — comme nos PDF n'ont pas de mise en
  *  page connue à l'avance, on les empile près du bas de la page 1 plutôt
  *  que de deviner un emplacement pertinent ; le signataire peut toujours
- *  déplacer son champ dans l'interface de signature. Pas vérifié contre
- *  un vrai envoi complet à l'écriture de ce fichier — si la réponse ne
- *  correspond pas, regarder ici en premier. */
+ *  déplacer son champ dans l'interface de signature.
+ *
+ *  `envelope/create` ne fait que créer un BROUILLON — constaté en
+ *  pratique (deux essais restés en statut "Brouillon" côté Documenso,
+ *  27/07/2026) : il faut ensuite `POST .../envelope/distribute` avec
+ *  `{ envelopeId }` pour déclencher réellement l'envoi aux signataires. */
 function configuration() {
   const url = process.env.DOCUMENSO_API_URL;
   const token = process.env.DOCUMENSO_API_TOKEN;
@@ -73,6 +76,17 @@ export async function creerEnveloppe({
   const donnees = await reponse.json();
   const envelopeId = donnees?.id ?? donnees?.envelopeId ?? donnees?.documentId;
   if (!envelopeId) throw new Error('Réponse Documenso inattendue (id introuvable).');
+
+  const reponseDistribution = await fetch(`${url}/api/v2/envelope/distribute`, {
+    method: 'POST',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ envelopeId }),
+  });
+  if (!reponseDistribution.ok) {
+    throw new Error(
+      `Enveloppe créée mais échec de l'envoi (${reponseDistribution.status}) : ${await reponseDistribution.text()}`
+    );
+  }
 
   return { envelopeId: String(envelopeId) };
 }
