@@ -12,17 +12,20 @@ function formatMontant(m: number | null) {
   return m != null ? `${m.toFixed(2)} €` : null;
 }
 
-function LigneStatut({ payee, montant, label }: { payee: boolean | null; montant: number | null; label: string }) {
+/** Pense-bête 27/07/2026 : "si c'est payé alors c'est vert, on ne parle
+ *  plus de prix" — puce compacte (icône + libellé colorés), plus de
+ *  "Payée · 20.00 €" / "Non payée" à côté. Le statut se lit uniquement à
+ *  la couleur/coche, pour ne pas surcharger la carte. */
+function PuceStatut({ payee, label }: { payee: boolean | null; label: string }) {
   return (
-    <div className="flex items-center justify-between text-[13px]">
-      <span className="flex items-center gap-1.5 text-encre-douce">
-        {payee ? <CheckCircle2 size={14} className="text-succes" /> : <XCircle size={14} className="text-danger" />}
-        {label}
-      </span>
-      <span className={payee ? 'text-succes' : 'text-danger'}>
-        {payee ? `Payée${formatMontant(montant) ? ' · ' + formatMontant(montant) : ''}` : 'Non payée'}
-      </span>
-    </div>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium ${
+        payee ? 'bg-succes/15 text-succes' : 'bg-danger/10 text-danger'
+      }`}
+    >
+      {payee ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
+      {label}
+    </span>
   );
 }
 
@@ -86,21 +89,19 @@ export function CarteCotisationMoncaro({
 
   return (
     <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] sm:col-span-2">
-      <div className="mb-3 flex items-center gap-2">
-        <CreditCard size={16} className="text-pin" />
-        <h2 className="font-display text-[15px]">Ma cotisation — saison {saison}</h2>
+      <div className="mb-2 flex items-center gap-2">
+        <CreditCard size={15} className="text-pin" />
+        <h2 className="font-display text-[14px]">Ma cotisation — saison {saison}</h2>
       </div>
 
-      <p className="mb-3 text-[12.5px] text-encre-douce">
+      <p className="mb-2.5 text-[12px] text-encre-douce">
         {estLicencie ? 'Licencié' : 'Membre'}
         {adhesion.categorie ? ` · ${adhesion.categorie}` : ''}
       </p>
 
-      <div className="flex flex-col gap-2">
-        <LigneStatut payee={adhesion.cotisationPayee} montant={adhesion.cotisationMontant} label="Carte de membre" />
-        {estLicencie && (
-          <LigneStatut payee={adhesion.licencePayee} montant={adhesion.licenceMontant} label="Licence" />
-        )}
+      <div className="flex flex-wrap gap-2">
+        <PuceStatut payee={adhesion.cotisationPayee} label="Carte de membre" />
+        {estLicencie && <PuceStatut payee={adhesion.licencePayee} label="Licence" />}
       </div>
 
       {!toutPaye && (

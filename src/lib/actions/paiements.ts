@@ -149,9 +149,25 @@ export async function envoyerAppelPaiementEmail(id: number): Promise<Resultat> {
   return { ok: true };
 }
 
+/** Retour Jérôme (27/07/2026) : une fois le trésorier "OK", l'info doit
+ *  remonter jusqu'à la fiche du membre — Moncaro ("Ma cotisation") lit
+ *  `adhesions.cotisation_payee`/`licence_payee`, pas `appels_paiement`, ces
+ *  deux tables étaient jusqu'ici décorrélées (décision explicite du
+ *  27/07 : "paiement manuel pour le moment", mais côté rapprochement, pas
+ *  côté propagation du résultat). Marquer un appel payé met donc aussi à
+ *  jour l'adhésion de la personne pour la saison active — meilleur effort,
+ *  ne fait jamais échouer le "payé" lui-même si l'appel n'est pas lié à
+ *  une fiche, ou pour un type "Autre" hors cotisation/licence. */
 export async function marquerAppelPaye(id: number, modePaiement: string): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+
+  const { data: appel, error: errAppel } = await supabase
+    .from('appels_paiement')
+    .select('id, type, personne_id')
+    .eq('id', id)
+    .single();
+  if (errAppel || !appel) return { ok: false, error: errAppel?.message ?? 'Appel de paiement introuvable.' };
 
   const { error } = await supabase
     .from('appels_paiement')
@@ -160,6 +176,36 @@ export async function marquerAppelPaye(id: number, modePaiement: string): Promis
   if (error) return { ok: false, error: error.message };
 
   revalidatePath('/outils/paiements');
+  revalidatePath('/outils/paiements-en-attente');
+
+  if (appel.personne_id && appel.type !== 'Autre') {
+    const { data: saison } = await supabase.from('saisons').select('libelle').eq('active', true).maybeSingle();
+    if (saison) {
+      const champs: Record<string, string | boolean> = {};
+      const aujourdhui = new Date().toISOString().slice(0, 10);
+      if (appel.type === 'Carte de membre' || appel.type === 'Carte de membre + Licence') {
+        champs.cotisation_payee = true;
+        champs.cotisation_date = aujourdhui;
+      }
+      if (appel.type === 'Licence' || appel.type === 'Carte de membre + Licence') {
+        champs.licence_payee = true;
+        champs.licence_date = aujourdhui;
+      }
+      const { error: errAdhesion } = await supabase
+        .from('adhesions')
+        .update(champs)
+        .eq('personne_id', appel.personne_id)
+        .eq('annee', saison.libelle);
+      if (errAdhesion) {
+        return {
+          ok: false,
+          error: `Appel marqué payé, mais la mise à jour de l'adhésion a échoué : ${errAdhesion.message}`,
+        };
+      }
+      revalidatePath('/moncaro');
+    }
+  }
+
   return { ok: true };
 }
 

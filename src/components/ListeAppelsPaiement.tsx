@@ -41,7 +41,11 @@ export function ListeAppelsPaiement({
   }
 
   async function marquerPaye(id: number) {
-    await marquerAppelPaye(id, 'Virement');
+    setErreurEnvoi(null);
+    const resultat = await marquerAppelPaye(id, 'Virement');
+    if (!resultat.ok) {
+      setErreurEnvoi({ id, message: resultat.error });
+    }
     router.refresh();
   }
 

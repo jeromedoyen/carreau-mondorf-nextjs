@@ -40,6 +40,7 @@ export function ListeRelancesPaiement({
 }) {
   const router = useRouter();
   const [qrOuvert, setQrOuvert] = useState<{ appel: AppelPaiement; dataUrl: string } | null>(null);
+  const [erreur, setErreur] = useState<{ id: number; message: string } | null>(null);
 
   async function genererQr(appel: AppelPaiement) {
     if (!parametres) return;
@@ -59,7 +60,11 @@ export function ListeRelancesPaiement({
   }
 
   async function marquerPaye(id: number) {
-    await marquerAppelPaye(id, 'Virement');
+    setErreur(null);
+    const resultat = await marquerAppelPaye(id, 'Virement');
+    if (!resultat.ok) {
+      setErreur({ id, message: resultat.error });
+    }
     router.refresh();
   }
 
@@ -90,6 +95,7 @@ export function ListeRelancesPaiement({
                   Relance envoyée le {new Date(a.emailEnvoyeLe).toLocaleDateString('fr-FR')}
                 </p>
               )}
+              {erreur?.id === a.id && <p className="mt-1 text-[12px] text-danger">{erreur.message}</p>}
             </div>
             <div className="flex items-center gap-2">
               <button
