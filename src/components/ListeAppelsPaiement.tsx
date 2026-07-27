@@ -77,9 +77,26 @@ export function ListeAppelsPaiement({
     return <p className="text-[14px] text-encre-douce">Aucun appel de paiement pour l&apos;instant.</p>;
   }
 
+  // Une fois l'email envoyé, l'appel quitte cet écran — retour Jérôme
+  // (27/07/2026) : "cette demande de cotisation doit disparaître et on la
+  // retrouve via une fonctionnalité dans outils" pour le contrôle
+  // financier, séparément de la création (cf. /outils/paiements-en-attente,
+  // ListeRelancesPaiement.tsx) — un envoi groupé peut en laisser 10 à 30
+  // en attente, ça n'a plus sa place mélangé à "Nouveaux appels".
   const nouveaux = appels.filter((a) => a.statut === 'en_attente' && !a.emailEnvoyeLe);
-  const relances = appels.filter((a) => a.statut === 'en_attente' && a.emailEnvoyeLe);
   const historique = appels.filter((a) => a.statut !== 'en_attente');
+
+  if (nouveaux.length === 0 && historique.length === 0) {
+    return (
+      <p className="text-[14px] text-encre-douce">
+        Aucun appel de paiement pour l&apos;instant — hors relances déjà envoyées, à traiter sur{' '}
+        <a href="/outils/paiements-en-attente" className="text-terracotta hover:underline">
+          Paiements en attente
+        </a>
+        .
+      </p>
+    );
+  }
 
   function ligneAppel(a: AppelPaiement, actions: ReactNode) {
     return (
@@ -132,44 +149,6 @@ export function ListeAppelsPaiement({
                 >
                   <Mail size={14} />
                   {envoiEnCours === a.id ? 'Envoi…' : "Envoyer l'email"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => marquerPaye(a.id)}
-                  aria-label="Marquer payé"
-                  className="text-succes hover:opacity-70"
-                >
-                  <Check size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => annuler(a.id)}
-                  aria-label="Annuler"
-                  className="text-encre-douce/60 hover:text-danger"
-                >
-                  <X size={18} />
-                </button>
-              </>
-            )
-          )}
-        </div>
-      )}
-
-      {relances.length > 0 && (
-        <div className="mb-6 flex flex-col gap-2.5">
-          <h3 className="font-display text-[14px]">Relances envoyées — en attente de paiement</h3>
-          {relances.map((a) =>
-            ligneAppel(
-              a,
-              <>
-                <button
-                  type="button"
-                  onClick={() => genererQr(a)}
-                  disabled={!parametres}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-pin px-3 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90 disabled:opacity-40"
-                >
-                  <QrCode size={14} />
-                  QR
                 </button>
                 <button
                   type="button"

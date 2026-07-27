@@ -11,6 +11,7 @@ const SOUS_MENU = [
   { href: '/federation', label: 'Contrôle fédération' },
   { href: '/federation/calendrier', label: 'Calendrier fédération' },
   { href: '/outils/paiements', label: 'Paiements' },
+  { href: '/outils/paiements-en-attente', label: 'Paiements en attente' },
   { href: '/outils/renouvellement', label: 'Renouvellement' },
 ];
 

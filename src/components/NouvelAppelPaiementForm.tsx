@@ -4,13 +4,35 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
 import { creerAppelPaiement } from '@/lib/actions/paiements';
-import type { TypeAppelPaiement } from '@/lib/paiements';
+import type { ParametresClub, TypeAppelPaiement } from '@/lib/paiements';
 
-export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number; nom: string }[] }) {
+export function NouvelAppelPaiementForm({
+  personnes,
+  parametres,
+}: {
+  personnes: { id: number; nom: string }[];
+  parametres: ParametresClub | null;
+}) {
   const router = useRouter();
   const [ouvert, setOuvert] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [montant, setMontant] = useState('');
+
+  // Pense-bête 27/07/2026 : préremplir le montant selon le type choisi, à
+  // partir des tarifs configurés sur ce même écran (Coordonnées bancaires
+  // du club) — reste modifiable manuellement ensuite (ex. tarif réduit).
+  function surChangementType(type: TypeAppelPaiement) {
+    const carte = parametres?.montantCarteMembre ?? null;
+    const licence = parametres?.montantLicence ?? null;
+    if (type === 'Carte de membre' && carte != null) setMontant(String(carte));
+    else if (type === 'Licence' && licence != null) setMontant(String(licence));
+    else if (type === 'Carte de membre + Licence' && (carte != null || licence != null)) {
+      setMontant(String((carte ?? 0) + (licence ?? 0)));
+    } else {
+      setMontant('');
+    }
+  }
 
   async function soumettre(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,6 +52,7 @@ export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number
       return;
     }
     setOuvert(false);
+    setMontant('');
     router.refresh();
   }
 
@@ -37,7 +60,10 @@ export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number
     return (
       <button
         type="button"
-        onClick={() => setOuvert(true)}
+        onClick={() => {
+          setOuvert(true);
+          surChangementType('Carte de membre');
+        }}
         className="inline-flex items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre transition-colors hover:border-terracotta"
       >
         <Plus size={15} />
@@ -61,6 +87,8 @@ export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number
       <div className="grid grid-cols-2 gap-3">
         <select
           name="type"
+          defaultValue="Carte de membre"
+          onChange={(e) => surChangementType(e.target.value as TypeAppelPaiement)}
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         >
           <option value="Carte de membre">Carte de membre</option>
@@ -74,6 +102,8 @@ export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number
           step="0.01"
           min="0.01"
           required
+          value={montant}
+          onChange={(e) => setMontant(e.target.value)}
           placeholder="Montant (EUR)"
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         />

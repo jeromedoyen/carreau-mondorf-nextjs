@@ -52,7 +52,7 @@ export default async function PaiementsPage() {
       </div>
 
       <div className="mb-8">
-        <NouvelAppelPaiementForm personnes={personnes} />
+        <NouvelAppelPaiementForm personnes={personnes} parametres={parametres} />
       </div>
 
       <ListeAppelsPaiement appels={appels} parametres={parametres} saisonActive={saisonActive} />
