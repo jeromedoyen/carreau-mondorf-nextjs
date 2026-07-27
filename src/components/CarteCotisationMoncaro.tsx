@@ -109,21 +109,43 @@ export function CarteCotisationMoncaro({
               Payer{resteAPayer > 0 ? ` · ${resteAPayer.toFixed(2)} €` : ''}
             </button>
           ) : (
-            <div className="flex flex-col items-center gap-3 text-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qrDataUrl} alt="QR code SEPA de cotisation" width={220} height={220} />
-              <p className="text-[12px] text-encre-douce">
-                {parametres?.nomBeneficiaire} · {parametres?.iban}
-                {resteAPayer > 0 ? ` · ${resteAPayer.toFixed(2)} €` : ''}
-              </p>
-              <a
-                href={qrDataUrl}
-                download={`qr-cotisation-${saison}.png`}
-                className="inline-flex items-center gap-2 rounded-lg border border-ligne px-4 py-2 text-[13px] text-encre-douce hover:border-terracotta hover:text-terracotta"
-              >
-                <Download size={14} />
-                Télécharger
-              </a>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-2 text-[13px]">
+                <div>
+                  <p className="text-[10.5px] uppercase tracking-wide text-encre-douce/60">Montant</p>
+                  <p className="font-score text-xl text-terracotta">
+                    {resteAPayer > 0 ? `${resteAPayer.toFixed(2)} €` : 'À renseigner'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10.5px] uppercase tracking-wide text-encre-douce/60">Communication</p>
+                  <p className="text-encre">{monNom} - Cotisation Caro {saison}</p>
+                </div>
+                <div>
+                  <p className="text-[10.5px] uppercase tracking-wide text-encre-douce/60">IBAN</p>
+                  <p className="text-encre">{parametres?.iban}</p>
+                </div>
+                {parametres?.bic && (
+                  <div>
+                    <p className="text-[10.5px] uppercase tracking-wide text-encre-douce/60">BIC</p>
+                    <p className="text-encre">{parametres.bic}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col items-center gap-2 text-center sm:shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrDataUrl} alt="QR code SEPA de cotisation" width={180} height={180} />
+                <p className="text-[12px] font-medium text-encre">{parametres?.nomBeneficiaire}</p>
+                <a
+                  href={qrDataUrl}
+                  download={`qr-cotisation-${saison}.png`}
+                  className="inline-flex items-center gap-1.5 text-[12px] text-terracotta hover:underline"
+                >
+                  <Download size={13} />
+                  Télécharger
+                </a>
+              </div>
             </div>
           )}
         </div>
