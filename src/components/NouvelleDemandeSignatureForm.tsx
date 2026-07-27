@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, X, FileText } from 'lucide-react';
+import { Plus, X, FileText, UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { creerDemandeSignature } from '@/lib/actions/signatures';
 
@@ -12,16 +12,39 @@ import { creerDemandeSignature } from '@/lib/actions/signatures';
  *  à faire de plus simple à transporter côté serveur ici, et Jérôme avait
  *  lui-même décrit ce flux ("uploader le fichier directement depuis le
  *  navigateur"). Une fois le fichier en place, creerDemandeSignature() ne
- *  fait que créer les lignes en base avec le chemin obtenu. */
+ *  fait que créer les lignes en base avec le chemin obtenu.
+ *
+ *  Signataire "manuel" (27/07/2026) : en plus des membres du CA
+ *  (signataires_ca()), on peut ajouter n'importe quel email/nom à la
+ *  volée — pensé pour tester avec le compte fictif Jean Testeur sans
+ *  solliciter tout le CA pour un simple essai, mais reste utile pour un
+ *  vrai signataire externe le cas échéant. */
 export function NouvelleDemandeSignatureForm({ signataires }: { signataires: { email: string; nom: string }[] }) {
   const router = useRouter();
   const [ouvert, setOuvert] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [choisis, setChoisis] = useState<string[]>([]);
+  const [manuels, setManuels] = useState<{ email: string; nom: string }[]>([]);
+  const [emailManuel, setEmailManuel] = useState('');
+  const [nomManuel, setNomManuel] = useState('');
 
   function basculer(email: string) {
     setChoisis((prev) => (prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]));
+  }
+
+  function ajouterManuel() {
+    const email = emailManuel.trim().toLowerCase();
+    const nom = nomManuel.trim();
+    if (!email || !nom) return;
+    if (manuels.some((m) => m.email === email) || signataires.some((s) => s.email === email)) return;
+    setManuels((prev) => [...prev, { email, nom }]);
+    setEmailManuel('');
+    setNomManuel('');
+  }
+
+  function retirerManuel(email: string) {
+    setManuels((prev) => prev.filter((m) => m.email !== email));
   }
 
   async function soumettre(e: FormEvent<HTMLFormElement>) {
@@ -32,10 +55,12 @@ export function NouvelleDemandeSignatureForm({ signataires }: { signataires: { e
     const titre = String(fd.get('titre') || '').trim();
     const fichier = fd.get('fichier') as File | null;
 
+    const tousSignataires = [...signataires.filter((s) => choisis.includes(s.email)), ...manuels];
+
     if (!titre) return setErreur('Titre obligatoire.');
     if (!fichier || fichier.size === 0) return setErreur('Choisis un fichier PDF.');
     if (fichier.type !== 'application/pdf') return setErreur('Le fichier doit être un PDF.');
-    if (choisis.length === 0) return setErreur('Choisis au moins un signataire.');
+    if (tousSignataires.length === 0) return setErreur('Choisis au moins un signataire.');
 
     setEnCours(true);
 
@@ -51,7 +76,7 @@ export function NouvelleDemandeSignatureForm({ signataires }: { signataires: { e
     const resultat = await creerDemandeSignature({
       titre,
       cheminStorage: chemin,
-      signataires: signataires.filter((s) => choisis.includes(s.email)),
+      signataires: tousSignataires,
     });
     setEnCours(false);
     if (!resultat.ok) {
@@ -60,6 +85,7 @@ export function NouvelleDemandeSignatureForm({ signataires }: { signataires: { e
     }
     setOuvert(false);
     setChoisis([]);
+    setManuels([]);
     router.refresh();
   }
 
@@ -114,6 +140,46 @@ export function NouvelleDemandeSignatureForm({ signataires }: { signataires: { e
               {s.nom}
             </label>
           ))}
+          {manuels.map((m) => (
+            <div key={m.email} className="flex items-center justify-between gap-2 text-[13.5px] text-encre">
+              <span>
+                {m.nom} <span className="text-encre-douce">({m.email})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => retirerManuel(m.email)}
+                aria-label={`Retirer ${m.nom}`}
+                className="text-encre-douce/60 hover:text-danger"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={nomManuel}
+            onChange={(e) => setNomManuel(e.target.value)}
+            placeholder="Nom (ex. Jean Testeur)"
+            className="min-w-0 flex-1 rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-[13px] outline-none focus:border-terracotta"
+          />
+          <input
+            type="email"
+            value={emailManuel}
+            onChange={(e) => setEmailManuel(e.target.value)}
+            placeholder="email"
+            className="min-w-0 flex-1 rounded-lg border border-ligne bg-sable px-2.5 py-1.5 text-[13px] outline-none focus:border-terracotta"
+          />
+          <button
+            type="button"
+            onClick={ajouterManuel}
+            className="inline-flex items-center gap-1 rounded-lg border border-ligne px-2.5 py-1.5 text-[12.5px] text-encre-douce hover:border-terracotta hover:text-terracotta"
+          >
+            <UserPlus size={13} />
+            Ajouter
+          </button>
         </div>
       </div>
 
