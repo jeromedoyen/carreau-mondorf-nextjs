@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
-import { envoyerEmail } from '@/lib/email';
+import { envoyerEmail, chargerLogoClub } from '@/lib/email';
 import { emailBienvenue } from '@/lib/emailTemplates';
 
 type Resultat = { ok: true } | { ok: false; error: string };
@@ -72,7 +72,7 @@ async function verifierCA(client: Awaited<ReturnType<typeof createClient>>) {
   return !!data;
 }
 
-const MONTANT_COTISATION = 20;
+const MONTANT_COTISATION_DEFAUT = 20;
 
 /** Appelée après creerMembre() une fois que le CA a validé/complété les
  *  champs dans MembreForm — relie la demande à la fiche créée et la marque
@@ -80,15 +80,17 @@ const MONTANT_COTISATION = 20;
  *  creerMembre) : cette action ne fait que classer la demande d'origine.
  *
  *  Phase D du workflow adhésion : génère aussi l'appel de paiement "Carte
- *  de membre {année}" (20 EUR, montant fixe — CarteVisite.html/Formulaire
- *  de l'app v1) pour Inscription ET Réinscription, plutôt qu'un geste
- *  manuel séparé sur /outils/paiements. La Licence, elle, reste manuelle :
- *  son montant est fixé par la FLBP (fédération) et n'existe nulle part
- *  dans ce système pour être généré automatiquement — le CA la crée
- *  lui-même une fois le montant communiqué par la fédération. Un échec de
- *  création de l'appel ne fait jamais échouer la validation de la demande
- *  (la fiche/adhésion existe déjà à ce stade) : juste un avertissement
- *  remonté à l'appelant, même principe que creerAccesEtEnvoyerBienvenue. */
+ *  de membre {année}" pour Inscription ET Réinscription, plutôt qu'un
+ *  geste manuel séparé sur /outils/paiements. Montant lu depuis
+ *  parametres_club.montant_carte_membre (configurable par le CA, migration
+ *  0032) — 20 EUR si non renseigné. La Licence, elle, reste manuelle :
+ *  même quand un montant est configuré, il varie chaque saison selon ce
+ *  que communique la FLBP (fédération) et n'est jamais garanti à jour au
+ *  moment du traitement d'une demande — le CA la crée lui-même. Un échec
+ *  de création de l'appel ne fait jamais échouer la validation de la
+ *  demande (la fiche/adhésion existe déjà à ce stade) : juste un
+ *  avertissement remonté à l'appelant, même principe que
+ *  creerAccesEtEnvoyerBienvenue. */
 export async function marquerDemandeTraitee(
   demandeId: number,
   personneId: number,
@@ -104,10 +106,16 @@ export async function marquerDemandeTraitee(
     .eq('id', demandeId);
   if (error) return { ok: false, error: error.message };
 
+  const { data: parametres } = await client
+    .from('parametres_club')
+    .select('montant_carte_membre')
+    .eq('id', 1)
+    .maybeSingle();
+
   const { error: errAppel } = await client.from('appels_paiement').insert({
     personne_id: personneId,
-    type: 'Cotisation',
-    montant: MONTANT_COTISATION,
+    type: 'Carte de membre',
+    montant: parametres?.montant_carte_membre ?? MONTANT_COTISATION_DEFAUT,
     description: `Carte de membre ${annee} — ${nomComplet}`,
   });
 
@@ -146,6 +154,7 @@ export async function creerAccesEtEnvoyerBienvenue(
       destinataire: email,
       sujet: 'Bienvenue au Carreau Boules et Pétanque Mondorf',
       html: emailBienvenue({ prenom, email, estLicencie }),
+      attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
     });
   } catch (e) {
     // L'accès existe déjà à ce stade (create côté RPC a réussi) — un email

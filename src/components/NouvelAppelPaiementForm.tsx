@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
 import { creerAppelPaiement } from '@/lib/actions/paiements';
+import type { TypeAppelPaiement } from '@/lib/paiements';
 
 export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number; nom: string }[] }) {
   const router = useRouter();
@@ -19,7 +20,7 @@ export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number
     const personneId = String(formData.get('personneId') || '');
     const resultat = await creerAppelPaiement({
       personneId: personneId ? Number(personneId) : undefined,
-      type: String(formData.get('type') || 'Autre') as 'Cotisation' | 'Licence' | 'Autre',
+      type: String(formData.get('type') || 'Autre') as TypeAppelPaiement,
       montant: Number(formData.get('montant') || 0),
       description: String(formData.get('description') || ''),
     });
@@ -62,8 +63,9 @@ export function NouvelAppelPaiementForm({ personnes }: { personnes: { id: number
           name="type"
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         >
-          <option value="Cotisation">Cotisation</option>
+          <option value="Carte de membre">Carte de membre</option>
           <option value="Licence">Licence</option>
+          <option value="Carte de membre + Licence">Carte de membre + Licence</option>
           <option value="Autre">Autre</option>
         </select>
         <input

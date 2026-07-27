@@ -1,8 +1,10 @@
 /** Gabarits d'email HTML — tables + styles inline uniquement (compat
  *  clients mail, pas de flex/grid/CSS externe). Couleurs reprises telles
- *  quelles de la charte graphique v2 (globals.css), logo servi en dur
- *  depuis le domaine de prod (les clients mail ne chargent jamais un
- *  fichier local). */
+ *  quelles de la charte graphique v2 (globals.css). Logo référencé en
+ *  `cid:logo-club` — chaque appelant doit joindre chargerLogoClub()
+ *  (src/lib/email.ts) sous ce cid, sans quoi l'image casse. Une image
+ *  distante bloquait par défaut dans plusieurs clients mail de bureau
+ *  (pense-bête Jérôme, 27/07/2026). */
 const COULEURS = {
   encre: '#241b12',
   encreDouce: '#5a4c3c',
@@ -33,7 +35,7 @@ export function emailBienvenue({
       <table role="presentation" width="100%" style="max-width:480px;background:${COULEURS.sableCarte};border-radius:16px;overflow:hidden;border:1px solid ${COULEURS.ligne};">
         <tr>
           <td style="background:${COULEURS.sable};padding:28px 32px;text-align:center;border-bottom:1px solid ${COULEURS.ligne};">
-            <img src="https://carreau-mondorf.com/logo.png" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
+            <img src="cid:logo-club" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
           </td>
         </tr>
         <tr>
@@ -109,7 +111,7 @@ export function emailAppelPaiement({
       <table role="presentation" width="100%" style="max-width:480px;background:${COULEURS.sableCarte};border-radius:16px;overflow:hidden;border:1px solid ${COULEURS.ligne};">
         <tr>
           <td style="background:${COULEURS.sable};padding:28px 32px;text-align:center;border-bottom:1px solid ${COULEURS.ligne};">
-            <img src="https://carreau-mondorf.com/logo.png" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
+            <img src="cid:logo-club" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
           </td>
         </tr>
         <tr>
@@ -167,7 +169,7 @@ export function emailRelanceRenouvellement({ prenom, annee }: { prenom: string; 
       <table role="presentation" width="100%" style="max-width:480px;background:${COULEURS.sableCarte};border-radius:16px;overflow:hidden;border:1px solid ${COULEURS.ligne};">
         <tr>
           <td style="background:${COULEURS.sable};padding:28px 32px;text-align:center;border-bottom:1px solid ${COULEURS.ligne};">
-            <img src="https://carreau-mondorf.com/logo.png" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
+            <img src="cid:logo-club" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
           </td>
         </tr>
         <tr>

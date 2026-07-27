@@ -5,14 +5,18 @@ export type ParametresClub = {
   iban: string;
   bic: string | null;
   ville: string | null;
+  montantCarteMembre: number | null;
+  montantLicence: number | null;
 };
+
+export type TypeAppelPaiement = 'Carte de membre' | 'Licence' | 'Carte de membre + Licence' | 'Autre';
 
 export type AppelPaiement = {
   id: number;
   personneId: number | null;
   personneNom: string | null;
   personneEmail: string | null;
-  type: 'Cotisation' | 'Licence' | 'Autre';
+  type: TypeAppelPaiement;
   montant: number;
   description: string;
   reference: string | null;
@@ -27,7 +31,7 @@ export async function getParametresClub(): Promise<ParametresClub | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('parametres_club')
-    .select('nom_beneficiaire, iban, bic, ville')
+    .select('nom_beneficiaire, iban, bic, ville, montant_carte_membre, montant_licence')
     .eq('id', 1)
     .maybeSingle();
   if (error) throw error;
@@ -37,6 +41,8 @@ export async function getParametresClub(): Promise<ParametresClub | null> {
     iban: data.iban,
     bic: data.bic,
     ville: data.ville,
+    montantCarteMembre: data.montant_carte_membre,
+    montantLicence: data.montant_licence,
   };
 }
 

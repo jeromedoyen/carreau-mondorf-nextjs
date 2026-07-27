@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { envoyerEmail } from '@/lib/email';
+import { envoyerEmail, chargerLogoClub } from '@/lib/email';
 import { emailRelanceRenouvellement } from '@/lib/emailTemplates';
 import { getMembresARenouveler } from '@/lib/renouvellement';
 
@@ -37,6 +37,7 @@ export async function envoyerRelancesRenouvellement(anneeCible: string): Promise
         destinataire: m.email,
         sujet: `La saison ${anneeCible} est ouverte — renouvelle ton adhésion`,
         html: emailRelanceRenouvellement({ prenom: m.prenom, annee: anneeCible }),
+        attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
       });
       envoyes += 1;
     } catch {

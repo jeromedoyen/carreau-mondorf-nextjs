@@ -46,13 +46,22 @@ export function ConnexionForm() {
     setEnvoye(true);
   }
 
-  async function validerCode(e: FormEvent) {
+  async function validerCode(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErreur(null);
     setEnCours(true);
+    // Lu depuis le FormData du submit, pas depuis l'état `code` — sur
+    // certains navigateurs mobiles, l'autofill "one-time-code" (le code
+    // reçu par email/SMS proposé par le clavier) remplit le champ sans
+    // toujours déclencher l'événement `input` React, laissant `code` à sa
+    // valeur précédente (souvent vide) : premier clic sur "Se connecter"
+    // échoue avec "code invalide" alors que le champ affiche bien le bon
+    // code, d'où le "il faut cliquer deux fois" remonté par Jérôme
+    // (27/07/2026). Le FormData reflète toujours la valeur DOM réelle.
+    const codeSaisi = String(new FormData(e.currentTarget).get('code') || '').trim();
     const { error } = await supabase.auth.verifyOtp({
       email: email.trim().toLowerCase(),
-      token: code.trim(),
+      token: codeSaisi,
       type: 'email',
     });
     setEnCours(false);
@@ -86,6 +95,7 @@ export function ConnexionForm() {
             </label>
             <input
               id="code"
+              name="code"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"

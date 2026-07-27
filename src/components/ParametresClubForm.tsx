@@ -17,11 +17,15 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
     setErreur(null);
     setEnCours(true);
     const formData = new FormData(e.currentTarget);
+    const montantCarteMembre = Number(formData.get('montantCarteMembre') || 0);
+    const montantLicence = Number(formData.get('montantLicence') || 0);
     const resultat = await enregistrerParametresClub({
       nomBeneficiaire: String(formData.get('nomBeneficiaire') || ''),
       iban: String(formData.get('iban') || ''),
       bic: String(formData.get('bic') || ''),
       ville: String(formData.get('ville') || ''),
+      montantCarteMembre: montantCarteMembre > 0 ? montantCarteMembre : undefined,
+      montantLicence: montantLicence > 0 ? montantLicence : undefined,
     });
     setEnCours(false);
     if (!resultat.ok) {
@@ -86,6 +90,32 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
             placeholder="Ville (optionnel)"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-[11.5px] text-encre-douce">Montant carte de membre (EUR)</label>
+              <input
+                type="number"
+                name="montantCarteMembre"
+                step="0.01"
+                min="0"
+                defaultValue={parametres?.montantCarteMembre ?? ''}
+                placeholder="20"
+                className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] text-encre-douce">Montant licence (EUR)</label>
+              <input
+                type="number"
+                name="montantLicence"
+                step="0.01"
+                min="0"
+                defaultValue={parametres?.montantLicence ?? ''}
+                placeholder="Fixé par la FLBP"
+                className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+              />
+            </div>
+          </div>
           {erreur && <p className="text-[12.5px] text-danger">{erreur}</p>}
           <button
             type="submit"

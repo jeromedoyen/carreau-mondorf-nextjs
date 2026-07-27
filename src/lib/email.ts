@@ -1,5 +1,23 @@
 import 'server-only';
+import fs from 'fs';
+import path from 'path';
 import nodemailer from 'nodemailer';
+
+let logoClub: Buffer | null = null;
+
+/** Logo du club en pièce jointe `cid:` plutôt qu'en image distante
+ *  (`https://carreau-mondorf.com/logo.png`) — beaucoup de clients mail
+ *  (Outlook desktop notamment) bloquent le chargement des images
+ *  distantes par défaut, ce qui grise le logo tant que l'utilisateur n'a
+ *  pas cliqué "Afficher les images" (pense-bête Jérôme, 27/07/2026). Une
+ *  image intégrée au message ne subit pas ce blocage. Lu une seule fois
+ *  et mis en cache : le fichier ne change jamais en cours d'exécution. */
+export function chargerLogoClub(): Buffer {
+  if (!logoClub) {
+    logoClub = fs.readFileSync(path.join(process.cwd(), 'public', 'logo.png'));
+  }
+  return logoClub;
+}
 
 /** Un seul transporteur SMTP réutilisé pour toute l'app (compte dédié
  *  carreau-mondorf.com) — port 587 + STARTTLS par défaut, comme documenté

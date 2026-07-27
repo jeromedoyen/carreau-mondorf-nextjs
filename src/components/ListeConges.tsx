@@ -35,12 +35,26 @@ export function ListeConges({ conges }: { conges: Conge[] }) {
     return <p className="text-[14px] text-encre-douce">Aucun congé déclaré pour cette saison.</p>;
   }
 
+  // Pense-bête 27/07/2026 : les congés déjà terminés (date de fin passée)
+  // en fin de liste et grisés, plutôt que mélangés avec les congés en
+  // cours/à venir — comparaison sur la date seule (pas l'heure), un congé
+  // qui se termine "aujourd'hui" reste donc dans le premier groupe.
+  const aujourdhui = new Date();
+  aujourdhui.setHours(0, 0, 0, 0);
+  const enCoursOuAVenir = conges.filter((c) => new Date(c.dateFin) >= aujourdhui);
+  const termines = conges.filter((c) => new Date(c.dateFin) < aujourdhui);
+  const congesOrdonnes = [...enCoursOuAVenir, ...termines];
+
   return (
     <div className="divide-y divide-ligne overflow-hidden rounded-2xl border border-ligne bg-sable-carte">
-      {conges.map((c) => {
+      {congesOrdonnes.map((c) => {
         const membre = MEMBRES_CA.find((m) => m.nom === c.personne);
+        const termine = new Date(c.dateFin) < aujourdhui;
         return (
-          <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <div
+            key={c.id}
+            className={`flex flex-wrap items-center justify-between gap-3 px-5 py-4 ${termine ? 'opacity-50' : ''}`}
+          >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-ligne bg-sable">
                 {membre?.photo ? (

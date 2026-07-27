@@ -3,9 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import QRCode from 'qrcode';
 import { createClient } from '@/lib/supabase/server';
-import { envoyerEmail } from '@/lib/email';
+import { envoyerEmail, chargerLogoClub } from '@/lib/email';
 import { emailAppelPaiement } from '@/lib/emailTemplates';
 import { genererPayloadSepaQr } from '@/lib/sepaQr';
+import type { TypeAppelPaiement } from '@/lib/paiements';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -19,6 +20,8 @@ export async function enregistrerParametresClub(data: {
   iban: string;
   bic?: string;
   ville?: string;
+  montantCarteMembre?: number;
+  montantLicence?: number;
 }): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
@@ -32,6 +35,8 @@ export async function enregistrerParametresClub(data: {
     iban: data.iban.trim(),
     bic: data.bic?.trim() || null,
     ville: data.ville?.trim() || null,
+    montant_carte_membre: data.montantCarteMembre ?? null,
+    montant_licence: data.montantLicence ?? null,
     maj_le: new Date().toISOString(),
   });
   if (error) return { ok: false, error: error.message };
@@ -42,7 +47,7 @@ export async function enregistrerParametresClub(data: {
 
 export async function creerAppelPaiement(data: {
   personneId?: number;
-  type: 'Cotisation' | 'Licence' | 'Autre';
+  type: TypeAppelPaiement;
   montant: number;
   description: string;
 }): Promise<Resultat> {
@@ -116,7 +121,10 @@ export async function envoyerAppelPaiementEmail(id: number): Promise<Resultat> {
         iban: parametres.iban,
         bic: parametres.bic,
       }),
-      attachments: [{ filename: 'qr-paiement.png', content: qrBuffer, cid: 'qr-cotisation' }],
+      attachments: [
+        { filename: 'qr-paiement.png', content: qrBuffer, cid: 'qr-cotisation' },
+        { filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' },
+      ],
     });
   } catch (e) {
     return { ok: false, error: `Échec de l'envoi : ${(e as Error).message}` };
