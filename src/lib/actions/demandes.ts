@@ -128,6 +128,41 @@ export async function creerAccesEtEnvoyerBienvenue(
   return { ok: true };
 }
 
+export type ReinscriptionSaisie = Omit<DemandeSaisie, 'typeDemande'>;
+
+/** Phase B du workflow adhésion : soumission de la réinscription depuis
+ *  Moncaro (licencié déjà connecté, pas un formulaire public) — passe par
+ *  le client avec session (server.ts), pas le client anonyme utilisé par
+ *  soumettreDemandeAdhesion(). La RPC soumettre_reinscription() (migration
+ *  0029) résout elle-même le personne_id depuis l'email de session,
+ *  jamais transmis par le client. */
+export async function soumettreReinscription(data: ReinscriptionSaisie): Promise<Resultat> {
+  const client = await createClient();
+  const { data: autorise } = await client.rpc('est_utilisateur_autorise');
+  if (!autorise) return { ok: false, error: 'Action réservée aux licenciés connectés.' };
+
+  const { error } = await client.rpc('soumettre_reinscription', {
+    p_nom: data.nom,
+    p_prenom: data.prenom,
+    p_date_naissance: data.dateNaissance,
+    p_sexe: data.sexe || null,
+    p_nationalite: data.nationalite || null,
+    p_adresse: data.adresse,
+    p_code_postal_ville: data.codePostalVille,
+    p_telephone: data.telephone,
+    p_email: data.email,
+    p_type_adhesion_souhaite: data.typeAdhesionSouhaite || null,
+    p_droit_image: data.droitImage,
+    p_message: data.message || null,
+    p_consent_reglement: data.consentReglement,
+    p_consent_donnees: data.consentDonnees,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/membres/demandes');
+  return { ok: true };
+}
+
 export async function refuserDemande(demandeId: number): Promise<Resultat> {
   const client = await createClient();
   if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };

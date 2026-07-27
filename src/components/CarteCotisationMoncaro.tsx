@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import QRCode from 'qrcode';
-import { CreditCard, CheckCircle2, XCircle, QrCode, Download } from 'lucide-react';
+import Link from 'next/link';
+import { CreditCard, CheckCircle2, XCircle, QrCode, Download, RefreshCw } from 'lucide-react';
 import { genererPayloadSepaQr } from '@/lib/sepaQr';
 import type { MonAdhesion } from '@/lib/moncaro';
 import type { ParametresClub } from '@/lib/paiements';
@@ -50,10 +51,16 @@ export function CarteCotisationMoncaro({
           <CreditCard size={16} className="text-pin" />
           <h2 className="font-display text-[15px]">Ma cotisation — saison {saison}</h2>
         </div>
-        <p className="text-[13px] text-encre-douce">
-          Aucune adhésion enregistrée pour cette saison à ton nom — contacte le comité si tu penses que c&apos;est
-          une erreur.
+        <p className="mb-3 text-[13px] text-encre-douce">
+          Aucune adhésion enregistrée pour cette saison à ton nom.
         </p>
+        <Link
+          href="/moncaro/renouveler"
+          className="inline-flex items-center gap-1.5 text-[12.5px] text-terracotta hover:underline"
+        >
+          <RefreshCw size={13} />
+          Renouveler mon adhésion
+        </Link>
       </div>
     );
   }
