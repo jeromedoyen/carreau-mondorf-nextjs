@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Mail, Navigation, Users, UserPlus, LogIn } from 'lucide-react';
+import { MapPin, Mail, Navigation, Users, UserPlus } from 'lucide-react';
 import { CLUB, DISCIPLINES, COMITE, ITINERAIRES } from '@/lib/club';
 import { FlagIcon } from '@/components/FlagIcon';
+import { ConnexionClubLink } from '@/components/ConnexionClubLink';
 
 export const metadata: Metadata = {
   title: 'Le Club',
@@ -37,13 +38,7 @@ export default function ClubPage() {
       {/* ---------- Hero ---------- */}
       <header className="entree mb-16 text-center">
         <div className="mb-2 flex justify-end">
-          <Link
-            href="/connexion"
-            className="inline-flex items-center gap-1.5 text-[12.5px] text-encre-douce transition-colors hover:text-terracotta"
-          >
-            <LogIn size={13} />
-            Connexion
-          </Link>
+          <ConnexionClubLink />
         </div>
         <Image
           src="/logo.png"

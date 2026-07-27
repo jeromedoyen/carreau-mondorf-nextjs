@@ -1,25 +1,13 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { AuthNavLink } from './AuthNavLink';
+import { LogoNavLink } from './LogoNavLink';
 import { NavLinks } from './NavLinks';
 
 export function NavBar() {
   return (
     <nav className="sticky top-0 z-30 border-b border-ligne/70 bg-sable/85 backdrop-blur-md print:hidden">
       <div className="relative mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3.5">
-        <Link href="/" className="flex min-w-0 items-center gap-2.5">
-          <Image
-            src="/logo.png"
-            alt="Carreau Mondorf"
-            width={500}
-            height={261}
-            priority
-            className="h-[34px] w-auto shrink-0"
-          />
-          <span className="font-display truncate text-[17px] font-semibold tracking-tight">
-            Carreau Mondorf
-          </span>
-        </Link>
+        <LogoNavLink />
         <div className="flex shrink-0 items-center gap-4 text-[13.5px] font-medium md:gap-6">
           <Link
             href="/manifestations"
