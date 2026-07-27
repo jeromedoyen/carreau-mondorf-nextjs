@@ -80,3 +80,59 @@ export function emailBienvenue({
   </tr>
 </table>`;
 }
+
+/** Relance de renouvellement (Phase E du workflow adhésion) — envoyée en
+ *  masse aux membres de la saison précédente qui n'ont pas encore
+ *  d'adhésion pour la saison cible. Pointe vers /moncaro/renouveler
+ *  (Phase B, formulaire de réinscription) plutôt que de recopier quoi que
+ *  ce soit automatiquement. */
+export function emailRelanceRenouvellement({ prenom, annee }: { prenom: string; annee: string }): string {
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COULEURS.sable};padding:32px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" style="max-width:480px;background:${COULEURS.sableCarte};border-radius:16px;overflow:hidden;border:1px solid ${COULEURS.ligne};">
+        <tr>
+          <td style="background:${COULEURS.sable};padding:28px 32px;text-align:center;border-bottom:1px solid ${COULEURS.ligne};">
+            <img src="https://carreau-mondorf.com/logo.png" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:${COULEURS.terracotta};font-weight:600;">Renouvellement ${annee}</p>
+            <h1 style="margin:0 0 20px;font-size:26px;line-height:1.3;color:${COULEURS.encre};font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;">
+              Bonjour ${prenom},
+            </h1>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:${COULEURS.encreDouce};">
+              La saison ${annee} du <strong style="color:${COULEURS.encre};">Carreau Boules et Pétanque Mondorf</strong>
+              est ouverte — nous serions ravis de te compter à nouveau parmi nous !
+            </p>
+            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${COULEURS.encreDouce};">
+              Renouvelle ton adhésion en quelques minutes depuis ton espace personnel — tes informations
+              sont préremplies, il te suffit de les vérifier et de confirmer.
+            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+              <tr>
+                <td style="border-radius:10px;background:${COULEURS.terracotta};">
+                  <a href="https://carreau-mondorf.com/moncaro/renouveler"
+                     style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:600;color:#fff;text-decoration:none;border-radius:10px;">
+                    Renouveler mon adhésion
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px;border-top:1px solid ${COULEURS.ligne};">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:${COULEURS.encreDouce};">
+              À bientôt au boulodrome !<br />
+              <strong style="color:${COULEURS.pin};">Le comité du Carreau Boules et Pétanque Mondorf</strong>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}

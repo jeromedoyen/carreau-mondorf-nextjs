@@ -72,11 +72,29 @@ async function verifierCA(client: Awaited<ReturnType<typeof createClient>>) {
   return !!data;
 }
 
+const MONTANT_COTISATION = 20;
+
 /** Appelée après creerMembre() une fois que le CA a validé/complété les
  *  champs dans MembreForm — relie la demande à la fiche créée et la marque
  *  traitée. Ne recrée jamais la personne elle-même (déjà fait par
- *  creerMembre) : cette action ne fait que classer la demande d'origine. */
-export async function marquerDemandeTraitee(demandeId: number, personneId: number): Promise<Resultat> {
+ *  creerMembre) : cette action ne fait que classer la demande d'origine.
+ *
+ *  Phase D du workflow adhésion : génère aussi l'appel de paiement "Carte
+ *  de membre {année}" (20 EUR, montant fixe — CarteVisite.html/Formulaire
+ *  de l'app v1) pour Inscription ET Réinscription, plutôt qu'un geste
+ *  manuel séparé sur /outils/paiements. La Licence, elle, reste manuelle :
+ *  son montant est fixé par la FLBP (fédération) et n'existe nulle part
+ *  dans ce système pour être généré automatiquement — le CA la crée
+ *  lui-même une fois le montant communiqué par la fédération. Un échec de
+ *  création de l'appel ne fait jamais échouer la validation de la demande
+ *  (la fiche/adhésion existe déjà à ce stade) : juste un avertissement
+ *  remonté à l'appelant, même principe que creerAccesEtEnvoyerBienvenue. */
+export async function marquerDemandeTraitee(
+  demandeId: number,
+  personneId: number,
+  annee: string,
+  nomComplet: string
+): Promise<Resultat> {
   const client = await createClient();
   if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
 
@@ -86,7 +104,18 @@ export async function marquerDemandeTraitee(demandeId: number, personneId: numbe
     .eq('id', demandeId);
   if (error) return { ok: false, error: error.message };
 
+  const { error: errAppel } = await client.from('appels_paiement').insert({
+    personne_id: personneId,
+    type: 'Cotisation',
+    montant: MONTANT_COTISATION,
+    description: `Carte de membre ${annee} — ${nomComplet}`,
+  });
+
   revalidatePath('/membres/demandes');
+  revalidatePath('/outils/paiements');
+  if (errAppel) {
+    return { ok: false, error: `Demande validée, mais l'appel de cotisation n'a pas pu être créé : ${errAppel.message}` };
+  }
   return { ok: true };
 }
 

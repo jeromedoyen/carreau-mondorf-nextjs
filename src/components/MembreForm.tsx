@@ -102,7 +102,17 @@ export function MembreForm({
     // de connexion : on ne recrée jamais l'accès ni le mail de bienvenue.
     const personneIdTraitee = modeEdition ? personne!.id : 'id' in resultat ? resultat.id : undefined;
     if (demandeId && personneIdTraitee) {
-      await marquerDemandeTraitee(demandeId, personneIdTraitee);
+      const resultatDemande = await marquerDemandeTraitee(
+        demandeId,
+        personneIdTraitee,
+        donneesAdhesion.annee,
+        `${donneesPersonne.prenom} ${donneesPersonne.nom}`
+      );
+      if (!resultatDemande.ok) {
+        setAvertissement(resultatDemande.error);
+        router.refresh();
+        return;
+      }
 
       if (!modeEdition && fd.get('creerAcces') === 'on') {
         const resultatAcces = await creerAccesEtEnvoyerBienvenue(
