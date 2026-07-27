@@ -8,7 +8,7 @@ import { ParametresClubForm } from '@/components/ParametresClubForm';
 import { NouvelAppelPaiementForm } from '@/components/NouvelAppelPaiementForm';
 import { ListeAppelsPaiement } from '@/components/ListeAppelsPaiement';
 
-export const metadata: Metadata = { title: 'Paiements' };
+export const metadata: Metadata = { title: 'Appel à cotisation' };
 
 export default async function PaiementsPage() {
   const autorise = await estMembreCA();
@@ -36,14 +36,19 @@ export default async function PaiementsPage() {
     supabase.from('personnes').select('id, nom, prenom').eq('supprime', false).order('nom', { ascending: true }),
   ]);
   const personnes = (personnesData ?? []).map((p) => ({ id: p.id, nom: `${p.prenom} ${p.nom}` }));
+  // Rien d'autre ne se passe ici une fois l'email envoyé — retour Jérôme
+  // (27/07/2026), le suivi (marquer payé, historique) vit désormais sur
+  // /outils/paiements-en-attente.
+  const nouveauxAppels = appels.filter((a) => a.statut === 'en_attente' && !a.emailEnvoyeLe);
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-12">
       <header className="entree mb-9">
         <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">OUTILS</p>
-        <h1 className="font-display mt-1 text-4xl italic">Paiements</h1>
+        <h1 className="font-display mt-1 text-4xl italic">Appel à cotisation</h1>
         <p className="mt-3 text-[13.5px] text-encre-douce">
-          Appels de cotisation, licence ou paiement ponctuel — chacun génère un QR code SEPA prêt à scanner.
+          Demande de paiement (carte de membre, licence, ou paiement ponctuel) à une ou plusieurs personnes —
+          chacune génère un QR code SEPA et peut être envoyée par email.
         </p>
       </header>
 
@@ -55,7 +60,7 @@ export default async function PaiementsPage() {
         <NouvelAppelPaiementForm personnes={personnes} parametres={parametres} />
       </div>
 
-      <ListeAppelsPaiement appels={appels} parametres={parametres} saisonActive={saisonActive} />
+      <ListeAppelsPaiement appels={nouveauxAppels} parametres={parametres} saisonActive={saisonActive} />
     </main>
   );
 }

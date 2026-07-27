@@ -31,6 +31,10 @@ export default async function PaiementsEnAttentePage() {
     getSaisonActive(),
   ]);
   const enAttente = appels.filter((a) => a.statut === 'en_attente' && a.emailEnvoyeLe);
+  // Historique de tous les appels traités, pas seulement ceux relancés par
+  // email — c'est désormais le seul endroit où il apparaît (retiré de
+  // /outils/paiements, qui ne sert plus qu'à la création/l'envoi).
+  const historique = appels.filter((a) => a.statut !== 'en_attente');
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-12">
@@ -46,7 +50,7 @@ export default async function PaiementsEnAttentePage() {
         </p>
       </header>
 
-      <ListeRelancesPaiement appels={enAttente} parametres={parametres} saisonActive={saisonActive} />
+      <ListeRelancesPaiement appels={enAttente} historique={historique} parametres={parametres} saisonActive={saisonActive} />
     </main>
   );
 }

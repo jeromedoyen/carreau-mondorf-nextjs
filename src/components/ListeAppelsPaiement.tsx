@@ -9,17 +9,6 @@ import { genererPayloadSepaQr } from '@/lib/sepaQr';
 import { genererCommunicationAppelPaiement } from '@/lib/communicationPaiement';
 import type { AppelPaiement, ParametresClub } from '@/lib/paiements';
 
-const STATUT_COULEUR: Record<string, string> = {
-  en_attente: 'bg-terracotta/10 text-terracotta',
-  payee: 'bg-succes/15 text-succes',
-  annulee: 'bg-encre-douce/15 text-encre-douce',
-};
-const STATUT_LABEL: Record<string, string> = {
-  en_attente: 'En attente',
-  payee: 'Payée',
-  annulee: 'Annulée',
-};
-
 export function ListeAppelsPaiement({
   appels,
   parametres,
@@ -73,23 +62,14 @@ export function ListeAppelsPaiement({
     router.refresh();
   }
 
+  // Retour Jérôme (27/07/2026) : cet écran ne sert qu'à demander un
+  // paiement — une fois l'email envoyé, plus rien ne s'y passe pour cet
+  // appel (il part sur /outils/paiements-en-attente). Aucun historique
+  // ici : "l'historique n'a pas à être là".
   if (appels.length === 0) {
-    return <p className="text-[14px] text-encre-douce">Aucun appel de paiement pour l&apos;instant.</p>;
-  }
-
-  // Une fois l'email envoyé, l'appel quitte cet écran — retour Jérôme
-  // (27/07/2026) : "cette demande de cotisation doit disparaître et on la
-  // retrouve via une fonctionnalité dans outils" pour le contrôle
-  // financier, séparément de la création (cf. /outils/paiements-en-attente,
-  // ListeRelancesPaiement.tsx) — un envoi groupé peut en laisser 10 à 30
-  // en attente, ça n'a plus sa place mélangé à "Nouveaux appels".
-  const nouveaux = appels.filter((a) => a.statut === 'en_attente' && !a.emailEnvoyeLe);
-  const historique = appels.filter((a) => a.statut !== 'en_attente');
-
-  if (nouveaux.length === 0 && historique.length === 0) {
     return (
       <p className="text-[14px] text-encre-douce">
-        Aucun appel de paiement pour l&apos;instant — hors relances déjà envoyées, à traiter sur{' '}
+        Aucun appel à cotisation en attente d&apos;envoi. Pour le suivi des relances déjà envoyées, voir{' '}
         <a href="/outils/paiements-en-attente" className="text-terracotta hover:underline">
           Paiements en attente
         </a>
@@ -105,12 +85,7 @@ export function ListeAppelsPaiement({
         className="flex flex-col gap-2 rounded-2xl border border-ligne bg-sable-carte p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
       >
         <div>
-          <div className="flex items-center gap-2">
-            <span className="font-display text-[14.5px]">{a.description}</span>
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_COULEUR[a.statut]}`}>
-              {STATUT_LABEL[a.statut]}
-            </span>
-          </div>
+          <span className="font-display text-[14.5px]">{a.description}</span>
           <p className="mt-0.5 text-[12px] text-encre-douce">
             {a.type} · {a.montant.toFixed(2)} € · {a.reference}
             {a.personneNom ? ` · ${a.personneNom}` : ''}
@@ -124,60 +99,50 @@ export function ListeAppelsPaiement({
 
   return (
     <>
-      {nouveaux.length > 0 && (
-        <div className="mb-6 flex flex-col gap-2.5">
-          <h3 className="font-display text-[14px]">Nouveaux appels</h3>
-          {nouveaux.map((a) =>
-            ligneAppel(
-              a,
-              <>
-                <button
-                  type="button"
-                  onClick={() => genererQr(a)}
-                  disabled={!parametres}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-pin px-3 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90 disabled:opacity-40"
-                >
-                  <QrCode size={14} />
-                  QR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => envoyerEmail(a.id)}
-                  disabled={!a.personneEmail || envoiEnCours === a.id}
-                  title={a.personneEmail ? undefined : 'Aucun email associé à cet appel'}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-ligne px-3 py-1.5 text-[12.5px] font-medium text-encre transition-colors hover:border-terracotta hover:text-terracotta disabled:opacity-40"
-                >
-                  <Mail size={14} />
-                  {envoiEnCours === a.id ? 'Envoi…' : "Envoyer l'email"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => marquerPaye(a.id)}
-                  aria-label="Marquer payé"
-                  className="text-succes hover:opacity-70"
-                >
-                  <Check size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => annuler(a.id)}
-                  aria-label="Annuler"
-                  className="text-encre-douce/60 hover:text-danger"
-                >
-                  <X size={18} />
-                </button>
-              </>
-            )
-          )}
-        </div>
-      )}
-
-      {historique.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <h3 className="font-display text-[14px]">Historique</h3>
-          {historique.map((a) => ligneAppel(a, null))}
-        </div>
-      )}
+      <div className="flex flex-col gap-2.5">
+        {appels.map((a) =>
+          ligneAppel(
+            a,
+            <>
+              <button
+                type="button"
+                onClick={() => genererQr(a)}
+                disabled={!parametres}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-pin px-3 py-1.5 text-[12.5px] font-medium text-sable-carte transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                <QrCode size={14} />
+                QR
+              </button>
+              <button
+                type="button"
+                onClick={() => envoyerEmail(a.id)}
+                disabled={!a.personneEmail || envoiEnCours === a.id}
+                title={a.personneEmail ? undefined : 'Aucun email associé à cet appel'}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ligne px-3 py-1.5 text-[12.5px] font-medium text-encre transition-colors hover:border-terracotta hover:text-terracotta disabled:opacity-40"
+              >
+                <Mail size={14} />
+                {envoiEnCours === a.id ? 'Envoi…' : "Envoyer l'email"}
+              </button>
+              <button
+                type="button"
+                onClick={() => marquerPaye(a.id)}
+                aria-label="Marquer payé"
+                className="text-succes hover:opacity-70"
+              >
+                <Check size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => annuler(a.id)}
+                aria-label="Annuler"
+                className="text-encre-douce/60 hover:text-danger"
+              >
+                <X size={18} />
+              </button>
+            </>
+          )
+        )}
+      </div>
 
       {qrOuvert && (
         <div

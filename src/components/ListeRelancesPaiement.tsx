@@ -9,18 +9,32 @@ import { genererPayloadSepaQr } from '@/lib/sepaQr';
 import { genererCommunicationAppelPaiement } from '@/lib/communicationPaiement';
 import type { AppelPaiement, ParametresClub } from '@/lib/paiements';
 
+const STATUT_COULEUR: Record<string, string> = {
+  payee: 'bg-succes/15 text-succes',
+  annulee: 'bg-encre-douce/15 text-encre-douce',
+};
+const STATUT_LABEL: Record<string, string> = {
+  payee: 'Payée',
+  annulee: 'Annulée',
+};
+
 /** Écran dédié au contrôle financier (retour Jérôme, 27/07/2026) : une
  *  fois l'email de relance envoyé, l'appel quitte /outils/paiements et
  *  atterrit ici — un envoi groupé peut en laisser 10 à 30 en attente, le
  *  trésorier les parcourt un par un en pointant ses relevés de compte et
  *  valide. Même actions que la liste principale (QR, marquer payé,
- *  annuler), sans "Envoyer l'email" (déjà fait) ni "Nouvel appel". */
+ *  annuler), sans "Envoyer l'email" (déjà fait) ni "Nouvel appel".
+ *  L'historique (payés/annulés) vit tout en bas de ce même écran — "c'est
+ *  là qu'il y a peut-être un intérêt à en avoir un", pas sur l'écran de
+ *  création qui n'a plus besoin d'en garder trace. */
 export function ListeRelancesPaiement({
   appels,
+  historique,
   parametres,
   saisonActive,
 }: {
   appels: AppelPaiement[];
+  historique: AppelPaiement[];
   parametres: ParametresClub | null;
   saisonActive: string;
 }) {
@@ -54,12 +68,11 @@ export function ListeRelancesPaiement({
     router.refresh();
   }
 
-  if (appels.length === 0) {
-    return <p className="text-[14px] text-encre-douce">Aucun paiement en attente pour l&apos;instant.</p>;
-  }
-
   return (
     <>
+      {appels.length === 0 ? (
+        <p className="text-[14px] text-encre-douce">Aucun paiement en attente pour l&apos;instant.</p>
+      ) : (
       <div className="flex flex-col gap-2.5">
         {appels.map((a) => (
           <div
@@ -108,6 +121,32 @@ export function ListeRelancesPaiement({
           </div>
         ))}
       </div>
+      )}
+
+      {historique.length > 0 && (
+        <div className="mt-8 flex flex-col gap-2.5">
+          <h3 className="font-display text-[14px]">Historique</h3>
+          {historique.map((a) => (
+            <div
+              key={a.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ligne bg-sable-carte p-4"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-[14.5px]">{a.description}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_COULEUR[a.statut]}`}>
+                    {STATUT_LABEL[a.statut]}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[12px] text-encre-douce">
+                  {a.type} · {a.montant.toFixed(2)} € · {a.reference}
+                  {a.personneNom ? ` · ${a.personneNom}` : ''}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {qrOuvert && (
         <div
