@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Check, X, Download, Upload } from 'lucide-react';
+import { Send, Check, X, Download, Upload, FolderUp, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
   envoyerDemandeSignature,
@@ -10,6 +10,7 @@ import {
   enregistrerPdfSigne,
   annulerDemandeSignature,
   obtenirUrlDocument,
+  archiverDansGoogleDrive,
 } from '@/lib/actions/signatures';
 import type { DemandeSignature } from '@/lib/signatures';
 
@@ -74,6 +75,15 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
   async function telecharger(chemin: string) {
     const resultat = await obtenirUrlDocument(chemin);
     if (resultat.ok) window.open(resultat.url, '_blank');
+  }
+
+  async function archiver(id: number) {
+    setErreur(null);
+    setEnCours(id);
+    const resultat = await archiverDansGoogleDrive(id);
+    setEnCours(null);
+    if (!resultat.ok) setErreur({ id, message: resultat.error });
+    router.refresh();
   }
 
   if (demandes.length === 0) {
@@ -166,14 +176,37 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
               )}
 
               {d.statut === 'complete' && d.cheminStorageSigne && (
-                <button
-                  type="button"
-                  onClick={() => telecharger(d.cheminStorageSigne as string)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-succes/15 px-3 py-1.5 text-[12.5px] font-medium text-succes hover:opacity-80"
-                >
-                  <Download size={13} />
-                  PDF signé
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => telecharger(d.cheminStorageSigne as string)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-succes/15 px-3 py-1.5 text-[12.5px] font-medium text-succes hover:opacity-80"
+                  >
+                    <Download size={13} />
+                    PDF signé
+                  </button>
+                  {d.googleDriveFileId ? (
+                    <a
+                      href={`https://drive.google.com/file/d/${d.googleDriveFileId}/view`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-ligne px-3 py-1.5 text-[12.5px] font-medium text-encre hover:border-terracotta hover:text-terracotta"
+                    >
+                      <ExternalLink size={13} />
+                      Voir dans Drive
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => archiver(d.id)}
+                      disabled={enCours === d.id}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-ligne px-3 py-1.5 text-[12.5px] font-medium text-encre hover:border-terracotta hover:text-terracotta disabled:opacity-40"
+                    >
+                      <FolderUp size={13} />
+                      {enCours === d.id ? 'Envoi…' : 'Archiver dans Drive'}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>

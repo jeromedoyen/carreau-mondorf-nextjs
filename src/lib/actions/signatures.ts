@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { creerEnveloppe } from '@/lib/documenso';
+import { televerserVersDrive } from '@/lib/googleDrive';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -165,6 +166,47 @@ export async function enregistrerPdfSigne(demandeId: number, cheminStorageSigne:
     .update({ statut: 'complete', complete_le: maintenant, chemin_storage_signe: cheminStorageSigne })
     .eq('id', demandeId);
   if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/outils/signatures');
+  return { ok: true };
+}
+
+/** Phase 3 (27/07/2026) : pousse le PDF signé vers le Drive du club, via
+ *  le compte de service partagé sur un dossier précis (jamais un accès
+ *  large au Drive) — nécessite que chemin_storage_signe soit déjà
+ *  renseigné (marquerSignataireSigne ou enregistrerPdfSigne). */
+export async function archiverDansGoogleDrive(demandeId: number): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+
+  const { data: demande, error: errDemande } = await supabase
+    .from('demandes_signature')
+    .select('id, chemin_storage_signe, documents(titre)')
+    .eq('id', demandeId)
+    .single();
+  if (errDemande || !demande) return { ok: false, error: errDemande?.message ?? 'Demande introuvable.' };
+  if (!demande.chemin_storage_signe) {
+    return { ok: false, error: "Aucun PDF signé enregistré pour cette demande." };
+  }
+
+  const document = Array.isArray(demande.documents) ? demande.documents[0] : demande.documents;
+
+  const { data: fichier, error: errTelechargement } = await supabase.storage
+    .from('documents-signature')
+    .download(demande.chemin_storage_signe);
+  if (errTelechargement || !fichier) {
+    return { ok: false, error: `Impossible de récupérer le PDF signé : ${errTelechargement?.message}` };
+  }
+
+  try {
+    const { fileId } = await televerserVersDrive({
+      nomFichier: `${document?.titre ?? 'document'} - signé.pdf`,
+      pdfBuffer: Buffer.from(await fichier.arrayBuffer()),
+    });
+    await supabase.from('demandes_signature').update({ google_drive_file_id: fileId }).eq('id', demandeId);
+  } catch (e) {
+    return { ok: false, error: `Échec de l'envoi vers Google Drive : ${(e as Error).message}` };
+  }
 
   revalidatePath('/outils/signatures');
   return { ok: true };

@@ -14,6 +14,7 @@ export type DemandeSignature = {
   titre: string;
   cheminStorage: string;
   cheminStorageSigne: string | null;
+  googleDriveFileId: string | null;
   statut: 'en_attente' | 'en_cours' | 'complete' | 'annulee';
   creeParEmail: string;
   creeLe: string;
@@ -36,7 +37,7 @@ export async function getDemandesSignature(): Promise<DemandeSignature[]> {
   const { data, error } = await supabase
     .from('demandes_signature')
     .select(
-      'id, document_id, statut, chemin_storage_signe, cree_par_email, cree_le, complete_le, documents(titre, chemin_storage), demandes_signature_signataires(id, email, nom, email_envoye_le, signe_le)'
+      'id, document_id, statut, chemin_storage_signe, google_drive_file_id, cree_par_email, cree_le, complete_le, documents(titre, chemin_storage), demandes_signature_signataires(id, email, nom, email_envoye_le, signe_le)'
     )
     .order('cree_le', { ascending: false });
   if (error) throw error;
@@ -49,6 +50,7 @@ export async function getDemandesSignature(): Promise<DemandeSignature[]> {
       titre: document?.titre ?? '(document supprimé)',
       cheminStorage: document?.chemin_storage ?? '',
       cheminStorageSigne: d.chemin_storage_signe,
+      googleDriveFileId: d.google_drive_file_id,
       statut: d.statut,
       creeParEmail: d.cree_par_email,
       creeLe: d.cree_le,
