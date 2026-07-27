@@ -31,6 +31,9 @@ export function NavBar() {
           <Link href="/club" className="text-encre-douce transition-colors hover:text-terracotta">
             Le Club
           </Link>
+          <Link href="/moncaro" className="text-encre-douce transition-colors hover:text-terracotta">
+            Moncaro
+          </Link>
           <AuthNavLink />
         </div>
       </div>

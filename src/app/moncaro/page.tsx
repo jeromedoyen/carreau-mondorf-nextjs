@@ -5,6 +5,7 @@ import { estUtilisateurAutorise } from '@/lib/manifestations';
 import { getSaisonActive } from '@/lib/saisons';
 import { getMonNomBenevole, getMonTableauDeBordBenevole } from '@/lib/benevolat';
 import { getMonAdhesion } from '@/lib/moncaro';
+import { getParametresClub } from '@/lib/paiements';
 import { getMesStatistiquesD2, getStatistiquesPromotion } from '@/lib/stats';
 import { HeroAnimationMoncaro } from '@/components/HeroAnimationMoncaro';
 import { TableauDeBordMoncaro } from '@/components/TableauDeBordMoncaro';
@@ -32,9 +33,10 @@ export default async function MoncaroPage() {
   const supabase = await createClient();
   const saison = await getSaisonActive();
 
-  const [monNom, adhesion, benevolat, { data: ca }, { data: licencie }] = await Promise.all([
+  const [monNom, adhesion, parametres, benevolat, { data: ca }, { data: licencie }] = await Promise.all([
     getMonNomBenevole(),
     getMonAdhesion(supabase, saison),
+    getParametresClub().catch(() => null),
     getMonTableauDeBordBenevole().catch(() => null),
     supabase.rpc('est_membre_ca'),
     supabase.rpc('est_licencie', { p_saison: saison }),
@@ -63,6 +65,7 @@ export default async function MoncaroPage() {
       <TableauDeBordMoncaro
         saison={saison}
         adhesion={adhesion}
+        parametres={parametres}
         benevolat={benevolat}
         statsVisibles={statsVisibles}
         monNom={monNom}

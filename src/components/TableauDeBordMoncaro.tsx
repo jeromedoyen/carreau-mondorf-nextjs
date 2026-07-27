@@ -1,6 +1,8 @@
 import Link from 'next/link';
-import { CreditCard, HeartHandshake, Trophy, CheckCircle2, XCircle } from 'lucide-react';
+import { HeartHandshake, Trophy } from 'lucide-react';
+import { CarteCotisationMoncaro } from './CarteCotisationMoncaro';
 import type { MonAdhesion } from '@/lib/moncaro';
+import type { ParametresClub } from '@/lib/paiements';
 import type { TableauDeBordBenevole } from '@/lib/benevolat';
 import type { StatJoueurD2, StatistiquesPromotion } from '@/lib/types';
 
@@ -12,27 +14,10 @@ function sansAccents(s: string) {
     .toLowerCase();
 }
 
-function formatMontant(m: number | null) {
-  return m != null ? `${m.toFixed(2)} €` : null;
-}
-
-function LigneStatut({ payee, montant, label }: { payee: boolean | null; montant: number | null; label: string }) {
-  return (
-    <div className="flex items-center justify-between text-[13px]">
-      <span className="flex items-center gap-1.5 text-encre-douce">
-        {payee ? <CheckCircle2 size={14} className="text-succes" /> : <XCircle size={14} className="text-danger" />}
-        {label}
-      </span>
-      <span className={payee ? 'text-succes' : 'text-danger'}>
-        {payee ? `Payée${formatMontant(montant) ? ' · ' + formatMontant(montant) : ''}` : 'Non payée'}
-      </span>
-    </div>
-  );
-}
-
 export function TableauDeBordMoncaro({
   saison,
   adhesion,
+  parametres,
   benevolat,
   statsVisibles,
   monNom,
@@ -41,6 +26,7 @@ export function TableauDeBordMoncaro({
 }: {
   saison: string;
   adhesion: MonAdhesion | null;
+  parametres: ParametresClub | null;
   benevolat: TableauDeBordBenevole | null;
   statsVisibles: boolean;
   monNom: string | null;
@@ -52,29 +38,7 @@ export function TableauDeBordMoncaro({
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] sm:col-span-2">
-        <div className="mb-3 flex items-center gap-2">
-          <CreditCard size={16} className="text-pin" />
-          <h2 className="font-display text-[15px]">Ma cotisation — saison {saison}</h2>
-        </div>
-        {adhesion ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-[12.5px] text-encre-douce">
-              {adhesion.type}
-              {adhesion.categorie ? ` · ${adhesion.categorie}` : ''}
-            </p>
-            <LigneStatut payee={adhesion.cotisationPayee} montant={adhesion.cotisationMontant} label="Cotisation" />
-            {adhesion.type === 'Licencié' && (
-              <LigneStatut payee={adhesion.licencePayee} montant={adhesion.licenceMontant} label="Licence" />
-            )}
-          </div>
-        ) : (
-          <p className="text-[13px] text-encre-douce">
-            Aucune adhésion enregistrée pour cette saison à ton nom — contacte le comité si tu penses que c&apos;est
-            une erreur.
-          </p>
-        )}
-      </div>
+      <CarteCotisationMoncaro saison={saison} monNom={monNom} adhesion={adhesion} parametres={parametres} />
 
       <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
         <div className="mb-3 flex items-center gap-2">

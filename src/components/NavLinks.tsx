@@ -8,7 +8,6 @@ import { OutilsMenu } from './OutilsMenu';
 import { createClient } from '@/lib/supabase/client';
 
 export const LIENS_PRINCIPAUX = [
-  { href: '/moncaro', label: 'Moncaro' },
   { href: '/calendrier', label: 'Calendrier' },
   { href: '/manifestations', label: 'Manifestations' },
   { href: '/benevole', label: 'Bénévole' },
