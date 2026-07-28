@@ -12,8 +12,13 @@ import { createClient } from '@/lib/supabase/client';
  *  réapparaître partout, y compris là (26/07/2026 : bug signalé — un
  *  utilisateur qui se connectait retombait sur une page sans menu, la
  *  redirection post-connexion pointant vers "/"). "/connexion" reste
- *  toujours sans menu (ce n'est qu'une invitation à se connecter). */
-const PAGES_SANS_NAV_SI_ANONYME = ['/', '/club'];
+ *  toujours sans menu (ce n'est qu'une invitation à se connecter).
+ *  "/national-d2" ajouté le 28/07/2026 (demande Jérôme) pour pouvoir
+ *  partager le lien des résultats à l'extérieur du club (adversaires,
+ *  fédération, famille) sans exposer le reste de l'appli — le contenu de
+ *  la page est déjà public (lecture anonyme autorisée), seul le menu
+ *  invitait à explorer les pages réservées. */
+const PAGES_SANS_NAV_SI_ANONYME = ['/', '/club', '/national-d2'];
 const PAGES_TOUJOURS_SANS_NAV = ['/connexion'];
 
 /** Client Component pour lire usePathname/session sans forcer tout
