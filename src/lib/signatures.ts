@@ -1,4 +1,6 @@
 import { createClient } from './supabase/server';
+import { obtenirStatutEnveloppe } from './documenso';
+import { appliquerRecipientsDocumenso } from './signatureSync';
 
 export type Signataire = {
   id: number;
@@ -32,8 +34,31 @@ export async function getSignatairesCA(): Promise<{ email: string; nom: string }
   return data ?? [];
 }
 
+/** Sondage direct de Documenso pour chaque demande "en_cours" (28/07/2026,
+ *  demande Jérôme — alternative au webhook, indisponible sur l'édition
+ *  Community sans offre payante) : appelée à chaque chargement de
+ *  /outils/signatures, avant de lire les demandes, pour que le statut
+ *  affiché soit à jour sans que le CA ait à pointer "marqué signé" à la
+ *  main. Best-effort — une erreur Documenso pour une demande n'empêche pas
+ *  de traiter les autres ni d'afficher la page. */
+async function synchroniserStatutsSignature(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: enCours } = await supabase
+    .from('demandes_signature')
+    .select('id, fournisseur_signature_id')
+    .eq('statut', 'en_cours')
+    .eq('supprime', false)
+    .not('fournisseur_signature_id', 'is', null);
+
+  for (const demande of enCours ?? []) {
+    const statut = await obtenirStatutEnveloppe(demande.fournisseur_signature_id as string);
+    if (!statut) continue;
+    await appliquerRecipientsDocumenso(supabase, demande.id, statut.recipients);
+  }
+}
+
 export async function getDemandesSignature(): Promise<DemandeSignature[]> {
   const supabase = await createClient();
+  await synchroniserStatutsSignature(supabase);
   const { data, error } = await supabase
     .from('demandes_signature')
     .select(

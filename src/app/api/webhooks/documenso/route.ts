@@ -1,35 +1,24 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { appliquerRecipientsDocumenso, type RecipientDocumenso } from '@/lib/signatureSync';
 
-/** Webhook Documenso (28/07/2026, demande Jérôme) — jusqu'ici le suivi
- *  d'une signature était 100% manuel (le CA constatait dans Documenso puis
- *  cliquait "marquer signé" sur /outils/signatures). Documenso appelle
- *  cette route à chaque évènement (DOCUMENT_SENT, DOCUMENT_OPENED,
- *  DOCUMENT_SIGNED, DOCUMENT_COMPLETED, ...) avec l'état courant du
- *  document ET de tous ses destinataires — on se contente de resynchroniser
- *  `demandes_signature_signataires.signe_le` depuis ce que Documenso
- *  rapporte plutôt que de dépendre du nom exact de l'évènement, plus
- *  robuste si Documenso ajoute/renomme des évènements. Dès que tous les
- *  signataires d'une demande sont signés, la demande passe "complete"
- *  (même règle que marquerSignataireSigne côté action manuelle, gardée en
- *  place pour le cas où le CA préfère toujours pointer à la main).
+/** Webhook Documenso (28/07/2026, demande Jérôme) — conservé au cas où le
+ *  club passerait un jour sur une offre Documenso payante : les webhooks
+ *  ne sont pas disponibles sur l'édition Community auto-hébergée gratuite
+ *  (constaté en pratique le 28/07/2026), le mécanisme réellement actif
+ *  aujourd'hui est le sondage périodique dans getDemandesSignature() (cf.
+ *  src/lib/signatures.ts, src/lib/documenso.ts::obtenirStatutEnveloppe) —
+ *  même logique de mise à jour, partagée via appliquerRecipientsDocumenso
+ *  (src/lib/signatureSync.ts).
  *
- *  Authentification : à configurer côté Documenso (Paramètres → Webhooks)
- *  avec un "secret" partagé — on vérifie ici l'en-tête
- *  `X-Documenso-Secret` ET, au cas où Documenso l'enverrait plutôt dans le
- *  corps, un champ `secret` du payload. Route publique par nature (comme
- *  /api/cron/sauvegarde) : c'est ce secret, pas l'URL, qui protège l'accès.
+ *  Si un jour activé : Documenso appelle cette route à chaque évènement
+ *  (DOCUMENT_SENT, DOCUMENT_SIGNED, DOCUMENT_COMPLETED, ...) avec l'état
+ *  courant du document ET de tous ses destinataires — on resynchronise
+ *  depuis cet état plutôt que de dépendre du nom exact de l'évènement.
  *
- *  Pas de récupération automatique du PDF signé ici (endpoint de
- *  téléchargement Documenso non vérifié en pratique) — l'archivage reste
- *  un geste CA (enregistrerPdfSigne / archiverDansGoogleDrive sur
- *  /outils/signatures), seul le suivi de statut est automatisé. */
-
-type RecipientDocumenso = {
-  email?: string;
-  signingStatus?: string;
-  status?: string;
-  signedAt?: string | null;
-};
+ *  Authentification : secret partagé à configurer côté Documenso
+ *  (Paramètres → Webhooks), vérifié ici via l'en-tête `X-Documenso-Secret`
+ *  ou un champ `secret` du corps. Route publique par nature (comme
+ *  /api/cron/sauvegarde) : c'est ce secret, pas l'URL, qui protège l'accès. */
 
 function extraireRecipients(corps: unknown): RecipientDocumenso[] {
   const objet = corps as Record<string, unknown>;
@@ -43,10 +32,6 @@ function extraireDocumentId(corps: unknown): string | null {
   const payload = (objet?.payload as Record<string, unknown>) ?? objet;
   const id = payload?.id ?? payload?.documentId ?? payload?.envelopeId;
   return id === undefined || id === null ? null : String(id);
-}
-
-function estSigne(r: RecipientDocumenso): boolean {
-  return r.signingStatus === 'SIGNED' || r.status === 'SIGNED' || !!r.signedAt;
 }
 
 export async function POST(requete: Request) {
@@ -71,10 +56,7 @@ export async function POST(requete: Request) {
     return Response.json({ ok: true, ignore: true });
   }
 
-  const supabase = createServiceClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
-  );
+  const supabase = createServiceClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
   const { data: demande, error: errDemande } = await supabase
     .from('demandes_signature')
@@ -89,28 +71,7 @@ export async function POST(requete: Request) {
     return Response.json({ ok: true, deja_traite: true });
   }
 
-  for (const r of recipients) {
-    if (!r.email || !estSigne(r)) continue;
-    await supabase
-      .from('demandes_signature_signataires')
-      .update({ signe_le: r.signedAt ?? new Date().toISOString() })
-      .eq('demande_id', demande.id)
-      .eq('email', r.email)
-      .is('signe_le', null);
-  }
-
-  const { data: restants } = await supabase
-    .from('demandes_signature_signataires')
-    .select('id')
-    .eq('demande_id', demande.id)
-    .is('signe_le', null);
-
-  if (restants && restants.length === 0) {
-    await supabase
-      .from('demandes_signature')
-      .update({ statut: 'complete', complete_le: new Date().toISOString() })
-      .eq('id', demande.id);
-  }
+  await appliquerRecipientsDocumenso(supabase, demande.id, recipients);
 
   return Response.json({ ok: true });
 }

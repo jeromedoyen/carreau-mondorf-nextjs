@@ -136,3 +136,37 @@ export async function creerEnveloppe({
 
   return { envelopeId: String(envelopeId) };
 }
+
+/** Statut courant d'une enveloppe — sondage direct de l'API (28/07/2026,
+ *  demande Jérôme) plutôt qu'un webhook Documenso : les webhooks ne sont
+ *  pas disponibles sur l'édition Community auto-hébergée sans passer sur
+ *  une offre payante, cette route GET (même famille que /create et
+ *  /distribute) l'est. Retourne `null` si l'appel échoue plutôt que de
+ *  lever une erreur — utilisé au chargement de /outils/signatures, une
+ *  panne de l'API Documenso ne doit jamais empêcher d'afficher la page. */
+export async function obtenirStatutEnveloppe(
+  envelopeId: string
+): Promise<{ recipients: { email: string; signingStatus?: string; signedAt?: string | null }[] } | null> {
+  try {
+    const { url, token } = configuration();
+    const reponse = await fetch(`${url}/api/v2/envelope/${envelopeId}`, {
+      headers: { Authorization: token },
+      cache: 'no-store',
+    });
+    if (!reponse.ok) return null;
+
+    const donnees = await reponse.json();
+    const recipients = donnees?.recipients ?? donnees?.envelope?.recipients;
+    if (!Array.isArray(recipients)) return null;
+
+    return {
+      recipients: recipients.map((r: Record<string, unknown>) => ({
+        email: String(r.email ?? ''),
+        signingStatus: r.signingStatus as string | undefined,
+        signedAt: (r.signedAt as string | null | undefined) ?? null,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
