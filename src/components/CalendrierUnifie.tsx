@@ -98,11 +98,14 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
   const [moisAffiche, setMoisAffiche] = useState(moisCourant);
 
   const grille = useMemo(() => construireGrilleMois(moisAffiche, filtres), [moisAffiche, filtres]);
+  const [jourSelectionne, setJourSelectionne] = useState<string | null>(null);
+  const jourDetail = grille.find((j) => j.iso === jourSelectionne);
 
   function changerMois(delta: number) {
     const [a, m] = moisAffiche.split('-').map(Number);
     const d = new Date(a, m - 1 + delta, 1);
     setMoisAffiche(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    setJourSelectionne(null);
   }
 
   const groupes = useMemo(() => {
@@ -168,7 +171,10 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
               <ChevronLeft size={16} />
             </button>
             <button
-              onClick={() => setMoisAffiche(moisCourant)}
+              onClick={() => {
+                setMoisAffiche(moisCourant);
+                setJourSelectionne(null);
+              }}
               className="rounded-lg px-2 py-1 text-[11.5px] text-encre-douce hover:bg-sable"
             >
               Aujourd&apos;hui
@@ -189,31 +195,59 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
               {j}
             </div>
           ))}
-          {grille.map((jour) => (
-            <div
-              key={jour.iso}
-              className={`flex min-h-[52px] flex-col items-center gap-1 rounded-lg py-1.5 text-[12px] ${
-                jour.horsMois ? 'text-encre-douce/30' : 'text-encre'
-              } ${jour.iso === aujourdhui ? 'bg-terracotta/10 font-semibold text-terracotta' : ''}`}
-            >
-              {jour.numero}
-              {jour.evenements.length > 0 && (
-                <div className="flex flex-wrap items-center justify-center gap-[3px]">
-                  {jour.evenements.slice(0, 3).map((e, i) => (
-                    <span
-                      key={i}
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ background: couleurCategorie(e.categorie) }}
-                    />
-                  ))}
-                  {jour.evenements.length > 3 && (
-                    <span className="text-[9px] text-encre-douce">+{jour.evenements.length - 3}</span>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+          {grille.map((jour) => {
+            // Jours passés : le numéro reste visible (contexte de la grille),
+            // mais pas les pastilles d'événement — retour Jérôme (enregistrement
+            // audio, 28/07/2026) : "ne fait pas apparaître les événements qui
+            // sont déjà passés" dans le calendrier.
+            const passe = jour.iso < aujourdhui;
+            const cliquable = jour.evenements.length > 0 && !passe;
+            return (
+              <button
+                key={jour.iso}
+                type="button"
+                onClick={() => cliquable && setJourSelectionne((prev) => (prev === jour.iso ? null : jour.iso))}
+                disabled={!cliquable}
+                className={`flex min-h-[52px] flex-col items-center gap-1 rounded-lg py-1.5 text-[12px] transition-colors ${
+                  jour.horsMois ? 'text-encre-douce/30' : passe ? 'text-encre-douce/50' : 'text-encre'
+                } ${jour.iso === aujourdhui ? 'bg-terracotta/10 font-semibold text-terracotta' : ''} ${
+                  jourSelectionne === jour.iso ? 'ring-1 ring-terracotta' : ''
+                } ${cliquable ? 'cursor-pointer hover:bg-sable' : 'cursor-default'}`}
+              >
+                {jour.numero}
+                {!passe && jour.evenements.length > 0 && (
+                  <div className="flex flex-wrap items-center justify-center gap-[3px]">
+                    {jour.evenements.slice(0, 3).map((e, i) => (
+                      <span
+                        key={i}
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ background: couleurCategorie(e.categorie) }}
+                      />
+                    ))}
+                    {jour.evenements.length > 3 && (
+                      <span className="text-[9px] text-encre-douce">+{jour.evenements.length - 3}</span>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
+
+        {jourDetail && jourDetail.evenements.length > 0 && (
+          <div className="mt-3 flex flex-col gap-1.5 rounded-xl border border-ligne bg-sable px-3 py-2.5">
+            <span className="text-[11px] font-medium text-encre-douce">
+              {new Date(jourDetail.iso + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </span>
+            {jourDetail.evenements.map((e, i) => (
+              <div key={i} className="flex items-center gap-2 text-[12.5px]">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: couleurCategorie(e.categorie) }} />
+                <span className="font-medium text-encre">{e.titre}</span>
+                <span className="text-encre-douce">— {e.categorie}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {groupes.length === 0 ? (
