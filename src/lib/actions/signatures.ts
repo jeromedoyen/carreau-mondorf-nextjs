@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { creerEnveloppe } from '@/lib/documenso';
+import { creerEnveloppe, telechargerDocumentSigne } from '@/lib/documenso';
 import { televerserVersDrive } from '@/lib/googleDrive';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
@@ -196,6 +196,72 @@ export async function archiverDansGoogleDrive(demandeId: number): Promise<Result
     .download(demande.chemin_storage_signe);
   if (errTelechargement || !fichier) {
     return { ok: false, error: `Impossible de récupérer le PDF signé : ${errTelechargement?.message}` };
+  }
+
+  try {
+    const { fileId } = await televerserVersDrive({
+      nomFichier: `${document?.titre ?? 'document'} - signé.pdf`,
+      pdfBuffer: Buffer.from(await fichier.arrayBuffer()),
+    });
+    await supabase.from('demandes_signature').update({ google_drive_file_id: fileId }).eq('id', demandeId);
+  } catch (e) {
+    return { ok: false, error: `Échec de l'envoi vers Google Drive : ${(e as Error).message}` };
+  }
+
+  revalidatePath('/outils/signatures');
+  return { ok: true };
+}
+
+/** Bouton unique "Récupérer et archiver" (28/07/2026, demande Jérôme) —
+ *  pour une demande passée "complete" via la synchronisation automatique
+ *  (getDemandesSignature) plutôt que via un pointage manuel signataire par
+ *  signataire, aucun PDF signé n'a encore été enregistré. Ce geste,
+ *  déclenché par une seule validation du CA, enchaîne : téléchargement du
+ *  PDF signé depuis Documenso (telechargerDocumentSigne), stockage dans
+ *  Supabase Storage, puis archivage dans Google Drive — équivalent à
+ *  enregistrerPdfSigne + archiverDansGoogleDrive combinés, sans repasser
+ *  par un upload manuel côté navigateur. */
+export async function recupererEtArchiverSignature(demandeId: number): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+
+  const { data: demande, error: errDemande } = await supabase
+    .from('demandes_signature')
+    .select('id, statut, fournisseur_signature_id, chemin_storage_signe, documents(titre)')
+    .eq('id', demandeId)
+    .single();
+  if (errDemande || !demande) return { ok: false, error: errDemande?.message ?? 'Demande introuvable.' };
+  if (demande.statut !== 'complete') return { ok: false, error: "Cette demande n'est pas encore complète." };
+
+  let cheminStorageSigne = demande.chemin_storage_signe as string | null;
+
+  if (!cheminStorageSigne) {
+    if (!demande.fournisseur_signature_id) {
+      return { ok: false, error: 'Aucune enveloppe Documenso associée à cette demande.' };
+    }
+    try {
+      const pdfBuffer = await telechargerDocumentSigne(demande.fournisseur_signature_id as string);
+      cheminStorageSigne = `signe-${demandeId}-${Date.now()}.pdf`;
+      const { error: errUpload } = await supabase.storage
+        .from('documents-signature')
+        .upload(cheminStorageSigne, pdfBuffer, { contentType: 'application/pdf' });
+      if (errUpload) return { ok: false, error: `Échec du stockage : ${errUpload.message}` };
+
+      await supabase
+        .from('demandes_signature')
+        .update({ chemin_storage_signe: cheminStorageSigne })
+        .eq('id', demandeId);
+    } catch (e) {
+      return { ok: false, error: `Échec de la récupération depuis Documenso : ${(e as Error).message}` };
+    }
+  }
+
+  const document = Array.isArray(demande.documents) ? demande.documents[0] : demande.documents;
+  const { data: fichier, error: errTelechargement } = await supabase.storage
+    .from('documents-signature')
+    .download(cheminStorageSigne);
+  if (errTelechargement || !fichier) {
+    return { ok: false, error: `Impossible de relire le PDF stocké : ${errTelechargement?.message}` };
   }
 
   try {

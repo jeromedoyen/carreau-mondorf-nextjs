@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Check, X, Download, Upload, FolderUp, ExternalLink, Trash2 } from 'lucide-react';
+import { Send, Check, X, Download, Upload, FolderUp, FileDown, ExternalLink, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
   envoyerDemandeSignature,
@@ -11,6 +11,7 @@ import {
   annulerDemandeSignature,
   obtenirUrlDocument,
   archiverDansGoogleDrive,
+  recupererEtArchiverSignature,
   supprimerDemandeSignature,
 } from '@/lib/actions/signatures';
 import type { DemandeSignature } from '@/lib/signatures';
@@ -92,6 +93,15 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
     setErreur(null);
     setEnCours(id);
     const resultat = await archiverDansGoogleDrive(id);
+    setEnCours(null);
+    if (!resultat.ok) setErreur({ id, message: resultat.error });
+    router.refresh();
+  }
+
+  async function recupererEtArchiver(id: number) {
+    setErreur(null);
+    setEnCours(id);
+    const resultat = await recupererEtArchiverSignature(id);
     setEnCours(null);
     if (!resultat.ok) setErreur({ id, message: resultat.error });
     router.refresh();
@@ -228,6 +238,18 @@ export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignatur
                     </button>
                   )}
                 </div>
+              )}
+
+              {d.statut === 'complete' && !d.cheminStorageSigne && (
+                <button
+                  type="button"
+                  onClick={() => recupererEtArchiver(d.id)}
+                  disabled={enCours === d.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-succes/15 px-3 py-1.5 text-[12.5px] font-medium text-succes hover:opacity-80 disabled:opacity-40"
+                >
+                  <FileDown size={13} />
+                  {enCours === d.id ? 'Récupération…' : 'Récupérer et archiver'}
+                </button>
               )}
             </div>
           </div>

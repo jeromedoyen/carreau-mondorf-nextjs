@@ -137,6 +137,40 @@ export async function creerEnveloppe({
   return { envelopeId: String(envelopeId) };
 }
 
+/** Télécharge le PDF signé final d'une enveloppe complète (28/07/2026,
+ *  demande Jérôme — endpoint découvert via /api/v2/openapi.json, aucune
+ *  doc publique ne le mentionnait) : il faut d'abord relire l'enveloppe
+ *  pour retrouver l'`envelopeItemId` (pas stocké en base, seul
+ *  `envelopeId` l'est), puis appeler
+ *  `/api/v2/envelope/item/{envelopeItemId}/download` qui renvoie
+ *  directement le PDF (pas de JSON intermédiaire). Suppose une enveloppe à
+ *  un seul document, cohérent avec creerEnveloppe() qui n'en envoie
+ *  jamais qu'un. */
+export async function telechargerDocumentSigne(envelopeId: string): Promise<Buffer> {
+  const { url, token } = configuration();
+
+  const reponseEnveloppe = await fetch(`${url}/api/v2/envelope/${envelopeId}`, {
+    headers: { Authorization: token },
+    cache: 'no-store',
+  });
+  if (!reponseEnveloppe.ok) {
+    throw new Error(`Impossible de relire l'enveloppe (${reponseEnveloppe.status}).`);
+  }
+  const enveloppe = await reponseEnveloppe.json();
+  const envelopeItemId = enveloppe?.envelopeItems?.[0]?.id;
+  if (!envelopeItemId) throw new Error("Aucun document trouvé dans l'enveloppe.");
+
+  const reponseTelechargement = await fetch(`${url}/api/v2/envelope/item/${envelopeItemId}/download`, {
+    headers: { Authorization: token },
+    cache: 'no-store',
+  });
+  if (!reponseTelechargement.ok) {
+    throw new Error(`Échec du téléchargement du PDF signé (${reponseTelechargement.status}).`);
+  }
+
+  return Buffer.from(await reponseTelechargement.arrayBuffer());
+}
+
 /** Statut courant d'une enveloppe — sondage direct de l'API (28/07/2026,
  *  demande Jérôme) plutôt qu'un webhook Documenso : les webhooks ne sont
  *  pas disponibles sur l'édition Community auto-hébergée sans passer sur
