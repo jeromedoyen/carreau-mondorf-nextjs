@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Home, Plane, MapPin } from 'lucide-react';
+import { Home, Plane, MapPin, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ItemCalendrier } from '@/lib/data';
 
 const COULEUR_CATEGORIE: Record<string, string> = {
@@ -37,9 +37,41 @@ function formatMois(iso: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-/** Filtre par catégorie + liste chronologique groupée par mois — pas de
- *  survol requis pour lire une info (principe déjà appliqué au graphique de
- *  classement, cf. ClassementBars.tsx). */
+const JOURS_SEMAINE = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
+
+/** Grille mensuelle (28/07/2026, retour Jérôme en session : "j'ai besoin de
+ *  voir un calendrier... mais avoir aussi le calendrier qui s'adapte au
+ *  filtre qu'on a appliqué") — construite à partir du même `filtres` que la
+ *  liste chronologique juste en dessous, jamais recalculée séparément. */
+function construireGrilleMois(anneeMois: string, items: ItemCalendrier[]) {
+  const [annee, mois] = anneeMois.split('-').map(Number);
+  const premierDuMois = new Date(annee, mois - 1, 1);
+  // Lundi = 0 (convention FR) plutôt que dimanche = 0 (JS natif).
+  const decalage = (premierDuMois.getDay() + 6) % 7;
+  const debutGrille = new Date(annee, mois - 1, 1 - decalage);
+
+  const parJour = new Map<string, ItemCalendrier[]>();
+  items.forEach((i) => {
+    if (!parJour.has(i.date)) parJour.set(i.date, []);
+    parJour.get(i.date)!.push(i);
+  });
+
+  return Array.from({ length: 42 }, (_, idx) => {
+    const jour = new Date(debutGrille);
+    jour.setDate(debutGrille.getDate() + idx);
+    const iso = jour.toISOString().slice(0, 10);
+    return {
+      iso,
+      numero: jour.getDate(),
+      horsMois: jour.getMonth() !== mois - 1,
+      evenements: parJour.get(iso) ?? [],
+    };
+  });
+}
+
+/** Filtre par catégorie + calendrier en grille + liste chronologique
+ *  groupée par mois — pas de survol requis pour lire une info (principe
+ *  déjà appliqué au graphique de classement, cf. ClassementBars.tsx). */
 export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
   const categories = useMemo(
     () => Array.from(new Set(items.map((i) => i.categorie))),
@@ -56,10 +88,22 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
     });
   };
 
+  const reinitialiserFiltres = () => setActives(new Set(categories));
+  const filtresActifs = actives.size !== categories.length;
+
   const filtres = items.filter((i) => actives.has(i.categorie));
 
   const aujourdhui = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const moisCourant = aujourdhui.slice(0, 7); // yyyy-mm
+  const [moisAffiche, setMoisAffiche] = useState(moisCourant);
+
+  const grille = useMemo(() => construireGrilleMois(moisAffiche, filtres), [moisAffiche, filtres]);
+
+  function changerMois(delta: number) {
+    const [a, m] = moisAffiche.split('-').map(Number);
+    const d = new Date(a, m - 1 + delta, 1);
+    setMoisAffiche(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
 
   const groupes = useMemo(() => {
     const map = new Map<string, ItemCalendrier[]>();
@@ -79,7 +123,7 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {categories.map((cat) => {
           const active = actives.has(cat);
           return (
@@ -101,6 +145,75 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
             </button>
           );
         })}
+        {filtresActifs && (
+          <button
+            onClick={reinitialiserFiltres}
+            className="ml-1 flex items-center gap-1.5 rounded-full border border-ligne px-3 py-1 text-[12px] text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta"
+          >
+            <RotateCcw size={12} />
+            Réinitialiser les filtres
+          </button>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-ligne bg-sable-carte p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-display text-lg italic text-encre">{formatMois(`${moisAffiche}-01`)}</h3>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => changerMois(-1)}
+              aria-label="Mois précédent"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-encre-douce hover:bg-sable"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setMoisAffiche(moisCourant)}
+              className="rounded-lg px-2 py-1 text-[11.5px] text-encre-douce hover:bg-sable"
+            >
+              Aujourd&apos;hui
+            </button>
+            <button
+              onClick={() => changerMois(1)}
+              aria-label="Mois suivant"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-encre-douce hover:bg-sable"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1">
+          {JOURS_SEMAINE.map((j) => (
+            <div key={j} className="pb-1 text-center text-[10.5px] font-medium uppercase tracking-wide text-encre-douce/70">
+              {j}
+            </div>
+          ))}
+          {grille.map((jour) => (
+            <div
+              key={jour.iso}
+              className={`flex min-h-[52px] flex-col items-center gap-1 rounded-lg py-1.5 text-[12px] ${
+                jour.horsMois ? 'text-encre-douce/30' : 'text-encre'
+              } ${jour.iso === aujourdhui ? 'bg-terracotta/10 font-semibold text-terracotta' : ''}`}
+            >
+              {jour.numero}
+              {jour.evenements.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-[3px]">
+                  {jour.evenements.slice(0, 3).map((e, i) => (
+                    <span
+                      key={i}
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: couleurCategorie(e.categorie) }}
+                    />
+                  ))}
+                  {jour.evenements.length > 3 && (
+                    <span className="text-[9px] text-encre-douce">+{jour.evenements.length - 3}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {groupes.length === 0 ? (
