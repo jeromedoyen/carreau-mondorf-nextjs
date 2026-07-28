@@ -6,7 +6,7 @@
 
 ## Concepts transverses (à connaître avant les pages)
 
-**CA / comité** — "CA" signifie Conseil d'Administration, jamais autre chose. Un accès "CA" est déterminé par la table `acces` (colonnes `est_ca` ou `est_admin`), indépendamment du registre des membres.
+**CA / comité** — Dans ce document et dans toute l'application, le sigle **"CA" signifie exclusivement "Conseil d'Administration"** (le comité directeur du club). **Ce n'est jamais une abréviation de "Canada"**, ni de rien d'autre — aucune des pages, tables ou fonctionnalités décrites ci-dessous n'a de rapport avec un pays. Un accès "CA" est déterminé par la table `acces` (colonnes `est_ca` ou `est_admin`), indépendamment du registre des membres.
 
 **Saison active** — Une seule saison est marquée "active" à la fois (page `/saisons`). Elle détermine par défaut ce qui s'affiche sur Compétition, Manifestations, Congés, Membres, etc. Changer de saison affichée sur une page ne change pas la saison active du site.
 
