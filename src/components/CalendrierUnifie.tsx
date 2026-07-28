@@ -77,7 +77,10 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
     () => Array.from(new Set(items.map((i) => i.categorie))),
     [items]
   );
-  const [actives, setActives] = useState<Set<string>>(new Set(categories));
+  // Rien de sélectionné au départ (retour Jérôme, 28/07/2026) : la page
+  // n'affiche donc rien tant qu'on n'a pas choisi au moins une catégorie —
+  // "réinitialiser" ramène à ce même état vide, pas à "tout sélectionné".
+  const [actives, setActives] = useState<Set<string>>(new Set());
 
   const toggle = (cat: string) => {
     setActives((prev) => {
@@ -88,8 +91,8 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
     });
   };
 
-  const reinitialiserFiltres = () => setActives(new Set(categories));
-  const filtresActifs = actives.size !== categories.length;
+  const reinitialiserFiltres = () => setActives(new Set());
+  const filtresActifs = actives.size > 0;
 
   const filtres = items.filter((i) => actives.has(i.categorie));
 
@@ -112,16 +115,11 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
     const map = new Map<string, ItemCalendrier[]>();
     filtres.forEach((i) => {
       const cle = i.date.slice(0, 7); // yyyy-mm
+      if (cle < moisCourant) return; // mois à venir uniquement (retour Jérôme, 28/07/2026)
       if (!map.has(cle)) map.set(cle, []);
       map.get(cle)!.push(i);
     });
-    // Réordonne du mois en cours à décembre, puis janvier au mois précédent
-    // le mois en cours — plutôt que janvier -> décembre chronologique brut,
-    // pour que la saison en cours démarre en haut de page.
-    return Array.from(map.entries()).sort(([a], [b]) => {
-      const rang = (cle: string) => (cle >= moisCourant ? cle : `9${cle}`);
-      return rang(a).localeCompare(rang(b));
-    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [filtres, moisCourant]);
 
   return (
@@ -159,149 +157,158 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
         )}
       </div>
 
-      <div className="rounded-2xl border border-ligne bg-sable-carte p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-display text-lg italic text-encre">{formatMois(`${moisAffiche}-01`)}</h3>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => changerMois(-1)}
-              aria-label="Mois précédent"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-encre-douce hover:bg-sable"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => {
-                setMoisAffiche(moisCourant);
-                setJourSelectionne(null);
-              }}
-              className="rounded-lg px-2 py-1 text-[11.5px] text-encre-douce hover:bg-sable"
-            >
-              Aujourd&apos;hui
-            </button>
-            <button
-              onClick={() => changerMois(1)}
-              aria-label="Mois suivant"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-encre-douce hover:bg-sable"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-7 gap-1">
-          {JOURS_SEMAINE.map((j) => (
-            <div key={j} className="pb-1 text-center text-[10.5px] font-medium uppercase tracking-wide text-encre-douce/70">
-              {j}
-            </div>
-          ))}
-          {grille.map((jour) => {
-            // Jours passés : le numéro reste visible (contexte de la grille),
-            // mais pas les pastilles d'événement — retour Jérôme (enregistrement
-            // audio, 28/07/2026) : "ne fait pas apparaître les événements qui
-            // sont déjà passés" dans le calendrier.
-            const passe = jour.iso < aujourdhui;
-            const cliquable = jour.evenements.length > 0 && !passe;
-            return (
-              <button
-                key={jour.iso}
-                type="button"
-                onClick={() => cliquable && setJourSelectionne((prev) => (prev === jour.iso ? null : jour.iso))}
-                disabled={!cliquable}
-                className={`flex min-h-[52px] flex-col items-center gap-1 rounded-lg py-1.5 text-[12px] transition-colors ${
-                  jour.horsMois ? 'text-encre-douce/30' : passe ? 'text-encre-douce/50' : 'text-encre'
-                } ${jour.iso === aujourdhui ? 'bg-terracotta/10 font-semibold text-terracotta' : ''} ${
-                  jourSelectionne === jour.iso ? 'ring-1 ring-terracotta' : ''
-                } ${cliquable ? 'cursor-pointer hover:bg-sable' : 'cursor-default'}`}
-              >
-                {jour.numero}
-                {!passe && jour.evenements.length > 0 && (
-                  <div className="flex flex-wrap items-center justify-center gap-[3px]">
-                    {jour.evenements.slice(0, 3).map((e, i) => (
-                      <span
-                        key={i}
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ background: couleurCategorie(e.categorie) }}
-                      />
-                    ))}
-                    {jour.evenements.length > 3 && (
-                      <span className="text-[9px] text-encre-douce">+{jour.evenements.length - 3}</span>
-                    )}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {jourDetail && jourDetail.evenements.length > 0 && (
-          <div className="mt-3 flex flex-col gap-1.5 rounded-xl border border-ligne bg-sable px-3 py-2.5">
-            <span className="text-[11px] font-medium text-encre-douce">
-              {new Date(jourDetail.iso + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </span>
-            {jourDetail.evenements.map((e, i) => (
-              <div key={i} className="flex items-center gap-2 text-[12.5px]">
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: couleurCategorie(e.categorie) }} />
-                <span className="font-medium text-encre">{e.titre}</span>
-                <span className="text-encre-douce">— {e.categorie}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {groupes.length === 0 ? (
+      {actives.size === 0 ? (
         <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce">
-          Aucun événement pour les catégories sélectionnées.
+          Choisis au moins une catégorie ci-dessus pour afficher les événements.
         </div>
       ) : (
-        <div className="flex flex-col gap-7">
-          {groupes.map(([mois, evenements]) => (
-            <div key={mois}>
-              <h3 className="font-display mb-3 text-lg italic text-encre-douce">
-                {formatMois(evenements[0].date)}
-              </h3>
-              <div className="rounded-2xl border border-ligne bg-sable-carte shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-                {evenements.map((e, i) => {
-                  const passe = e.date < aujourdhui;
-                  return (
-                  <div
-                    key={`${e.date}-${e.titre}-${i}`}
-                    className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-ligne px-5 py-3 text-[13.5px] first:border-t-0 hover:bg-sable/60 ${
-                      passe ? 'opacity-45' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="font-score w-9 shrink-0 text-encre-douce/70">
-                        {formatDate(e.date)}
-                      </span>
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ background: couleurCategorie(e.categorie) }}
-                      />
-                      <span className="font-medium text-encre">{e.titre}</span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3 text-[12px] text-encre-douce">
-                      {e.lieu && (
-                        <span className="flex items-center gap-1">
-                          <MapPin size={12} />
-                          {e.lieu}
-                        </span>
-                      )}
-                      {e.domicile !== null &&
-                        (e.domicile ? (
-                          <Home size={14} className="text-pin" />
-                        ) : (
-                          <Plane size={14} className="text-encre-douce/50" />
-                        ))}
-                    </div>
+        <>
+          {groupes.length === 0 ? (
+            <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce">
+              Aucun événement à venir pour les catégories sélectionnées.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-7">
+              {groupes.map(([mois, evenements]) => (
+                <div key={mois}>
+                  <h3 className="font-display mb-3 text-lg italic text-encre-douce">
+                    {formatMois(evenements[0].date)}
+                  </h3>
+                  <div className="rounded-2xl border border-ligne bg-sable-carte shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+                    {evenements.map((e, i) => {
+                      const passe = e.date < aujourdhui;
+                      return (
+                      <div
+                        key={`${e.date}-${e.titre}-${i}`}
+                        className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-ligne px-5 py-3 text-[13.5px] first:border-t-0 hover:bg-sable/60 ${
+                          passe ? 'opacity-45' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-score w-9 shrink-0 text-encre-douce/70">
+                            {formatDate(e.date)}
+                          </span>
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ background: couleurCategorie(e.categorie) }}
+                          />
+                          <span className="font-medium text-encre">{e.titre}</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3 text-[12px] text-encre-douce">
+                          {e.lieu && (
+                            <span className="flex items-center gap-1">
+                              <MapPin size={12} />
+                              {e.lieu}
+                            </span>
+                          )}
+                          {e.domicile !== null &&
+                            (e.domicile ? (
+                              <Home size={14} className="text-pin" />
+                            ) : (
+                              <Plane size={14} className="text-encre-douce/50" />
+                            ))}
+                        </div>
+                      </div>
+                      );
+                    })}
                   </div>
-                  );
-                })}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-ligne bg-sable-carte p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-display text-lg italic text-encre">{formatMois(`${moisAffiche}-01`)}</h3>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => changerMois(-1)}
+                  disabled={moisAffiche <= moisCourant}
+                  aria-label="Mois précédent"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-encre-douce hover:bg-sable disabled:opacity-30 disabled:hover:bg-transparent"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={() => {
+                    setMoisAffiche(moisCourant);
+                    setJourSelectionne(null);
+                  }}
+                  className="rounded-lg px-2 py-1 text-[11.5px] text-encre-douce hover:bg-sable"
+                >
+                  Aujourd&apos;hui
+                </button>
+                <button
+                  onClick={() => changerMois(1)}
+                  aria-label="Mois suivant"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-encre-douce hover:bg-sable"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {JOURS_SEMAINE.map((j) => (
+                <div key={j} className="pb-1 text-center text-[10.5px] font-medium uppercase tracking-wide text-encre-douce/70">
+                  {j}
+                </div>
+              ))}
+              {grille.map((jour) => {
+                // Jours passés : le numéro reste visible (contexte de la grille),
+                // mais pas les pastilles d'événement — retour Jérôme (enregistrement
+                // audio, 28/07/2026) : "ne fait pas apparaître les événements qui
+                // sont déjà passés" dans le calendrier.
+                const passe = jour.iso < aujourdhui;
+                const cliquable = jour.evenements.length > 0 && !passe;
+                return (
+                  <button
+                    key={jour.iso}
+                    type="button"
+                    onClick={() => cliquable && setJourSelectionne((prev) => (prev === jour.iso ? null : jour.iso))}
+                    disabled={!cliquable}
+                    className={`flex min-h-[52px] flex-col items-center gap-1 rounded-lg py-1.5 text-[12px] transition-colors ${
+                      jour.horsMois ? 'text-encre-douce/30' : passe ? 'text-encre-douce/50' : 'text-encre'
+                    } ${jour.iso === aujourdhui ? 'bg-terracotta/10 font-semibold text-terracotta' : ''} ${
+                      jourSelectionne === jour.iso ? 'ring-1 ring-terracotta' : ''
+                    } ${cliquable ? 'cursor-pointer hover:bg-sable' : 'cursor-default'}`}
+                  >
+                    {jour.numero}
+                    {!passe && jour.evenements.length > 0 && (
+                      <div className="flex flex-wrap items-center justify-center gap-[3px]">
+                        {jour.evenements.slice(0, 3).map((e, i) => (
+                          <span
+                            key={i}
+                            className="h-1.5 w-1.5 rounded-full"
+                            style={{ background: couleurCategorie(e.categorie) }}
+                          />
+                        ))}
+                        {jour.evenements.length > 3 && (
+                          <span className="text-[9px] text-encre-douce">+{jour.evenements.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {jourDetail && jourDetail.evenements.length > 0 && (
+              <div className="mt-3 flex flex-col gap-1.5 rounded-xl border border-ligne bg-sable px-3 py-2.5">
+                <span className="text-[11px] font-medium text-encre-douce">
+                  {new Date(jourDetail.iso + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </span>
+                {jourDetail.evenements.map((e, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[12.5px]">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: couleurCategorie(e.categorie) }} />
+                    <span className="font-medium text-encre">{e.titre}</span>
+                    <span className="text-encre-douce">— {e.categorie}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
