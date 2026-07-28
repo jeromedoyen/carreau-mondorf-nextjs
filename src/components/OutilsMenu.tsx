@@ -15,6 +15,7 @@ const SOUS_MENU = [
   { href: '/outils/renouvellement', label: 'Renouvellement' },
   { href: '/outils/fiches-membres', label: 'Fiches membres' },
   { href: '/outils/statistiques-benevoles', label: 'Statistiques bénévoles' },
+  { href: '/outils/assistant-questions', label: 'Questions posées à Caro' },
   { href: '/outils/journal', label: 'Journal des actions' },
   { href: '/outils/signatures', label: 'Signatures électroniques' },
 ];

@@ -21,9 +21,18 @@ import {
   CloudLightning,
   CloudFog,
   Droplets,
+  Mail,
 } from 'lucide-react';
 import { obtenirAccueilAssistant, type AccueilAssistant } from '@/lib/actions/assistant';
 import type { Meteo } from '@/lib/meteo';
+import { CLUB } from '@/lib/club';
+
+const QUESTIONS_SUGGEREES = [
+  'Comment payer ma cotisation ?',
+  'Où voir le calendrier des matchs ?',
+  'Comment me proposer comme bénévole ?',
+  'Où voir mon statut de licencié ?',
+];
 
 // L'API de reconnaissance vocale n'a pas de types dans lib.dom.d.ts — on ne
 // déclare que ce dont on se sert réellement (28/07/2026, demande Jérôme :
@@ -153,8 +162,11 @@ export function AssistantChat() {
   const voixRef = useRef<SpeechSynthesisVoice | null>(null);
   const accueilDejaCharge = useRef(false);
 
+  const [erreur, setErreur] = useState<string | null>(null);
+
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: '/api/assistant' }),
+    onError: (err) => setErreur(err.message || "Une erreur s'est produite, réessaie dans un instant."),
   });
   const enCours = status === 'submitted' || status === 'streaming';
 
@@ -198,8 +210,15 @@ export function AssistantChat() {
   function envoyer(e: React.FormEvent) {
     e.preventDefault();
     if (!saisie.trim() || enCours) return;
+    setErreur(null);
     sendMessage({ text: saisie.trim() });
     setSaisie('');
+  }
+
+  function envoyerSuggestion(question: string) {
+    if (enCours) return;
+    setErreur(null);
+    sendMessage({ text: question });
   }
 
   function basculerEcoute() {
@@ -300,6 +319,18 @@ export function AssistantChat() {
                   Je n&apos;ai pas accès aux données du club (paiements, membres...), pour ça direction{' '}
                   <span className="font-medium text-encre">Mon Caro</span> ou le comité.
                 </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUESTIONS_SUGGEREES.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => envoyerSuggestion(q)}
+                      className="rounded-full border border-ligne bg-white px-2.5 py-1 text-[11.5px] text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             <div className="flex flex-col gap-2.5">
@@ -324,8 +355,21 @@ export function AssistantChat() {
                 </div>
               ))}
               {enCours && <div className="max-w-[85%] rounded-xl bg-sable px-3 py-2 text-[12.5px] text-encre-douce">…</div>}
+              {erreur && (
+                <div className="max-w-[90%] rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-[12px] text-danger">
+                  {erreur}
+                </div>
+              )}
             </div>
           </div>
+
+          <a
+            href={`mailto:${CLUB.email}`}
+            className="flex items-center justify-center gap-1.5 border-t border-ligne py-1.5 text-[11px] text-encre-douce transition-colors hover:text-terracotta"
+          >
+            <Mail size={11} />
+            Contacter le comité directement
+          </a>
 
           <form onSubmit={envoyer} className="flex items-center gap-2 border-t border-ligne p-2.5">
             {micDisponible && (
