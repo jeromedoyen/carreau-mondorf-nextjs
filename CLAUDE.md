@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Read `CONTEXTE_PROJET.md` in full — it is the authoritative, actively-maintained session log for this project: why it exists, what's been built, open issues, and design decisions. More current than this file for anything project-state-related. Update it at the end of any session that changes app behavior, data, or leaves work unfinished.
 
+Also maintain `BASE_CONNAISSANCE_FONCTIONNALITES.md` (28/07/2026, demande Jérôme — "il me semble que c'est un document important") — a page-by-page, feature-by-feature reference doc, structured for two uses: writing a user guide, and giving the Caro assistant (`src/lib/assistantPrompt.ts`) grounding to answer "what does this feature do" questions. **Whenever you add, remove, or meaningfully change a page/route or a CA tool**, update the corresponding entry in this file in the same session — don't let it drift out of sync with the actual app, that defeats its purpose as a RAG-ready source of truth.
+
 ## Project
 
 A from-scratch Next.js reconstruction of the "Compétition" module of `carreau-mondorf-app` (a Google Apps Script club-management webapp for Carreau Boules et Pétanque Mondorf a.s.b.l., a Luxembourg pétanque club). Built to prove that the same business logic can run with far better performance and a much stronger visual identity than Apps Script allows.
