@@ -106,6 +106,18 @@ function rendreTexteAvecLiens(texte: string, cleBase: string) {
   return morceaux;
 }
 
+/** Retire la syntaxe Markdown avant la lecture vocale (28/07/2026, retour
+ *  Jérôme : "elle ne doit pas lire étoile étoile" — le modèle répond
+ *  parfois en **gras**, la synthèse vocale lisait les astérisques mot à
+ *  mot). Garde le texte des liens, retire tout le reste. */
+function nettoyerPourLecture(texte: string): string {
+  return texte
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // liens -> texte du lien
+    .replace(/[*_`#~]+/g, '') // gras/italique/code/titres/barré
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Choisit la voix française la plus "naturelle" disponible dans le
  *  navigateur (28/07/2026, retour Jérôme : la voix par défaut est trop
  *  robotique) — les voix "Google français"/"Natural" sonnent nettement
@@ -169,11 +181,9 @@ export function AssistantChat() {
     if (!lectureVocale || status !== 'ready') return;
     const dernier = messages[messages.length - 1];
     if (!dernier || dernier.role !== 'assistant' || dernier.id === dernierMessageLuRef.current) return;
-    const texte = dernier.parts
-      .map((p) => (p.type === 'text' ? p.text : ''))
-      .join(' ')
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-      .trim();
+    const texte = nettoyerPourLecture(
+      dernier.parts.map((p) => (p.type === 'text' ? p.text : '')).join(' ')
+    );
     if (!texte) return;
     dernierMessageLuRef.current = dernier.id;
     const utterance = new SpeechSynthesisUtterance(texte);
