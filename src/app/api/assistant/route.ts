@@ -14,6 +14,7 @@ import { PROMPT_SYSTEME_ASSISTANT } from '@/lib/assistantPrompt';
 import { getMeteoDuJour } from '@/lib/meteo';
 import { getSaisonActive } from '@/lib/saisons';
 import { createClient } from '@/lib/supabase/server';
+import { chargerBaseConnaissance } from '@/lib/baseConnaissance';
 
 const LIMITE_MESSAGES_PAR_JOUR = 40;
 
@@ -44,7 +45,14 @@ function texteDernierMessageUtilisateur(messages: UIMessage[]): string {
  *  security definer déjà existantes pour Mon Caro (mon_identite,
  *  mon_adhesion, migrations 0026/0039) — scopées à la session courante côté
  *  base, jamais un accès élargi au registre. Caro ne peut donc physiquement
- *  pas répondre sur les données de quelqu'un d'autre, RLS oblige. */
+ *  pas répondre sur les données de quelqu'un d'autre, RLS oblige.
+ *
+ *  BASE_CONNAISSANCE_FONCTIONNALITES.md injecté dans le prompt système
+ *  (28/07/2026, demande Jérôme : "permet à Caro d'y avoir accès pour
+ *  améliorer les réponses") — le document est écrit précisément pour cet
+ *  usage (structure Route/Accès/Objectif/Description/Actions, homogène
+ *  page par page). Doit rester à jour à chaque changement de page/outil
+ *  (voir CLAUDE.md) pour ne pas faire dériver les réponses de Caro. */
 export async function POST(requete: Request) {
   if (!(await estUtilisateurAutorise())) {
     return new Response('Réservé aux licenciés connectés.', { status: 401 });
@@ -67,9 +75,17 @@ export async function POST(requete: Request) {
   const question = texteDernierMessageUtilisateur(messages);
   if (question) await supabase.rpc('journaliser_question_assistant', { p_question: question });
 
+  const systeme = `${PROMPT_SYSTEME_ASSISTANT}
+
+---
+
+Voici une base de connaissance détaillée, page par page, de l'application — utilise-la comme source de référence pour toute question sur ce que fait une fonctionnalité précise (elle est plus détaillée que le résumé ci-dessus, fais-lui confiance en priorité en cas d'écart) :
+
+${chargerBaseConnaissance()}`;
+
   const result = streamText({
     model: google('gemini-flash-latest'),
-    system: PROMPT_SYSTEME_ASSISTANT,
+    system: systeme,
     messages: await convertToModelMessages(messages),
     stopWhen: isStepCount(3),
     tools: {
