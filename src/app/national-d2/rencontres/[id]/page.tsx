@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SaisieRencontre } from '@/components/SaisieRencontre';
+import { FeuilleDeMatch } from '@/components/FeuilleDeMatch';
+import { ForfaitPanel } from '@/components/ForfaitPanel';
 import { getRencontreDetail } from '@/lib/rencontreDetail';
 import { estMembreCA } from '@/lib/membres';
 
@@ -52,7 +53,10 @@ export default async function SaisieRencontrePage({
           <p className="mt-2 text-[13px] font-medium text-danger">{LABEL_STATUT[rencontre.statut]}</p>
         )}
       </header>
-      <SaisieRencontre rencontre={rencontre} />
+      <div className="flex flex-col gap-6">
+        <ForfaitPanel rencontreId={rencontre.id} adversaire={rencontre.adversaire ?? 'l’adversaire'} />
+        <FeuilleDeMatch rencontre={rencontre} />
+      </div>
     </main>
   );
 }

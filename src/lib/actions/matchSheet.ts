@@ -1,9 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { generateObject } from 'ai';
-import { google } from '@ai-sdk/google';
-import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 
 export type PartieSaisie = {

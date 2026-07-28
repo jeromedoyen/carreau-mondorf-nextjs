@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PartieExistante, RencontreDetail } from '@/lib/rencontreDetail';
 import { enregistrerResultatRencontre, type PartieSaisie } from '@/lib/actions/matchSheet';
@@ -45,28 +45,11 @@ const LABEL_PHASE: Record<number, string> = {
   4: 'Phase 4',
 };
 
-export function FeuilleDeMatch({
-  rencontre,
-  importation,
-  onImportationConsommee,
-}: {
-  rencontre: RencontreDetail;
-  /** Lignes extraites d'un fichier de résultats importé (cf.
-   *  ImportResultatsPdf) — quand fourni, remplace le contenu du formulaire
-   *  (aligné sur le gabarit des 20 parties par phase/type/ordre). */
-  importation?: Ligne[] | null;
-  onImportationConsommee?: () => void;
-}) {
+export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
   const router = useRouter();
   const [lignes, setLignes] = useState<Ligne[]>(() => lignesParDefaut(rencontre.parties));
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!importation) return;
-    setLignes(lignesParDefaut(importation));
-    onImportationConsommee?.();
-  }, [importation, onImportationConsommee]);
 
   function modifierLigne(index: number, champ: keyof Ligne, valeur: string | number) {
     setLignes((prev) => prev.map((l, i) => (i === index ? { ...l, [champ]: valeur } : l)));
