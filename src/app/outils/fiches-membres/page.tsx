@@ -4,6 +4,7 @@ import { estMembreCA } from '@/lib/membres';
 import { getSaisonActive } from '@/lib/saisons';
 import { getFichesMembres } from '@/lib/fichesMembres';
 import { GenererFichesMembresBouton } from '@/components/GenererFichesMembresBouton';
+import { FicheIndividuelleForm } from '@/components/FicheIndividuelleForm';
 
 export const metadata: Metadata = { title: 'Fiches membres' };
 
@@ -42,6 +43,10 @@ export default async function FichesMembresPage() {
 
       <div className="mb-6 rounded-2xl border border-ligne bg-sable-carte p-5">
         <GenererFichesMembresBouton fiches={fiches} annee={annee} />
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-ligne bg-sable-carte p-5">
+        <FicheIndividuelleForm fiches={fiches} annee={annee} />
       </div>
 
       <p className="text-[13px] text-encre-douce">

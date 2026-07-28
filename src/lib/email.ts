@@ -52,10 +52,12 @@ export async function envoyerEmail({
   destinataire: string;
   sujet: string;
   html: string;
-  /** Pièces jointes intégrées (ex. QR code en `cid:` référencé depuis le
-   *  HTML) — plus fiable qu'une image en `data:` URI, que certains clients
-   *  mail de bureau (Outlook) suppriment silencieusement. */
-  attachments?: { filename: string; content: Buffer; cid: string }[];
+  /** `cid` sert aux images intégrées référencées depuis le HTML (ex. logo)
+   *  — plus fiable qu'une `data:` URI, que certains clients mail de bureau
+   *  (Outlook) suppriment silencieusement. Omis pour une pièce jointe
+   *  "normale" (ex. PDF téléchargeable, 28/07/2026 : envoi d'une fiche
+   *  membre individuelle). */
+  attachments?: { filename: string; content: Buffer; cid?: string }[];
 }) {
   const transporteur = creerTransporteur();
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;

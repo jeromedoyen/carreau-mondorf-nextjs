@@ -171,8 +171,8 @@ Toutes les pages ci-dessous affichent "Réservé au comité" avec un bouton "Se 
 **Description** : cible toujours la saison active → la saison suivante (jamais l'inverse). Liste les personnes de la saison active n'ayant pas encore d'adhésion pour la saison suivante et disposant déjà d'un accès de connexion, avec un bouton d'envoi groupé.
 
 ### `/outils/fiches-membres` — fiches imprimables
-**Objectif** : produire un classeur papier ou un export machine du registre.
-**Description** : génère, pour la saison choisie, un classeur PDF (une fiche par personne, logo du club en en-tête, informations identité/coordonnées/adhésion/paiements), un export JSON, un export CSV, ou une archive ZIP regroupant les trois.
+**Objectif** : produire un classeur papier ou un export machine du registre, ou la fiche d'une seule personne à la demande.
+**Description** : génère, pour la saison choisie, un classeur PDF (une fiche par personne, logo du club en en-tête, informations identité/coordonnées/adhésion/paiements), un export JSON, un export CSV, ou une archive ZIP regroupant les trois. Une seconde section permet de choisir une personne précise dans une liste déroulante et de générer uniquement sa fiche à la volée ; une fois générée, elle apparaît dans une liste avec deux actions : la télécharger, ou l'envoyer par email directement à cette personne (pièce jointe PDF).
 
 ### `/outils/statistiques-benevoles` — classement des bénévoles
 **Objectif** : voir qui contribue le plus au bénévolat du club, et sur quoi.
