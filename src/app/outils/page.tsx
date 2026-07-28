@@ -12,6 +12,7 @@ import {
   MessageCircleQuestion,
   ScrollText,
   PenTool,
+  UserPlus,
 } from 'lucide-react';
 import { estMembreCA } from '@/lib/membres';
 
@@ -23,6 +24,7 @@ export const metadata: Metadata = { title: 'Outils' };
  *  "Outils" (OutilsMenu.tsx) pointe maintenant directement ici plutôt que
  *  d'ouvrir un menu au survol. */
 const OUTILS = [
+  { href: '/membres/demandes', label: 'Demandes d’adhésion', description: 'Traiter les demandes en attente', Icon: UserPlus },
   { href: '/saisons', label: 'Saisons', description: 'Gérer les saisons du club', Icon: CalendarRange },
   { href: '/federation', label: 'Contrôle fédération', description: 'Écarts avec les données fédérales', Icon: ShieldCheck },
   { href: '/federation/calendrier', label: 'Calendrier fédération', description: 'Tournois et matchs à venir', Icon: CalendarClock },
