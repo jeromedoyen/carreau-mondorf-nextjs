@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { NavBar } from './NavBar';
 import { BottomNav } from './BottomNav';
+import { AssistantChat } from './AssistantChat';
 import { createClient } from '@/lib/supabase/client';
 
 /** "/" et "/club" masquent le menu pour un visiteur non connecté (accueil
@@ -42,6 +43,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-full flex-1 flex-col pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
       <NavBar />
       {children}
+      {connecte === true && <AssistantChat />}
       <BottomNav />
     </div>
   );
