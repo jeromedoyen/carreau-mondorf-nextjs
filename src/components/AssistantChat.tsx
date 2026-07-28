@@ -22,17 +22,84 @@ import {
   CloudFog,
   Droplets,
   Mail,
+  UserCheck,
+  Check,
+  X as CroixStatut,
 } from 'lucide-react';
 import { obtenirAccueilAssistant, type AccueilAssistant } from '@/lib/actions/assistant';
 import type { Meteo } from '@/lib/meteo';
 import { CLUB } from '@/lib/club';
 
 const QUESTIONS_SUGGEREES = [
-  'Comment payer ma cotisation ?',
+  'Ai-je payé ma cotisation ?',
   'Où voir le calendrier des matchs ?',
   'Comment me proposer comme bénévole ?',
-  'Où voir mon statut de licencié ?',
+  'Suis-je licencié cette saison ?',
 ];
+
+/** Résultat de l'outil "mesInformations" (28/07/2026, demande Jérôme :
+ *  brancher Caro sur les données de la personne connectée) — même forme
+ *  que celle renvoyée par la route /api/assistant. */
+type ResultatMesInformations =
+  | { trouve: false }
+  | {
+      trouve: true;
+      prenom: string | null;
+      saison: string;
+      adhesion: {
+        type: string;
+        categorie: string | null;
+        cotisationPayee: boolean | null;
+        cotisationDate: string | null;
+        licencePayee: boolean | null;
+        licenceDate: string | null;
+      } | null;
+    };
+
+function PastilleStatut({ payee }: { payee: boolean | null }) {
+  if (payee) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-succes/15 px-2 py-0.5 text-[11px] font-medium text-succes">
+        <Check size={11} /> payée
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-danger/15 px-2 py-0.5 text-[11px] font-medium text-danger">
+      <CroixStatut size={11} /> non payée
+    </span>
+  );
+}
+
+function CarteMesInformations({ resultat }: { resultat: ResultatMesInformations }) {
+  if (!resultat.trouve) {
+    return (
+      <div className="rounded-xl border border-ligne bg-white px-3 py-2.5 text-[12px] text-encre-douce">
+        Aucune fiche retrouvée à ton nom — contacte le comité.
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-ligne bg-white px-3 py-2.5">
+      <UserCheck size={22} className="mt-0.5 flex-shrink-0 text-terracotta" />
+      <div className="text-[12px] leading-snug">
+        <div className="font-medium text-encre">
+          {resultat.prenom ?? 'Toi'} — saison {resultat.saison}
+        </div>
+        {resultat.adhesion ? (
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-encre-douce">
+            <span>Carte de membre</span>
+            <PastilleStatut payee={resultat.adhesion.cotisationPayee} />
+            <span className="ml-1.5">Licence</span>
+            <PastilleStatut payee={resultat.adhesion.licencePayee} />
+          </div>
+        ) : (
+          <div className="mt-1 text-encre-douce">Aucune adhésion enregistrée pour cette saison.</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // L'API de reconnaissance vocale n'a pas de types dans lib.dom.d.ts — on ne
 // déclare que ce dont on se sert réellement (28/07/2026, demande Jérôme :
@@ -139,10 +206,12 @@ function choisirVoixFrancaise(): SpeechSynthesisVoice | null {
   return preferee ?? voix[0];
 }
 
-/** Bulle d'aide flottante "Caro" (28/07/2026, demande Jérôme) — un
- *  assistant qui n'aide qu'à UTILISER l'app (navigation, où trouver
- *  quoi) et donne la météo du jour, pas connecté aux données du club (cf.
- *  src/lib/assistantPrompt.ts). Rendu uniquement pour un licencié connecté
+/** Bulle d'aide flottante "Caro" (28/07/2026, demande Jérôme) — aide à
+ *  UTILISER l'app (navigation, où trouver quoi), donne la météo du jour,
+ *  et répond sur les données PERSONNELLES de la personne connectée
+ *  (cotisation, licence) via des RPC scopées à la session — jamais sur
+ *  les données d'un tiers (cf. src/lib/assistantPrompt.ts). Rendu
+ *  uniquement pour un licencié connecté
  *  (cf. AppChrome.tsx). Déplaçable (glisser le titre), avec saisie et
  *  lecture vocale — toutes deux via les API navigateur natives (Web
  *  Speech), gratuites, pas de service tiers. */
@@ -315,9 +384,8 @@ export function AssistantChat() {
                 </p>
                 {accueil?.meteo && <CarteMeteo meteo={accueil.meteo} />}
                 <p className="text-[12.5px] text-encre-douce">
-                  Pose-moi une question sur l&apos;application — où trouver une page, comment faire telle action.
-                  Je n&apos;ai pas accès aux données du club (paiements, membres...), pour ça direction{' '}
-                  <span className="font-medium text-encre">Mon Caro</span> ou le comité.
+                  Pose-moi une question sur l&apos;application, ou sur <span className="font-medium text-encre">ta propre situation</span>{' '}
+                  (cotisation, licence). Je n&apos;ai en revanche accès aux informations de personne d&apos;autre.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {QUESTIONS_SUGGEREES.map((q) => (
@@ -347,6 +415,13 @@ export function AssistantChat() {
                       return (
                         <div key={i} className="mt-1">
                           <CarteMeteo meteo={part.output as Meteo} />
+                        </div>
+                      );
+                    }
+                    if (part.type === 'tool-mesInformations' && 'output' in part && part.output) {
+                      return (
+                        <div key={i} className="mt-1">
+                          <CarteMesInformations resultat={part.output as ResultatMesInformations} />
                         </div>
                       );
                     }
