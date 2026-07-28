@@ -33,7 +33,7 @@ function calculerPositionsSignature(nombre: number): PositionChamp[] {
   const HAUTEUR = 7;
   const ECART_X = 4;
   const ECART_Y = 3;
-  const Y_BAS = 88; // bas de la zone signable, proche du pied de page
+  const Y_BAS = 80; // bas de la zone signable — un peu remonté (retour Jérôme, 28/07/2026 : 88 était trop bas sur la page)
 
   if (nombre === 1) {
     return [{ positionX: 50 - LARGEUR_MAX / 2, positionY: Y_BAS, width: LARGEUR_MAX, height: HAUTEUR }];
