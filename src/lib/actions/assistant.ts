@@ -68,3 +68,20 @@ export async function obtenirAccueilAssistant(): Promise<AccueilAssistant> {
 
   return { prenom, salutation: salutationPourNationalite(nationalite), meteo };
 }
+
+type Resultat = { ok: true } | { ok: false; error: string };
+
+/** Suppression douce (28/07/2026) : masque une question de la liste sans
+ *  effacer de ligne — même principe que `supprime` sur demandes_signature
+ *  (0036), jamais de vrai DELETE. Le trigger ajouté en 0041 journalise ce
+ *  changement comme une modification normale. */
+export async function supprimerQuestionAssistant(id: number): Promise<Resultat> {
+  const supabase = await createClient();
+  const { data: ca } = await supabase.rpc('est_membre_ca');
+  if (!ca) return { ok: false, error: 'Action réservée au comité.' };
+
+  const { error } = await supabase.from('assistant_questions').update({ supprime: true }).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  return { ok: true };
+}

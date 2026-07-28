@@ -2,12 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { estMembreCA } from '@/lib/membres';
 import { getQuestionsAssistant } from '@/lib/assistantQuestions';
+import { ListeQuestionsAssistant } from '@/components/ListeQuestionsAssistant';
 
 export const metadata: Metadata = { title: 'Questions posées à Caro' };
-
-function formaterDate(iso: string): string {
-  return new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
 
 export default async function AssistantQuestionsPage() {
   const ca = await estMembreCA();
@@ -40,20 +37,7 @@ export default async function AssistantQuestionsPage() {
         </p>
       </header>
 
-      {questions.length === 0 ? (
-        <p className="text-[13.5px] text-encre-douce">Aucune question posée pour l&apos;instant.</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {questions.map((q) => (
-            <div key={q.id} className="rounded-xl border border-ligne bg-sable-carte p-4">
-              <p className="text-[13.5px] text-encre">{q.question}</p>
-              <p className="mt-1.5 text-[11px] text-encre-douce">
-                {q.email} · {formaterDate(q.creeLe)}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      <ListeQuestionsAssistant questions={questions} />
     </main>
   );
 }

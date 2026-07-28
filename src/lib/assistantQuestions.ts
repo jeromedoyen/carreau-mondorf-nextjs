@@ -17,6 +17,7 @@ export async function getQuestionsAssistant(limite = 200): Promise<QuestionAssis
   const { data, error } = await supabase
     .from('assistant_questions')
     .select('id, email, question, cree_le')
+    .eq('supprime', false)
     .order('cree_le', { ascending: false })
     .limit(limite);
   if (error) throw error;
