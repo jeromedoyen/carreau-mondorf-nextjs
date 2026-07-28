@@ -49,7 +49,7 @@ export default function ClubPage() {
           className="mx-auto h-24 w-auto"
         />
         <h1 className="font-display mt-6 text-[clamp(2rem,6vw,3.25rem)] italic leading-tight">
-          Club Carreau Boules &amp; Pétanque Mondorf
+          Club Carreau Boules &amp; Pétanque Mondorf-les-Bains
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-encre-douce">
           {CLUB.baseline}
