@@ -1,6 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { generateObject } from 'ai';
+import { google } from '@ai-sdk/google';
+import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 
 export type PartieSaisie = {
@@ -87,6 +90,71 @@ export async function enregistrerResultatRencontre(
 
   revalidatePath('/national-d2');
   return { ok: true, scoreCM, scoreAdverse, resultat };
+}
+
+const SCHEMA_PARTIE = z.object({
+  phase: z.number(),
+  type: z.enum(['Tête à tête', 'Doublette', 'Triplette']),
+  ordre: z.number(),
+  joueursCM: z.string(),
+  joueursAdverse: z.string(),
+  scoreCM: z.number(),
+  scoreAdverse: z.number(),
+  terrain: z.string().optional(),
+});
+
+export type ResultatExtractionPdf =
+  | { ok: true; lignes: PartieSaisie[] }
+  | { ok: false; error: string };
+
+/** Extraction du détail d'une feuille de match à partir d'un PDF fourni par
+ *  le CA (28/07/2026, demande Jérôme, enregistrement audio) — pour éviter
+ *  de ressaisir à la main les 20 lignes quand le fichier de résultats
+ *  officiel existe déjà. Réutilise le modèle Gemini déjà en place pour
+ *  Caro (lecture native de PDF, pas de bibliothèque d'extraction de texte
+ *  à ajouter) ; ne fait qu'extraire, jamais enregistrer directement — le
+ *  résultat préremplit la feuille de match ci-dessous, à relire et
+ *  corriger par le CA avant "Enregistrer le résultat". */
+export async function extraireResultatsPdf(
+  pdfBase64: string,
+  contexte: { domicile: boolean; adversaire: string }
+): Promise<ResultatExtractionPdf> {
+  const supabase = await createClient();
+  const { data: estCA } = await supabase.rpc('est_membre_ca');
+  if (!estCA) return { ok: false, error: 'Action réservée aux membres du CA.' };
+
+  try {
+    const { object } = await generateObject({
+      model: google('gemini-flash-latest'),
+      schema: z.object({ parties: z.array(SCHEMA_PARTIE) }),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Voici la feuille de match d'une rencontre de pétanque National Division 2 (fédération FLBP), au format PDF. Extrais le détail des 20 parties.
+
+Structure attendue :
+- Phase 1 : 9 parties de type "Tête à tête"
+- Phase 2 : 3 parties de type "Triplette"
+- Phase 3 : 4 parties de type "Doublette" puis 1 partie de type "Tête à tête"
+- Phase 4 : 3 parties de type "Triplette"
+
+Pour chaque partie, donne phase, type, ordre (position dans sa phase, à partir de 1), les joueurs (séparés par des virgules pour les doublettes/triplettes), les deux scores et le numéro de terrain si indiqué.
+
+Le club "Carreau Mondorf" joue ${contexte.domicile ? 'à domicile' : 'à l\'extérieur'} contre "${contexte.adversaire}". "joueursCM" doit toujours contenir les joueurs de Carreau Mondorf et "scoreCM" son score, quelle que soit la colonne dans laquelle ils apparaissent sur le PDF.`,
+            },
+            { type: 'file', data: pdfBase64, mediaType: 'application/pdf' },
+          ],
+        },
+      ],
+    });
+
+    return { ok: true, lignes: object.parties };
+  } catch (e) {
+    return { ok: false, error: `Échec de l'extraction : ${(e as Error).message}` };
+  }
 }
 
 export type ResultatForfait = { ok: true } | { ok: false; error: string };
