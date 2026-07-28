@@ -30,7 +30,7 @@ export const DISCIPLINES = [
       'Championnat de deuxième division FLBP, championnat de promotion, championnats nationaux et rencontres amicales avec des clubs du Luxembourg et de la Grande Région.',
   },
   {
-    titre: 'Boules lyonnaises',
+    titre: 'Boule lyonnaise',
     description:
       'Participation régulière à des tournois internationaux, notamment en France et en Allemagne, dont le tournoi des 6 clubs à Hainburg.',
   },

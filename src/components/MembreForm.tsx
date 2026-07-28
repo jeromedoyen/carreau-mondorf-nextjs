@@ -208,6 +208,7 @@ export function MembreForm({
           <input
             type="email"
             name="email"
+            required
             defaultValue={valeurs?.email ?? ''}
             placeholder="Email"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
