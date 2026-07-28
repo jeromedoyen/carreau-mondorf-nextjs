@@ -25,8 +25,12 @@ export default async function RenouvellementPage() {
     );
   }
 
-  const anneeCible = await getSaisonActive();
-  const anneePrecedente = String(Number(anneeCible) - 1);
+  // La saison "active" (saisons.active) est celle EN COURS, pas celle vers
+  // laquelle on renouvelle — retour Jérôme, 28/07/2026 : tant que 2026 est
+  // active, l'outil doit préparer le basculement 2026 -> 2027, pas
+  // reproposer 2025 -> 2026 (déjà fait). Toujours saison active -> suivante.
+  const anneePrecedente = await getSaisonActive();
+  const anneeCible = String(Number(anneePrecedente) + 1);
   const membres = await getMembresARenouveler(anneePrecedente, anneeCible);
 
   return (
