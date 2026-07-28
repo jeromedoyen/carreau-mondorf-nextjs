@@ -13,6 +13,7 @@ import {
   ScrollText,
   PenTool,
   UserPlus,
+  Swords,
 } from 'lucide-react';
 import { estMembreCA } from '@/lib/membres';
 
@@ -28,6 +29,7 @@ const OUTILS = [
   { href: '/saisons', label: 'Saisons', description: 'Gérer les saisons du club', Icon: CalendarRange },
   { href: '/federation', label: 'Contrôle fédération', description: 'Écarts avec les données fédérales', Icon: ShieldCheck },
   { href: '/federation/calendrier', label: 'Calendrier fédération', description: 'Tournois et matchs à venir', Icon: CalendarClock },
+  { href: '/national-d2', label: 'Résultats D2', description: 'Saisir les résultats de la journée', Icon: Swords },
   { href: '/outils/paiements', label: 'Appel à cotisation', description: 'Créer un appel de paiement', Icon: Euro },
   { href: '/outils/paiements-en-attente', label: 'Paiements en attente', description: 'Valider les paiements reçus', Icon: Clock },
   { href: '/outils/renouvellement', label: 'Renouvellement', description: 'Relancer les adhésions', Icon: RefreshCw },
