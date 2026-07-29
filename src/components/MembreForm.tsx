@@ -151,14 +151,13 @@ export function MembreForm({
         }
       })();
     }
-    // Retour au menu standard, immédiat — n'attend plus les envois
-    // ci-dessus. `window.location.href` plutôt que router.push()
-    // (29/07/2026, 4e retour Jérôme sur le même symptôme malgré plusieurs
-    // correctifs successifs côté navigation "douce" Next.js) : un
-    // rechargement complet et sans ambiguïté, qui ne peut pas rester
-    // silencieusement sans effet quelle qu'en soit la cause exacte côté
-    // client (cache du routeur, hydratation, etc.).
-    window.location.href = '/';
+    // Retour à la liste des membres — le vrai "menu standard" du CA pour ce
+    // workflow (29/07/2026, retour Jérôme : "/" atterrit sur la page Club,
+    // ce n'est que la vitrine publique, pas un espace de travail CA).
+    // `window.location.href` plutôt que router.push() (retour précédent :
+    // navigation "douce" Next.js qui ne s'exécutait pas de façon fiable) —
+    // rechargement complet et sans ambiguïté.
+    window.location.href = '/membres';
   }
 
   return (
