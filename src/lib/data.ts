@@ -8,9 +8,10 @@ import type { ClassementDivisionD2, EvolutionPoint } from './types';
  *  RPC dédiée (montants_club(), migration 0042) : parametres_club n'est
  *  lisible par un anonyme via aucune policy directe. */
 export async function getMontantCotisation(): Promise<number | null> {
-  const { data, error } = await supabase.rpc('montants_club').maybeSingle();
+  const { data, error } = await supabase.rpc('montants_club');
   if (error) throw error;
-  return data?.montant_carte_membre ?? null;
+  const ligne = (data as { montant_carte_membre: number | null }[] | null)?.[0];
+  return ligne?.montant_carte_membre ?? null;
 }
 
 /** Reproduit exactement getClassementDivisionD2() de DivisionD2Backend.gs :
