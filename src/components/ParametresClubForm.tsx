@@ -45,19 +45,35 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
       >
         <span className="flex items-center gap-2">
           <Landmark size={16} className="text-pin" />
-          <span className="font-display text-[15px]">Coordonnées bancaires du club</span>
+          <span className="font-display text-[15px]">Coordonnées bancaires & montants (cotisation, licence)</span>
         </span>
         <ChevronDown size={16} className={`text-encre-douce transition-transform ${ouvert ? 'rotate-180' : ''}`} />
       </button>
+      <p className="mt-1 text-[11.5px] text-encre-douce/70">
+        Référence unique utilisée partout — emails, appels à cotisation, renouvellement, page publique du club.
+      </p>
 
       {!ouvert && parametres && (
         <p className="mt-2 text-[12.5px] text-encre-douce">
           {parametres.nomBeneficiaire} · {parametres.iban}
           {parametres.bic ? ` · ${parametres.bic}` : ''}
+          <br />
+          Cotisation :{' '}
+          <strong className={parametres.montantCarteMembre ? 'text-encre' : 'text-danger'}>
+            {parametres.montantCarteMembre ? `${parametres.montantCarteMembre.toFixed(2)} €` : 'non renseignée'}
+          </strong>
+          {' · '}
+          Licence :{' '}
+          <strong className={parametres.montantLicence ? 'text-encre' : 'text-encre-douce'}>
+            {parametres.montantLicence ? `${parametres.montantLicence.toFixed(2)} €` : 'non renseignée'}
+          </strong>
         </p>
       )}
       {!ouvert && !parametres && (
-        <p className="mt-2 text-[12.5px] text-danger">Aucune coordonnée enregistrée — les QR ne peuvent pas être générés.</p>
+        <p className="mt-2 text-[12.5px] text-danger">
+          Aucune coordonnée ni montant enregistrés — les QR ne peuvent pas être générés, les appels à cotisation
+          non plus.
+        </p>
       )}
 
       {ouvert && (

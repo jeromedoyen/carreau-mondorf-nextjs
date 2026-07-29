@@ -113,35 +113,6 @@ async function verifierCA(client: Awaited<ReturnType<typeof createClient>>) {
   return !!data;
 }
 
-const MONTANT_COTISATION_DEFAUT = 20;
-
-/** Appelée après creerMembre() une fois que le CA a validé/complété les
- *  champs dans MembreForm — relie la demande à la fiche créée et la marque
- *  traitée. Ne recrée jamais la personne elle-même (déjà fait par
- *  creerMembre) : cette action ne fait que classer la demande d'origine.
- *
- *  Phase D du workflow adhésion : génère aussi l'appel de paiement "Carte
- *  de membre {année}" pour Inscription ET Réinscription, plutôt qu'un
- *  geste manuel séparé sur /outils/paiements. Montant lu depuis
- *  parametres_club.montant_carte_membre (configurable par le CA, migration
- *  0032) — 20 EUR si non renseigné. La Licence, elle, reste manuelle :
- *  même quand un montant est configuré, il varie chaque saison selon ce
- *  que communique la FLBP (fédération) et n'est jamais garanti à jour au
- *  moment du traitement d'une demande — le CA la crée lui-même. Un échec
- *  de création de l'appel ne fait jamais échouer la validation de la
- *  demande (la fiche/adhésion existe déjà à ce stade) : juste un
- *  avertissement remonté à l'appelant, même principe que
- *  creerAccesEtEnvoyerBienvenue.
- *
- *  Le geste "cotisation payée ou non" est unique — la case à cocher
- *  "Cotisation payée" de la section Adhésion (MembreForm.tsx), jamais une
- *  seconde case séparée (retour Jérôme, 29/07/2026 : les deux se
- *  contredisaient — "cotisation payée" ET "envoyer l'appel" cochées en
- *  même temps n'avait pas de sens). Payée → l'appel est créé directement
- *  au statut "payee" avec le mode de paiement renseigné, aucun email
- *  envoyé. Pas payée → l'appel part par email tout de suite (QR SEPA
- *  inclus, cf. envoyerAppelPaiementEmail), pour permettre un paiement à
- *  distance sans second geste manuel sur /outils/paiements. */
 /** Crée l'appel de cotisation "Carte de membre {année}" et le traite selon
  *  qu'elle est déjà payée ou non — extrait de marquerDemandeTraitee
  *  (29/07/2026) pour être réutilisé aussi côté création directe d'un
@@ -150,7 +121,16 @@ const MONTANT_COTISATION_DEFAUT = 20;
  *  depuis une demande d'adhésion, jamais pour un enregistrement "au
  *  comptoir" (retour Jérôme, 29/07/2026 — aucun email de bienvenue ni
  *  d'appel à cotisation n'était envoyé dans ce cas, gap réel, pas juste un
- *  oubli de test). */
+ *  oubli de test).
+ *
+ *  Montant TOUJOURS lu depuis parametres_club.montant_carte_membre —
+ *  aucun fallback en dur (retiré le 29/07/2026, demande explicite de
+ *  Jérôme : "supprime partout les montants fixes", le montant configuré
+ *  sur /outils/paiements est l'unique référence). Si le CA n'a jamais
+ *  renseigné ce montant, on bloque plutôt que de deviner un chiffre —
+ *  message clair pointant vers le réglage à faire d'abord. Même logique
+ *  pour la Licence, gérée séparément (montant variable chaque saison
+ *  selon la FLBP, geste manuel du CA sur /outils/paiements). */
 async function traiterCotisationMembre(
   client: Awaited<ReturnType<typeof createClient>>,
   personneId: number,
@@ -164,13 +144,19 @@ async function traiterCotisationMembre(
     .select('montant_carte_membre')
     .eq('id', 1)
     .maybeSingle();
+  if (!parametres?.montant_carte_membre) {
+    return {
+      ok: false,
+      error: "Le montant de la carte de membre n'est pas configuré — renseigne-le d'abord sur Outils → Appel à cotisation.",
+    };
+  }
 
   const { data: appel, error: errAppel } = await client
     .from('appels_paiement')
     .insert({
       personne_id: personneId,
       type: 'Carte de membre',
-      montant: parametres?.montant_carte_membre ?? MONTANT_COTISATION_DEFAUT,
+      montant: parametres.montant_carte_membre,
       description: `Carte de membre ${annee} — ${nomComplet}`,
       ...(cotisationPayee
         ? { statut: 'payee', mode_paiement: modePaiement || null, payee_le: new Date().toISOString() }

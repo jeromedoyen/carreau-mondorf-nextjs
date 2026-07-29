@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Mail, Navigation, Users, UserPlus } from 'lucide-react';
 import { CLUB, DISCIPLINES, COMITE, ITINERAIRES } from '@/lib/club';
+import { getMontantCotisation } from '@/lib/data';
 import { FlagIcon } from '@/components/FlagIcon';
 import { ConnexionClubLink } from '@/components/ConnexionClubLink';
 
@@ -32,7 +33,9 @@ function IconeFacebook({ className }: { className?: string }) {
   );
 }
 
-export default function ClubPage() {
+export default async function ClubPage() {
+  const montantCotisation = await getMontantCotisation();
+
   return (
     <main className="mx-auto max-w-5xl px-5 py-14">
       {/* ---------- Hero ---------- */}
@@ -122,7 +125,12 @@ export default function ClubPage() {
           {[
             { k: 'Boulodrome', v: CLUB.boulodrome.adresse, note: CLUB.boulodrome.note },
             { k: 'Siège social', v: CLUB.siegeSocial },
-            { k: 'Cotisation annuelle', v: CLUB.cotisation },
+            {
+              k: 'Cotisation annuelle',
+              v: montantCotisation
+                ? `${montantCotisation.toFixed(2)} EUR — carte de membre obligatoire (couverture assurance)`
+                : 'Montant fixé annuellement par le comité — nous contacter',
+            },
             { k: 'Association', v: `${CLUB.nomComplet} — ${CLUB.rcs}` },
             { k: 'Email', v: CLUB.email, href: `mailto:${CLUB.email}` },
           ].map((ligne) => (

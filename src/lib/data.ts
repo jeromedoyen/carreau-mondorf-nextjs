@@ -2,6 +2,17 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import type { ClassementDivisionD2, EvolutionPoint } from './types';
 
+/** Montant de la cotisation annuelle affiché sur la page publique /club
+ *  (29/07/2026, demande Jérôme : plus aucun montant en dur dans le code —
+ *  toujours celui configuré par le CA sur Outils → Appel à cotisation).
+ *  RPC dédiée (montants_club(), migration 0042) : parametres_club n'est
+ *  lisible par un anonyme via aucune policy directe. */
+export async function getMontantCotisation(): Promise<number | null> {
+  const { data, error } = await supabase.rpc('montants_club').maybeSingle();
+  if (error) throw error;
+  return data?.montant_carte_membre ?? null;
+}
+
 /** Reproduit exactement getClassementDivisionD2() de DivisionD2Backend.gs :
  *  cumul journée par journée (parties jouées, victoires/défaites, points
  *  faits/rendus) et rang (victoires desc, puis diff desc, puis points faits

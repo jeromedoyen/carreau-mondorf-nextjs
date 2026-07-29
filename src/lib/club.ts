@@ -18,7 +18,6 @@ export const CLUB = {
     note: 'Ouvert la majeure partie de l’année (environ 220 jours en 2025)',
   },
   siegeSocial: '6, rue Dr. Auguste Schumacher, L-5654 Mondorf-les-Bains',
-  cotisation: '20 EUR — carte de membre obligatoire (couverture assurance)',
   email: 'carreau.mondorf@pt.lu',
   facebook: 'https://www.facebook.com/groups/271245557161927/',
 };
