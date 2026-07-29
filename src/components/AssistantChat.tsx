@@ -479,14 +479,16 @@ export function AssistantChat() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setOuvert((v) => !v)}
-        aria-label={ouvert ? 'Fermer Caro' : 'Ouvrir Caro, l’assistant d’aide'}
-        className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-terracotta text-white shadow-[0_6px_18px_-4px_rgba(193,82,43,.6)] transition-transform hover:scale-105 md:bottom-6"
-      >
-        {ouvert ? <X size={20} /> : <MessageCircle size={20} />}
-      </button>
+      {!ouvert && (
+        <button
+          type="button"
+          onClick={() => setOuvert(true)}
+          aria-label="Ouvrir Caro, l’assistant d’aide"
+          className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-terracotta text-white shadow-[0_6px_18px_-4px_rgba(193,82,43,.6)] transition-transform hover:scale-105 md:bottom-6"
+        >
+          <MessageCircle size={20} />
+        </button>
+      )}
     </>
   );
 }

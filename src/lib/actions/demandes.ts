@@ -131,13 +131,24 @@ const MONTANT_COTISATION_DEFAUT = 20;
  *  de création de l'appel ne fait jamais échouer la validation de la
  *  demande (la fiche/adhésion existe déjà à ce stade) : juste un
  *  avertissement remonté à l'appelant, même principe que
- *  creerAccesEtEnvoyerBienvenue. */
+ *  creerAccesEtEnvoyerBienvenue.
+ *
+ *  Le geste "cotisation payée ou non" est unique — la case à cocher
+ *  "Cotisation payée" de la section Adhésion (MembreForm.tsx), jamais une
+ *  seconde case séparée (retour Jérôme, 29/07/2026 : les deux se
+ *  contredisaient — "cotisation payée" ET "envoyer l'appel" cochées en
+ *  même temps n'avait pas de sens). Payée → l'appel est créé directement
+ *  au statut "payee" avec le mode de paiement renseigné, aucun email
+ *  envoyé. Pas payée → l'appel part par email tout de suite (QR SEPA
+ *  inclus, cf. envoyerAppelPaiementEmail), pour permettre un paiement à
+ *  distance sans second geste manuel sur /outils/paiements. */
 export async function marquerDemandeTraitee(
   demandeId: number,
   personneId: number,
   annee: string,
   nomComplet: string,
-  envoyerCotisationMaintenant = true
+  cotisationPayee: boolean,
+  modePaiement?: string
 ): Promise<Resultat> {
   const client = await createClient();
   if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
@@ -161,6 +172,9 @@ export async function marquerDemandeTraitee(
       type: 'Carte de membre',
       montant: parametres?.montant_carte_membre ?? MONTANT_COTISATION_DEFAUT,
       description: `Carte de membre ${annee} — ${nomComplet}`,
+      ...(cotisationPayee
+        ? { statut: 'payee', mode_paiement: modePaiement || null, payee_le: new Date().toISOString() }
+        : {}),
     })
     .select('id')
     .single();
@@ -171,12 +185,7 @@ export async function marquerDemandeTraitee(
     return { ok: false, error: `Demande validée, mais l'appel de cotisation n'a pas pu être créé : ${errAppel.message}` };
   }
 
-  // Envoi automatique de l'appel à cotisation (28/07/2026, workflow adhésion
-  // bout-en-bout) — jusqu'ici un second geste manuel sur /outils/paiements
-  // était nécessaire ; désactivable via la case à cocher du formulaire (ex.
-  // cotisation déjà réglée sur place). Échec non bloquant : l'appel existe
-  // et reste envoyable manuellement depuis /outils/paiements.
-  if (envoyerCotisationMaintenant) {
+  if (!cotisationPayee) {
     const resultatEnvoi = await envoyerAppelPaiementEmail(appel.id);
     if (!resultatEnvoi.ok) {
       return {

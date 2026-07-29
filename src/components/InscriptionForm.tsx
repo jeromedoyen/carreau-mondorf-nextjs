@@ -95,6 +95,7 @@ export function InscriptionForm() {
           />
           <input
             name="nationalite"
+            defaultValue="Française"
             placeholder="Nationalité"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />

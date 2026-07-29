@@ -48,6 +48,7 @@ export function MembreForm({
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [avertissement, setAvertissement] = useState<string | null>(null);
+  const [cotisationPayee, setCotisationPayee] = useState(personne?.adhesion?.cotisationPayee ?? false);
   const modeEdition = !!personne;
   // Sert uniquement de source de valeurs par défaut (édition OU
   // préremplissage depuis une demande) — jamais les deux en même temps.
@@ -80,6 +81,7 @@ export function MembreForm({
       classe: String(fd.get('classe') || ''),
       cotisationPayee: fd.get('cotisationPayee') === 'on',
     };
+    const modePaiement = String(fd.get('modePaiement') || '');
 
     const resultat = modeEdition
       ? await (async () => {
@@ -107,7 +109,8 @@ export function MembreForm({
         personneIdTraitee,
         donneesAdhesion.annee,
         `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
-        fd.get('envoyerCotisation') === 'on'
+        donneesAdhesion.cotisationPayee,
+        modePaiement
       );
       if (!resultatDemande.ok) {
         setAvertissement(resultatDemande.error);
@@ -133,7 +136,11 @@ export function MembreForm({
         }
       }
     }
-    router.push('/membres');
+    // Retour à la liste des demandes (pas la liste générale des membres)
+    // quand on vient de traiter une demande (29/07/2026, retour Jérôme) —
+    // pour voir la demande passer dans "Traitées" plutôt que de perdre le
+    // fil sur /membres.
+    router.push(demandeId ? '/membres/demandes' : '/membres');
     router.refresh();
   }
 
@@ -176,7 +183,7 @@ export function MembreForm({
           />
           <input
             name="nationalite"
-            defaultValue={valeurs?.nationalite ?? ''}
+            defaultValue={valeurs?.nationalite ?? (modeEdition ? '' : 'Française')}
             placeholder="Nationalité"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
@@ -260,11 +267,27 @@ export function MembreForm({
           <input
             type="checkbox"
             name="cotisationPayee"
-            defaultChecked={personne?.adhesion?.cotisationPayee ?? false}
+            checked={cotisationPayee}
+            onChange={(e) => setCotisationPayee(e.target.checked)}
             className="h-4 w-4 accent-terracotta"
           />
           Cotisation payée
         </label>
+        {cotisationPayee ? (
+          <input
+            name="modePaiement"
+            required
+            placeholder="Comment ? (espèces, virement, carte…)"
+            className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+          />
+        ) : (
+          demandeId && (
+            <p className="text-[11.5px] text-encre-douce/70">
+              Pas encore payée : l&apos;appel à cotisation (avec QR code SEPA) partira automatiquement par email à
+              la création.
+            </p>
+          )
+        )}
       </section>
 
       <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-sable-carte p-5">
@@ -286,20 +309,6 @@ export function MembreForm({
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         />
       </section>
-
-      {demandeId && (
-        <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-sable-carte p-5">
-          <h3 className="font-display text-[15px]">Cotisation</h3>
-          <label className="flex items-center gap-2 text-[13px] text-encre-douce">
-            <input type="checkbox" name="envoyerCotisation" defaultChecked className="h-4 w-4 accent-terracotta" />
-            Envoyer l&apos;appel à cotisation par email immédiatement
-          </label>
-          <p className="text-[11.5px] text-encre-douce/70">
-            Décoche si la cotisation a déjà été réglée sur place (espèces, carte…) — l&apos;appel reste créé et
-            envoyable plus tard depuis Outils → Appel à cotisation.
-          </p>
-        </section>
-      )}
 
       {demandeId && !modeEdition && (
         <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-pin/5 p-5">

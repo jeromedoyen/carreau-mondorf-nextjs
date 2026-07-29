@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ListeDemandes } from '@/components/ListeDemandes';
-import { getDemandesEnAttente } from '@/lib/demandes';
+import { ListeDemandesTraitees } from '@/components/ListeDemandesTraitees';
+import { getDemandesEnAttente, getDemandesTraitees } from '@/lib/demandes';
 import { estMembreCA } from '@/lib/membres';
 
 export const metadata: Metadata = { title: 'Demandes d’adhésion' };
@@ -24,7 +25,7 @@ export default async function DemandesPage() {
     );
   }
 
-  const demandes = await getDemandesEnAttente();
+  const [demandes, traitees] = await Promise.all([getDemandesEnAttente(), getDemandesTraitees()]);
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-12">
@@ -36,6 +37,9 @@ export default async function DemandesPage() {
         <h1 className="font-display mt-1 text-3xl italic">Demandes d&apos;adhésion</h1>
       </header>
       <ListeDemandes demandes={demandes} />
+
+      <h2 className="font-display mt-10 mb-4 text-xl italic">Traitées récemment</h2>
+      <ListeDemandesTraitees demandes={traitees} />
     </main>
   );
 }
