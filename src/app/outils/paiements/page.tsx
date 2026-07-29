@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { estMembreCA } from '@/lib/membres';
 import { getParametresClub, getAppelsPaiement } from '@/lib/paiements';
 import { getSaisonActive } from '@/lib/saisons';
-import { ParametresClubForm } from '@/components/ParametresClubForm';
 import { NouvelAppelPaiementForm } from '@/components/NouvelAppelPaiementForm';
 import { ListeAppelsPaiement } from '@/components/ListeAppelsPaiement';
 
@@ -50,11 +49,16 @@ export default async function PaiementsPage() {
           Demande de paiement (carte de membre, licence, ou paiement ponctuel) à une ou plusieurs personnes —
           chacune génère un QR code SEPA et peut être envoyée par email.
         </p>
+        {!parametres?.iban && (
+          <p className="mt-2 text-[12.5px] text-danger">
+            Aucune coordonnée bancaire enregistrée —{' '}
+            <Link href="/outils/parametres" className="underline">
+              configure-les d&apos;abord
+            </Link>
+            .
+          </p>
+        )}
       </header>
-
-      <div className="mb-8">
-        <ParametresClubForm parametres={parametres} />
-      </div>
 
       <div className="mb-8">
         <NouvelAppelPaiementForm personnes={personnes} parametres={parametres} />

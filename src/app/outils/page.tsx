@@ -14,6 +14,7 @@ import {
   PenTool,
   UserPlus,
   Swords,
+  Landmark,
 } from 'lucide-react';
 import { estMembreCA } from '@/lib/membres';
 
@@ -30,7 +31,8 @@ const OUTILS = [
   { href: '/federation', label: 'Contrôle fédération', description: 'Écarts avec les données fédérales', Icon: ShieldCheck },
   { href: '/federation/calendrier', label: 'Calendrier fédération', description: 'Tournois et matchs à venir', Icon: CalendarClock },
   { href: '/national-d2', label: 'Résultats D2', description: 'Saisir les résultats de la journée', Icon: Swords },
-  { href: '/outils/paiements', label: 'Appel à cotisation', description: 'Créer un appel, régler les montants cotisation/licence', Icon: Euro },
+  { href: '/outils/parametres', label: 'Paramètres cotisation & licence', description: 'Montants et coordonnées bancaires du club', Icon: Landmark },
+  { href: '/outils/paiements', label: 'Appel à cotisation', description: 'Créer et envoyer un appel de paiement', Icon: Euro },
   { href: '/outils/paiements-en-attente', label: 'Paiements en attente', description: 'Valider les paiements reçus', Icon: Clock },
   { href: '/outils/renouvellement', label: 'Renouvellement', description: 'Relancer les adhésions', Icon: RefreshCw },
   { href: '/outils/fiches-membres', label: 'Fiches membres', description: 'Classeur PDF et exports', Icon: IdCard },
