@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { creerMembre, modifierPersonne, enregistrerAdhesion } from '@/lib/actions/membres';
 import { marquerDemandeTraitee, creerAccesEtEnvoyerBienvenue, creerAppelCotisationPourMembre } from '@/lib/actions/demandes';
 import type { PersonneAvecAdhesion } from '@/lib/types';
@@ -43,7 +42,6 @@ export function MembreForm({
   demandeId?: number;
   saisonActuelle: string;
 }) {
-  const router = useRouter();
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [cotisationPayee, setCotisationPayee] = useState(personne?.adhesion?.cotisationPayee ?? false);
@@ -154,9 +152,13 @@ export function MembreForm({
       })();
     }
     // Retour au menu standard, immédiat — n'attend plus les envois
-    // ci-dessus (29/07/2026, retour Jérôme).
-    router.push('/');
-    router.refresh();
+    // ci-dessus. `window.location.href` plutôt que router.push()
+    // (29/07/2026, 4e retour Jérôme sur le même symptôme malgré plusieurs
+    // correctifs successifs côté navigation "douce" Next.js) : un
+    // rechargement complet et sans ambiguïté, qui ne peut pas rester
+    // silencieusement sans effet quelle qu'en soit la cause exacte côté
+    // client (cache du routeur, hydratation, etc.).
+    window.location.href = '/';
   }
 
   return (
