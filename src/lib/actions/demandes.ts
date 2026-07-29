@@ -142,23 +142,23 @@ const MONTANT_COTISATION_DEFAUT = 20;
  *  envoyé. Pas payée → l'appel part par email tout de suite (QR SEPA
  *  inclus, cf. envoyerAppelPaiementEmail), pour permettre un paiement à
  *  distance sans second geste manuel sur /outils/paiements. */
-export async function marquerDemandeTraitee(
-  demandeId: number,
+/** Crée l'appel de cotisation "Carte de membre {année}" et le traite selon
+ *  qu'elle est déjà payée ou non — extrait de marquerDemandeTraitee
+ *  (29/07/2026) pour être réutilisé aussi côté création directe d'un
+ *  membre depuis l'onglet Membres (creerAppelCotisationPourMembre
+ *  ci-dessous) : jusqu'ici ce geste n'existait que pour les membres créés
+ *  depuis une demande d'adhésion, jamais pour un enregistrement "au
+ *  comptoir" (retour Jérôme, 29/07/2026 — aucun email de bienvenue ni
+ *  d'appel à cotisation n'était envoyé dans ce cas, gap réel, pas juste un
+ *  oubli de test). */
+async function traiterCotisationMembre(
+  client: Awaited<ReturnType<typeof createClient>>,
   personneId: number,
   annee: string,
   nomComplet: string,
   cotisationPayee: boolean,
   modePaiement?: string
 ): Promise<Resultat> {
-  const client = await createClient();
-  if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
-
-  const { error } = await client
-    .from('demandes_adhesion')
-    .update({ statut: 'validee', personne_id: personneId })
-    .eq('id', demandeId);
-  if (error) return { ok: false, error: error.message };
-
   const { data: parametres } = await client
     .from('parametres_club')
     .select('montant_carte_membre')
@@ -179,20 +179,57 @@ export async function marquerDemandeTraitee(
     .select('id')
     .single();
 
-  revalidatePath('/membres/demandes');
   revalidatePath('/outils/paiements');
   if (errAppel) {
-    return { ok: false, error: `Demande validée, mais l'appel de cotisation n'a pas pu être créé : ${errAppel.message}` };
+    return { ok: false, error: `L'appel de cotisation n'a pas pu être créé : ${errAppel.message}` };
   }
 
   if (!cotisationPayee) {
     const resultatEnvoi = await envoyerAppelPaiementEmail(appel.id);
     if (!resultatEnvoi.ok) {
-      return {
-        ok: false,
-        error: `Demande validée, appel de cotisation créé, mais l'envoi de l'email a échoué : ${resultatEnvoi.error}`,
-      };
+      return { ok: false, error: `Appel de cotisation créé, mais l'envoi de l'email a échoué : ${resultatEnvoi.error}` };
     }
+  }
+
+  return { ok: true };
+}
+
+/** Même geste que marquerDemandeTraitee, pour un membre créé directement
+ *  depuis l'onglet Membres (pas de demande d'adhésion à classer) —
+ *  29/07/2026, retour Jérôme. */
+export async function creerAppelCotisationPourMembre(
+  personneId: number,
+  annee: string,
+  nomComplet: string,
+  cotisationPayee: boolean,
+  modePaiement?: string
+): Promise<Resultat> {
+  const client = await createClient();
+  if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
+  return traiterCotisationMembre(client, personneId, annee, nomComplet, cotisationPayee, modePaiement);
+}
+
+export async function marquerDemandeTraitee(
+  demandeId: number,
+  personneId: number,
+  annee: string,
+  nomComplet: string,
+  cotisationPayee: boolean,
+  modePaiement?: string
+): Promise<Resultat> {
+  const client = await createClient();
+  if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
+
+  const { error } = await client
+    .from('demandes_adhesion')
+    .update({ statut: 'validee', personne_id: personneId })
+    .eq('id', demandeId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/membres/demandes');
+
+  const resultatCotisation = await traiterCotisationMembre(client, personneId, annee, nomComplet, cotisationPayee, modePaiement);
+  if (!resultatCotisation.ok) {
+    return { ok: false, error: `Demande validée, mais ${resultatCotisation.error.charAt(0).toLowerCase()}${resultatCotisation.error.slice(1)}` };
   }
 
   return { ok: true };

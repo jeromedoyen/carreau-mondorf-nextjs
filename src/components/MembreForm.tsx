@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { creerMembre, modifierPersonne, enregistrerAdhesion } from '@/lib/actions/membres';
-import { marquerDemandeTraitee, creerAccesEtEnvoyerBienvenue } from '@/lib/actions/demandes';
+import { marquerDemandeTraitee, creerAccesEtEnvoyerBienvenue, creerAppelCotisationPourMembre } from '@/lib/actions/demandes';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
 const TYPES_ADHESION = ['Licencié', 'Membre (non-licencié)'];
@@ -96,24 +96,37 @@ export function MembreForm({
       setErreur(resultat.error);
       return;
     }
-    // Traité depuis une demande d'adhésion (/membres/demandes) : la demande
-    // n'est classée qu'une fois la fiche membre effectivement créée ou mise
-    // à jour — jamais avant, pour ne pas perdre sa trace si ça échoue.
-    // En Réinscription (modeEdition true dans ce cas, cf. page.tsx qui
-    // résout la personne existante par email), la personne a déjà un accès
-    // de connexion : on ne recrée jamais l'accès ni le mail de bienvenue.
+    // Le geste "cotisation + accès/bienvenue" s'applique à toute création
+    // d'un nouveau membre — qu'elle vienne d'une demande d'adhésion (y
+    // compris Réinscription, modeEdition true dans ce cas, cf. page.tsx qui
+    // résout la personne existante par email) OU d'un enregistrement direct
+    // au comptoir (!modeEdition, sans demandeId) : jusqu'au 29/07/2026 ce
+    // second cas ne déclenchait ni l'appel à cotisation ni l'email de
+    // bienvenue, un vrai manque (retour Jérôme) et pas seulement un
+    // raccourci pour les demandes. Jamais pour une simple modification
+    // d'une fiche existante (modeEdition sans demandeId) — on ne veut pas
+    // regénérer un appel de paiement à chaque correction de fiche.
     const personneIdTraitee = modeEdition ? personne!.id : 'id' in resultat ? resultat.id : undefined;
-    if (demandeId && personneIdTraitee) {
-      const resultatDemande = await marquerDemandeTraitee(
-        demandeId,
-        personneIdTraitee,
-        donneesAdhesion.annee,
-        `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
-        donneesAdhesion.cotisationPayee,
-        modePaiement
-      );
-      if (!resultatDemande.ok) {
-        setAvertissement(resultatDemande.error);
+    const declencherPostCreation = (demandeId || !modeEdition) && personneIdTraitee;
+    if (declencherPostCreation) {
+      const resultatCotisation = demandeId
+        ? await marquerDemandeTraitee(
+            demandeId,
+            personneIdTraitee,
+            donneesAdhesion.annee,
+            `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
+            donneesAdhesion.cotisationPayee,
+            modePaiement
+          )
+        : await creerAppelCotisationPourMembre(
+            personneIdTraitee,
+            donneesAdhesion.annee,
+            `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
+            donneesAdhesion.cotisationPayee,
+            modePaiement
+          );
+      if (!resultatCotisation.ok) {
+        setAvertissement(resultatCotisation.error);
         router.refresh();
         return;
       }
@@ -281,7 +294,7 @@ export function MembreForm({
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
         ) : (
-          demandeId && (
+          (demandeId || !modeEdition) && (
             <p className="text-[11.5px] text-encre-douce/70">
               Pas encore payée : l&apos;appel à cotisation (avec QR code SEPA) partira automatiquement par email à
               la création.
@@ -310,7 +323,7 @@ export function MembreForm({
         />
       </section>
 
-      {demandeId && !modeEdition && (
+      {!modeEdition && (
         <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-pin/5 p-5">
           <h3 className="font-display text-[15px]">Accès à l&apos;application</h3>
           <label className="flex items-center gap-2 text-[13px] text-encre-douce">
