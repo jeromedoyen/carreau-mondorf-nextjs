@@ -43,6 +43,7 @@ export function MembreForm({
   saisonActuelle: string;
 }) {
   const [enCours, setEnCours] = useState(false);
+  const [etapeEnCours, setEtapeEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [cotisationPayee, setCotisationPayee] = useState(personne?.adhesion?.cotisationPayee ?? false);
   const modeEdition = !!personne;
@@ -87,8 +88,8 @@ export function MembreForm({
         })()
       : await creerMembre(donneesPersonne, donneesAdhesion);
 
-    setEnCours(false);
     if (!resultat.ok) {
+      setEnCours(false);
       setErreur(resultat.error);
       return;
     }
@@ -104,59 +105,62 @@ export function MembreForm({
     // regénérer un appel de paiement à chaque correction de fiche.
     const personneIdTraitee = modeEdition ? personne!.id : 'id' in resultat ? resultat.id : undefined;
     const declencherPostCreation = (demandeId || !modeEdition) && personneIdTraitee;
-    // Les étapes suivantes (cotisation, accès/bienvenue) sont secondaires :
-    // la fiche membre (et, s'il y en a une, la demande) sont déjà créées à
-    // ce stade. Lancées en arrière-plan SANS attendre leur résultat
-    // (29/07/2026, 3e retour Jérôme sur le même symptôme : "je reste sur
-    // cette page" alors que les emails étaient bien reçus) — deux emails
-    // séquentiels (cotisation avec QR SEPA + bienvenue) peuvent prendre
-    // 10-15s, tout ce temps la page semblait figée. La navigation n'a plus
-    // aucune raison d'attendre ces envois ; le `try/catch` continue de
-    // protéger contre toute exception (ex. QR SEPA sur un IBAN mal formé)
-    // qui ne doit jamais remonter jusqu'à l'utilisateur.
+    // Les étapes suivantes (cotisation, accès/bienvenue) sont ATTENDUES ici,
+    // pas lancées en arrière-plan (retour en arrière, 29/07/2026) : un essai
+    // précédent les lançait sans attendre puis naviguait tout de suite avec
+    // `window.location.href`, ce qui coupait net la requête de l'email de
+    // bienvenue avant qu'elle n'ait fini côté serveur (le navigateur annule
+    // les requêtes en vol au déchargement de la page) — l'email de
+    // cotisation partait car lancé en premier, celui de bienvenue non. On
+    // revient à un enchaînement attendu, avec un texte de bouton qui change
+    // ("Envoi des emails…") pour que l'attente ne soit plus perçue comme un
+    // blocage. Le `try/catch` protège toujours contre toute exception (ex.
+    // QR SEPA sur un IBAN mal formé) qui ne doit jamais empêcher la
+    // navigation finale.
     if (declencherPostCreation) {
-      (async () => {
-        try {
-          const resultatCotisation = demandeId
-            ? await marquerDemandeTraitee(
-                demandeId,
-                personneIdTraitee,
-                donneesAdhesion.annee,
-                `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
-                donneesAdhesion.type,
-                donneesAdhesion.cotisationPayee,
-                modePaiement
-              )
-            : await creerAppelCotisationPourMembre(
-                personneIdTraitee,
-                donneesAdhesion.annee,
-                `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
-                donneesAdhesion.type,
-                donneesAdhesion.cotisationPayee,
-                modePaiement
-              );
-          if (!resultatCotisation.ok) console.warn('[MembreForm] cotisation :', resultatCotisation.error);
-
-          if (!modeEdition && fd.get('creerAcces') === 'on') {
-            const resultatAcces = await creerAccesEtEnvoyerBienvenue(
-              donneesPersonne.nom,
-              donneesPersonne.prenom,
-              donneesPersonne.email,
-              donneesAdhesion.type === 'Licencié'
+      try {
+        setEtapeEnCours('cotisation');
+        const resultatCotisation = demandeId
+          ? await marquerDemandeTraitee(
+              demandeId,
+              personneIdTraitee,
+              donneesAdhesion.annee,
+              `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
+              donneesAdhesion.type,
+              donneesAdhesion.cotisationPayee,
+              modePaiement
+            )
+          : await creerAppelCotisationPourMembre(
+              personneIdTraitee,
+              donneesAdhesion.annee,
+              `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
+              donneesAdhesion.type,
+              donneesAdhesion.cotisationPayee,
+              modePaiement
             );
-            if (!resultatAcces.ok) console.warn('[MembreForm] accès/bienvenue :', resultatAcces.error);
-          }
-        } catch (e) {
-          console.warn('[MembreForm] post-création :', (e as Error).message);
+        if (!resultatCotisation.ok) console.warn('[MembreForm] cotisation :', resultatCotisation.error);
+
+        if (!modeEdition && fd.get('creerAcces') === 'on') {
+          setEtapeEnCours('bienvenue');
+          const resultatAcces = await creerAccesEtEnvoyerBienvenue(
+            donneesPersonne.nom,
+            donneesPersonne.prenom,
+            donneesPersonne.email,
+            donneesAdhesion.type === 'Licencié'
+          );
+          if (!resultatAcces.ok) console.warn('[MembreForm] accès/bienvenue :', resultatAcces.error);
         }
-      })();
+      } catch (e) {
+        console.warn('[MembreForm] post-création :', (e as Error).message);
+      }
     }
     // Retour à la liste des membres — le vrai "menu standard" du CA pour ce
     // workflow (29/07/2026, retour Jérôme : "/" atterrit sur la page Club,
     // ce n'est que la vitrine publique, pas un espace de travail CA).
     // `window.location.href` plutôt que router.push() (retour précédent :
     // navigation "douce" Next.js qui ne s'exécutait pas de façon fiable) —
-    // rechargement complet et sans ambiguïté.
+    // rechargement complet et sans ambiguïté, déclenché seulement une fois
+    // tous les envois terminés (voir commentaire ci-dessus).
     window.location.href = '/membres';
   }
 
@@ -343,7 +347,15 @@ export function MembreForm({
         disabled={enCours}
         className="self-start rounded-lg bg-terracotta px-5 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {enCours ? 'Enregistrement…' : modeEdition ? 'Enregistrer les modifications' : 'Créer le membre'}
+        {etapeEnCours === 'cotisation'
+          ? "Envoi de l'appel à cotisation…"
+          : etapeEnCours === 'bienvenue'
+            ? "Envoi de l'email de bienvenue…"
+            : enCours
+              ? 'Enregistrement…'
+              : modeEdition
+                ? 'Enregistrer les modifications'
+                : 'Créer le membre'}
       </button>
     </form>
   );
