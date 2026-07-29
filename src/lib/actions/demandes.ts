@@ -10,6 +10,14 @@ import { envoyerAppelPaiementEmail } from './paiements';
 
 type Resultat = { ok: true } | { ok: false; error: string };
 
+/** Désactive temporairement l'envoi réel de l'alerte CA (28/07/2026,
+ *  demande Jérôme) — période de tests d'automatisation du workflow
+ *  d'adhésion avec un compte "testeur" recréé à volonté : sans ce
+ *  garde-fou, chaque test spammerait toute la boîte partagée du comité.
+ *  L'envoi est simulé (loggé) au lieu d'être réellement effectué.
+ *  Repasser à false une fois les tests terminés. */
+const SIMULER_ALERTE_CA = true;
+
 export type DemandeSaisie = {
   typeDemande: 'Inscription' | 'Réinscription';
   nom: string;
@@ -81,12 +89,18 @@ export async function soumettreDemandeAdhesion(data: DemandeSaisie): Promise<Res
     // Silencieux — rien à remonter à un applicant anonyme, la demande est déjà enregistrée.
   }
   try {
-    await envoyerEmail({
-      destinataire: CLUB.email,
-      sujet: `Nouvelle demande d'adhésion — ${data.prenom} ${data.nom}`,
-      html: emailAlerteNouvelleDemande({ nomComplet: `${data.prenom} ${data.nom}`, typeDemande: data.typeDemande }),
-      attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
-    });
+    if (SIMULER_ALERTE_CA) {
+      console.log(
+        `[SIMULATION — alerte CA désactivée pendant les tests] destinataire=${CLUB.email} sujet="Nouvelle demande d'adhésion — ${data.prenom} ${data.nom}"`
+      );
+    } else {
+      await envoyerEmail({
+        destinataire: CLUB.email,
+        sujet: `Nouvelle demande d'adhésion — ${data.prenom} ${data.nom}`,
+        html: emailAlerteNouvelleDemande({ nomComplet: `${data.prenom} ${data.nom}`, typeDemande: data.typeDemande }),
+        attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
+      });
+    }
   } catch {
     // Idem — le CA verra quand même la demande sur /membres/demandes.
   }
