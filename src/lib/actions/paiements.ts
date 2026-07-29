@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import QRCode from 'qrcode';
 import { createClient } from '@/lib/supabase/server';
 import { envoyerEmail, chargerLogoClub } from '@/lib/email';
-import { emailAppelPaiement } from '@/lib/emailTemplates';
+import { emailAppelPaiement, emailMerciPaiement } from '@/lib/emailTemplates';
 import { genererPayloadSepaQr } from '@/lib/sepaQr';
 import { genererCommunicationAppelPaiement } from '@/lib/communicationPaiement';
 import type { TypeAppelPaiement } from '@/lib/paiements';
@@ -157,14 +157,18 @@ export async function envoyerAppelPaiementEmail(id: number): Promise<Resultat> {
  *  côté propagation du résultat). Marquer un appel payé met donc aussi à
  *  jour l'adhésion de la personne pour la saison active — meilleur effort,
  *  ne fait jamais échouer le "payé" lui-même si l'appel n'est pas lié à
- *  une fiche, ou pour un type "Autre" hors cotisation/licence. */
+ *  une fiche, ou pour un type "Autre" hors cotisation/licence.
+ *
+ *  Envoie aussi un email de remerciement à la personne (29/07/2026,
+ *  demande Jérôme) — best-effort, ne fait jamais échouer la validation du
+ *  paiement elle-même si le SMTP est indisponible. */
 export async function marquerAppelPaye(id: number, modePaiement: string): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
 
   const { data: appel, error: errAppel } = await supabase
     .from('appels_paiement')
-    .select('id, type, personne_id')
+    .select('id, type, personne_id, description, montant, personnes(prenom, email)')
     .eq('id', id)
     .single();
   if (errAppel || !appel) return { ok: false, error: errAppel?.message ?? 'Appel de paiement introuvable.' };
@@ -203,6 +207,20 @@ export async function marquerAppelPaye(id: number, modePaiement: string): Promis
         };
       }
       revalidatePath('/moncaro');
+    }
+  }
+
+  const personne = Array.isArray(appel.personnes) ? appel.personnes[0] : appel.personnes;
+  if (personne?.email) {
+    try {
+      await envoyerEmail({
+        destinataire: personne.email,
+        sujet: `Paiement reçu — ${appel.description}`,
+        html: emailMerciPaiement({ prenom: personne.prenom, description: appel.description, montant: appel.montant }),
+        attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
+      });
+    } catch {
+      // Silencieux — le paiement est déjà marqué payé, seul le remerciement échoue.
     }
   }
 

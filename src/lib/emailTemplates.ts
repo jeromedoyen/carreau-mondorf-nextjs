@@ -244,6 +244,29 @@ export function emailAppelPaiement({
 </table>`;
 }
 
+/** Remerciement de paiement (29/07/2026, demande Jérôme) — envoyé quand le
+ *  CA marque un appel de paiement comme payé (validation depuis
+ *  /outils/paiements-en-attente ou directement lors du traitement d'une
+ *  demande d'adhésion). */
+export function emailMerciPaiement({
+  prenom,
+  description,
+  montant,
+}: {
+  prenom: string;
+  description: string;
+  montant: number;
+}): string {
+  return carteSimple({
+    etiquette: 'Paiement reçu',
+    titre: `Merci ${prenom} !`,
+    paragraphes: [
+      `Nous te confirmons la bonne réception de ton paiement pour <strong style="color:${COULEURS.encre};">${description}</strong> (${montant.toFixed(2)} €).`,
+      `À bientôt au boulodrome !`,
+    ],
+  });
+}
+
 /** Relance de renouvellement (Phase E du workflow adhésion) — envoyée en
  *  masse aux membres de la saison précédente qui n'ont pas encore
  *  d'adhésion pour la saison cible. Pointe vers /moncaro/renouveler
