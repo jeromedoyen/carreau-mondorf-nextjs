@@ -7,6 +7,7 @@ import { envoyerEmail, chargerLogoClub } from '@/lib/email';
 import { emailBienvenue, emailConfirmationDemande, emailAlerteNouvelleDemande, emailRefusDemande } from '@/lib/emailTemplates';
 import { CLUB } from '@/lib/club';
 import { envoyerAppelPaiementEmail } from './paiements';
+import type { TypeAppelPaiement } from '@/lib/paiements';
 
 type Resultat = { ok: true } | { ok: false; error: string };
 
@@ -113,51 +114,65 @@ async function verifierCA(client: Awaited<ReturnType<typeof createClient>>) {
   return !!data;
 }
 
-/** Crée l'appel de cotisation "Carte de membre {année}" et le traite selon
- *  qu'elle est déjà payée ou non — extrait de marquerDemandeTraitee
- *  (29/07/2026) pour être réutilisé aussi côté création directe d'un
- *  membre depuis l'onglet Membres (creerAppelCotisationPourMembre
- *  ci-dessous) : jusqu'ici ce geste n'existait que pour les membres créés
- *  depuis une demande d'adhésion, jamais pour un enregistrement "au
- *  comptoir" (retour Jérôme, 29/07/2026 — aucun email de bienvenue ni
- *  d'appel à cotisation n'était envoyé dans ce cas, gap réel, pas juste un
- *  oubli de test).
+/** Crée l'appel de cotisation et le traite selon qu'elle est déjà payée ou
+ *  non — extrait de marquerDemandeTraitee (29/07/2026) pour être réutilisé
+ *  aussi côté création directe d'un membre depuis l'onglet Membres
+ *  (creerAppelCotisationPourMembre ci-dessous).
  *
- *  Montant TOUJOURS lu depuis parametres_club.montant_carte_membre —
- *  aucun fallback en dur (retiré le 29/07/2026, demande explicite de
- *  Jérôme : "supprime partout les montants fixes", le montant configuré
- *  sur /outils/paiements est l'unique référence). Si le CA n'a jamais
- *  renseigné ce montant, on bloque plutôt que de deviner un chiffre —
- *  message clair pointant vers le réglage à faire d'abord. Même logique
- *  pour la Licence, gérée séparément (montant variable chaque saison
- *  selon la FLBP, geste manuel du CA sur /outils/paiements). */
+ *  Montants TOUJOURS lus depuis parametres_club — aucun fallback en dur
+ *  (demande explicite de Jérôme : "supprime partout les montants fixes",
+ *  le montant configuré sur Outils → Paramètres cotisation & licence est
+ *  l'unique référence). Si absent, on bloque plutôt que de deviner un
+ *  chiffre.
+ *
+ *  Pour un Licencié, l'appel couvre carte de membre ET licence en une
+ *  seule fois (type "Carte de membre + Licence", montant = somme des deux
+ *  — retour Jérôme, 29/07/2026 : "sa cotisation de licencié c'est pas 20
+ *  euros", l'email envoyé jusqu'ici n'affichait que la carte de membre
+ *  seule, jamais la licence). Pour un Membre non-licencié, seule la carte
+ *  de membre est due. */
 async function traiterCotisationMembre(
   client: Awaited<ReturnType<typeof createClient>>,
   personneId: number,
   annee: string,
   nomComplet: string,
+  typeAdhesion: string,
   cotisationPayee: boolean,
   modePaiement?: string
 ): Promise<Resultat> {
   const { data: parametres } = await client
     .from('parametres_club')
-    .select('montant_carte_membre')
+    .select('montant_carte_membre, montant_licence')
     .eq('id', 1)
     .maybeSingle();
   if (!parametres?.montant_carte_membre) {
     return {
       ok: false,
-      error: "Le montant de la carte de membre n'est pas configuré — renseigne-le d'abord sur Outils → Appel à cotisation.",
+      error: "Le montant de la carte de membre n'est pas configuré — renseigne-le d'abord sur Outils → Paramètres cotisation & licence.",
     };
   }
+
+  const estLicencie = typeAdhesion === 'Licencié';
+  if (estLicencie && !parametres.montant_licence) {
+    return {
+      ok: false,
+      error: "Le montant de la licence n'est pas configuré — renseigne-le d'abord sur Outils → Paramètres cotisation & licence.",
+    };
+  }
+
+  const type: TypeAppelPaiement = estLicencie ? 'Carte de membre + Licence' : 'Carte de membre';
+  const montant = estLicencie ? parametres.montant_carte_membre + parametres.montant_licence! : parametres.montant_carte_membre;
+  const description = estLicencie
+    ? `Carte de membre + Licence ${annee} — ${nomComplet}`
+    : `Carte de membre ${annee} — ${nomComplet}`;
 
   const { data: appel, error: errAppel } = await client
     .from('appels_paiement')
     .insert({
       personne_id: personneId,
-      type: 'Carte de membre',
-      montant: parametres.montant_carte_membre,
-      description: `Carte de membre ${annee} — ${nomComplet}`,
+      type,
+      montant,
+      description,
       ...(cotisationPayee
         ? { statut: 'payee', mode_paiement: modePaiement || null, payee_le: new Date().toISOString() }
         : {}),
@@ -187,12 +202,13 @@ export async function creerAppelCotisationPourMembre(
   personneId: number,
   annee: string,
   nomComplet: string,
+  typeAdhesion: string,
   cotisationPayee: boolean,
   modePaiement?: string
 ): Promise<Resultat> {
   const client = await createClient();
   if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
-  return traiterCotisationMembre(client, personneId, annee, nomComplet, cotisationPayee, modePaiement);
+  return traiterCotisationMembre(client, personneId, annee, nomComplet, typeAdhesion, cotisationPayee, modePaiement);
 }
 
 export async function marquerDemandeTraitee(
@@ -200,6 +216,7 @@ export async function marquerDemandeTraitee(
   personneId: number,
   annee: string,
   nomComplet: string,
+  typeAdhesion: string,
   cotisationPayee: boolean,
   modePaiement?: string
 ): Promise<Resultat> {
@@ -213,7 +230,7 @@ export async function marquerDemandeTraitee(
   if (error) return { ok: false, error: error.message };
   revalidatePath('/membres/demandes');
 
-  const resultatCotisation = await traiterCotisationMembre(client, personneId, annee, nomComplet, cotisationPayee, modePaiement);
+  const resultatCotisation = await traiterCotisationMembre(client, personneId, annee, nomComplet, typeAdhesion, cotisationPayee, modePaiement);
   if (!resultatCotisation.ok) {
     return { ok: false, error: `Demande validée, mais ${resultatCotisation.error.charAt(0).toLowerCase()}${resultatCotisation.error.slice(1)}` };
   }

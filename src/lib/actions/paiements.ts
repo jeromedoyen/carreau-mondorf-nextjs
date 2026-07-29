@@ -102,20 +102,29 @@ export async function envoyerAppelPaiementEmail(id: number): Promise<Resultat> {
   const personne = Array.isArray(appel.personnes) ? appel.personnes[0] : appel.personnes;
   if (!personne?.email) return { ok: false, error: 'Aucun email associé à cet appel de paiement.' };
 
-  const communication = genererCommunicationAppelPaiement({
-    type: appel.type,
-    annee: saison?.libelle ?? String(new Date().getFullYear()),
-    personneNom: `${personne.prenom} ${personne.nom}`,
-  });
-
-  const payload = genererPayloadSepaQr({
-    nomBeneficiaire: parametres.nom_beneficiaire,
-    iban: parametres.iban,
-    bic: parametres.bic,
-    montant: appel.montant,
-    communication,
-  });
-  const qrBuffer = await QRCode.toBuffer(payload, { width: 400, margin: 2 });
+  let qrBuffer: Buffer;
+  let communication: string;
+  try {
+    communication = genererCommunicationAppelPaiement({
+      type: appel.type,
+      annee: saison?.libelle ?? String(new Date().getFullYear()),
+      personneNom: `${personne.prenom} ${personne.nom}`,
+    });
+    const payload = genererPayloadSepaQr({
+      nomBeneficiaire: parametres.nom_beneficiaire,
+      iban: parametres.iban,
+      bic: parametres.bic,
+      montant: appel.montant,
+      communication,
+    });
+    qrBuffer = await QRCode.toBuffer(payload, { width: 400, margin: 2 });
+  } catch (e) {
+    // Génération du QR (IBAN mal formé, etc.) — ne doit jamais devenir une
+    // exception non rattrapée qui remonte jusqu'à l'appelant (29/07/2026,
+    // retour Jérôme : c'est exactement ce qui bloquait la page de création
+    // d'un membre).
+    return { ok: false, error: `Échec de la génération du QR SEPA : ${(e as Error).message}` };
+  }
 
   try {
     await envoyerEmail({

@@ -108,47 +108,53 @@ export function MembreForm({
     const declencherPostCreation = (demandeId || !modeEdition) && personneIdTraitee;
     // Les étapes suivantes (cotisation, accès/bienvenue) sont secondaires :
     // la fiche membre (et, s'il y en a une, la demande) sont déjà créées à
-    // ce stade. Un email qui échoue ne doit plus jamais bloquer la page
-    // (retour Jérôme, 29/07/2026 : "il faut que le workflow continue et
-    // que la page disparaisse" — le blocage précédent, pensé pour laisser
-    // le CA lire l'avertissement avant de partir, s'est révélé pire que le
-    // problème qu'il évitait). On continue vers la navigation finale dans
-    // tous les cas ; l'éventuel souci reste visible a posteriori sur
-    // /outils/paiements ou en recontactant la personne, pas en bloquant ici.
+    // ce stade. Un `try/catch` englobe tout le bloc (29/07/2026, 2e retour
+    // Jérôme sur le même symptôme : "la fiche est restée là") — un premier
+    // correctif avait traité les échecs "propres" ({ok:false}), mais pas
+    // les exceptions non rattrapées (ex. génération du QR SEPA qui plante
+    // sur un IBAN mal formé) : celles-ci remontaient jusqu'ici sans être
+    // interceptées et bloquaient la page. Plus aucun problème d'envoi ne
+    // doit pouvoir empêcher la navigation finale — l'éventuel souci reste
+    // visible a posteriori sur Outils → Appel à cotisation.
     if (declencherPostCreation) {
-      const resultatCotisation = demandeId
-        ? await marquerDemandeTraitee(
-            demandeId,
-            personneIdTraitee,
-            donneesAdhesion.annee,
-            `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
-            donneesAdhesion.cotisationPayee,
-            modePaiement
-          )
-        : await creerAppelCotisationPourMembre(
-            personneIdTraitee,
-            donneesAdhesion.annee,
-            `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
-            donneesAdhesion.cotisationPayee,
-            modePaiement
-          );
-      if (!resultatCotisation.ok) console.warn('[MembreForm] cotisation :', resultatCotisation.error);
+      try {
+        const resultatCotisation = demandeId
+          ? await marquerDemandeTraitee(
+              demandeId,
+              personneIdTraitee,
+              donneesAdhesion.annee,
+              `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
+              donneesAdhesion.type,
+              donneesAdhesion.cotisationPayee,
+              modePaiement
+            )
+          : await creerAppelCotisationPourMembre(
+              personneIdTraitee,
+              donneesAdhesion.annee,
+              `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
+              donneesAdhesion.type,
+              donneesAdhesion.cotisationPayee,
+              modePaiement
+            );
+        if (!resultatCotisation.ok) console.warn('[MembreForm] cotisation :', resultatCotisation.error);
 
-      if (!modeEdition && fd.get('creerAcces') === 'on') {
-        const resultatAcces = await creerAccesEtEnvoyerBienvenue(
-          donneesPersonne.nom,
-          donneesPersonne.prenom,
-          donneesPersonne.email,
-          donneesAdhesion.type === 'Licencié'
-        );
-        if (!resultatAcces.ok) console.warn('[MembreForm] accès/bienvenue :', resultatAcces.error);
+        if (!modeEdition && fd.get('creerAcces') === 'on') {
+          const resultatAcces = await creerAccesEtEnvoyerBienvenue(
+            donneesPersonne.nom,
+            donneesPersonne.prenom,
+            donneesPersonne.email,
+            donneesAdhesion.type === 'Licencié'
+          );
+          if (!resultatAcces.ok) console.warn('[MembreForm] accès/bienvenue :', resultatAcces.error);
+        }
+      } catch (e) {
+        console.warn('[MembreForm] post-création :', (e as Error).message);
       }
     }
-    // Retour à la liste des demandes (pas la liste générale des membres)
-    // quand on vient de traiter une demande (29/07/2026, retour Jérôme) —
-    // pour voir la demande passer dans "Traitées" plutôt que de perdre le
-    // fil sur /membres.
-    router.push(demandeId ? '/membres/demandes' : '/membres');
+    // Retour au menu standard (29/07/2026, retour Jérôme) — pas une liste
+    // spécifique (/membres, /membres/demandes) qui laissait l'impression
+    // que "ça n'avançait pas".
+    router.push('/');
     router.refresh();
   }
 
