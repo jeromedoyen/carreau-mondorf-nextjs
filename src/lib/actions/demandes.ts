@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase/server';
 import { envoyerEmail, chargerLogoClub } from '@/lib/email';
-import { emailBienvenue } from '@/lib/emailTemplates';
+import { emailBienvenue, emailConfirmationDemande, emailAlerteNouvelleDemande, emailRefusDemande } from '@/lib/emailTemplates';
+import { CLUB } from '@/lib/club';
+import { envoyerAppelPaiementEmail } from './paiements';
 
 type Resultat = { ok: true } | { ok: false; error: string };
 
@@ -64,6 +66,31 @@ export async function soumettreDemandeAdhesion(data: DemandeSaisie): Promise<Res
   });
   if (error) return { ok: false, error: error.message };
 
+  // Accusé de réception à l'applicant + alerte au comité (28/07/2026,
+  // workflow adhésion bout-en-bout) — best-effort : la demande est déjà
+  // enregistrée à ce stade, un SMTP indisponible ne doit jamais faire
+  // échouer la soumission elle-même.
+  try {
+    await envoyerEmail({
+      destinataire: data.email,
+      sujet: 'Ta demande a bien été reçue',
+      html: emailConfirmationDemande({ prenom: data.prenom }),
+      attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
+    });
+  } catch {
+    // Silencieux — rien à remonter à un applicant anonyme, la demande est déjà enregistrée.
+  }
+  try {
+    await envoyerEmail({
+      destinataire: CLUB.email,
+      sujet: `Nouvelle demande d'adhésion — ${data.prenom} ${data.nom}`,
+      html: emailAlerteNouvelleDemande({ nomComplet: `${data.prenom} ${data.nom}`, typeDemande: data.typeDemande }),
+      attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
+    });
+  } catch {
+    // Idem — le CA verra quand même la demande sur /membres/demandes.
+  }
+
   return { ok: true };
 }
 
@@ -95,7 +122,8 @@ export async function marquerDemandeTraitee(
   demandeId: number,
   personneId: number,
   annee: string,
-  nomComplet: string
+  nomComplet: string,
+  envoyerCotisationMaintenant = true
 ): Promise<Resultat> {
   const client = await createClient();
   if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
@@ -112,18 +140,38 @@ export async function marquerDemandeTraitee(
     .eq('id', 1)
     .maybeSingle();
 
-  const { error: errAppel } = await client.from('appels_paiement').insert({
-    personne_id: personneId,
-    type: 'Carte de membre',
-    montant: parametres?.montant_carte_membre ?? MONTANT_COTISATION_DEFAUT,
-    description: `Carte de membre ${annee} — ${nomComplet}`,
-  });
+  const { data: appel, error: errAppel } = await client
+    .from('appels_paiement')
+    .insert({
+      personne_id: personneId,
+      type: 'Carte de membre',
+      montant: parametres?.montant_carte_membre ?? MONTANT_COTISATION_DEFAUT,
+      description: `Carte de membre ${annee} — ${nomComplet}`,
+    })
+    .select('id')
+    .single();
 
   revalidatePath('/membres/demandes');
   revalidatePath('/outils/paiements');
   if (errAppel) {
     return { ok: false, error: `Demande validée, mais l'appel de cotisation n'a pas pu être créé : ${errAppel.message}` };
   }
+
+  // Envoi automatique de l'appel à cotisation (28/07/2026, workflow adhésion
+  // bout-en-bout) — jusqu'ici un second geste manuel sur /outils/paiements
+  // était nécessaire ; désactivable via la case à cocher du formulaire (ex.
+  // cotisation déjà réglée sur place). Échec non bloquant : l'appel existe
+  // et reste envoyable manuellement depuis /outils/paiements.
+  if (envoyerCotisationMaintenant) {
+    const resultatEnvoi = await envoyerAppelPaiementEmail(appel.id);
+    if (!resultatEnvoi.ok) {
+      return {
+        ok: false,
+        error: `Demande validée, appel de cotisation créé, mais l'envoi de l'email a échoué : ${resultatEnvoi.error}`,
+      };
+    }
+  }
+
   return { ok: true };
 }
 
@@ -205,8 +253,31 @@ export async function refuserDemande(demandeId: number): Promise<Resultat> {
   const client = await createClient();
   if (!(await verifierCA(client))) return { ok: false, error: 'Action réservée aux membres du CA.' };
 
+  const { data: demande } = await client
+    .from('demandes_adhesion')
+    .select('prenom, email')
+    .eq('id', demandeId)
+    .maybeSingle();
+
   const { error } = await client.from('demandes_adhesion').update({ statut: 'rejetee' }).eq('id', demandeId);
   if (error) return { ok: false, error: error.message };
+
+  // Email de refus (28/07/2026, workflow adhésion bout-en-bout) — jusqu'ici
+  // un refus était un silence radio pour l'applicant. Best-effort : la
+  // demande est déjà classée à ce stade, ne jamais faire échouer le refus
+  // lui-même pour un souci SMTP.
+  if (demande?.email) {
+    try {
+      await envoyerEmail({
+        destinataire: demande.email,
+        sujet: 'Ta demande d’adhésion',
+        html: emailRefusDemande({ prenom: demande.prenom }),
+        attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
+      });
+    } catch {
+      // Silencieux — la demande est déjà classée "rejetee".
+    }
+  }
 
   revalidatePath('/membres/demandes');
   return { ok: true };

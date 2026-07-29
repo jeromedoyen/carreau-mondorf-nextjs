@@ -106,7 +106,8 @@ export function MembreForm({
         demandeId,
         personneIdTraitee,
         donneesAdhesion.annee,
-        `${donneesPersonne.prenom} ${donneesPersonne.nom}`
+        `${donneesPersonne.prenom} ${donneesPersonne.nom}`,
+        fd.get('envoyerCotisation') === 'on'
       );
       if (!resultatDemande.ok) {
         setAvertissement(resultatDemande.error);
@@ -285,6 +286,20 @@ export function MembreForm({
           className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
         />
       </section>
+
+      {demandeId && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-sable-carte p-5">
+          <h3 className="font-display text-[15px]">Cotisation</h3>
+          <label className="flex items-center gap-2 text-[13px] text-encre-douce">
+            <input type="checkbox" name="envoyerCotisation" defaultChecked className="h-4 w-4 accent-terracotta" />
+            Envoyer l&apos;appel à cotisation par email immédiatement
+          </label>
+          <p className="text-[11.5px] text-encre-douce/70">
+            Décoche si la cotisation a déjà été réglée sur place (espèces, carte…) — l&apos;appel reste créé et
+            envoyable plus tard depuis Outils → Appel à cotisation.
+          </p>
+        </section>
+      )}
 
       {demandeId && !modeEdition && (
         <section className="flex flex-col gap-3 rounded-2xl border border-ligne bg-pin/5 p-5">

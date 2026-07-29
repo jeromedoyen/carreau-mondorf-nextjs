@@ -83,6 +83,94 @@ export function emailBienvenue({
 </table>`;
 }
 
+function carteSimple({ etiquette, titre, paragraphes, cta }: {
+  etiquette: string;
+  titre: string;
+  paragraphes: string[];
+  cta?: { href: string; texte: string };
+}): string {
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COULEURS.sable};padding:32px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" style="max-width:480px;background:${COULEURS.sableCarte};border-radius:16px;overflow:hidden;border:1px solid ${COULEURS.ligne};">
+        <tr>
+          <td style="background:${COULEURS.sable};padding:28px 32px;text-align:center;border-bottom:1px solid ${COULEURS.ligne};">
+            <img src="cid:logo-club" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:${COULEURS.terracotta};font-weight:600;">${etiquette}</p>
+            <h1 style="margin:0 0 20px;font-size:24px;line-height:1.3;color:${COULEURS.encre};font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;">
+              ${titre}
+            </h1>
+            ${paragraphes.map((p) => `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:${COULEURS.encreDouce};">${p}</p>`).join('')}
+            ${cta ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 0;">
+              <tr>
+                <td style="border-radius:10px;background:${COULEURS.terracotta};">
+                  <a href="${cta.href}" style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:600;color:#fff;text-decoration:none;border-radius:10px;">
+                    ${cta.texte}
+                  </a>
+                </td>
+              </tr>
+            </table>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px;border-top:1px solid ${COULEURS.ligne};">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:${COULEURS.encreDouce};">
+              Le comité du Carreau Boules et Pétanque Mondorf
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
+/** Accusé de réception (28/07/2026, workflow adhésion bout-en-bout) — envoyé
+ *  immédiatement à l'applicant après soumission du formulaire public
+ *  /inscription, pour qu'il sache que sa demande est bien partie plutôt que
+ *  de rester dans l'incertitude jusqu'à un éventuel appel du comité. */
+export function emailConfirmationDemande({ prenom }: { prenom: string }): string {
+  return carteSimple({
+    etiquette: 'Demande reçue',
+    titre: `Bonjour ${prenom},`,
+    paragraphes: [
+      `Ta demande d'adhésion au <strong style="color:${COULEURS.encre};">Carreau Boules et Pétanque Mondorf</strong> vient bien de nous parvenir.`,
+      `Le comité va l'examiner et revient vers toi rapidement — pas besoin de renvoyer le formulaire.`,
+    ],
+  });
+}
+
+/** Alerte comité (28/07/2026) — envoyée au même moment que la confirmation
+ *  ci-dessus, à l'adresse partagée du club (CLUB.email) : jusqu'ici rien ne
+ *  prévenait le CA qu'une demande attendait sur /membres/demandes, il
+ *  fallait penser à aller vérifier la page. */
+export function emailAlerteNouvelleDemande({ nomComplet, typeDemande }: { nomComplet: string; typeDemande: string }): string {
+  return carteSimple({
+    etiquette: 'Nouvelle demande',
+    titre: `${typeDemande} — ${nomComplet}`,
+    paragraphes: [`Une nouvelle demande vient d'être soumise sur le site — à traiter sur la page "Demandes d'adhésion".`],
+    cta: { href: 'https://carreau-mondorf.com/membres/demandes', texte: 'Voir la demande' },
+  });
+}
+
+/** Refus (28/07/2026) — jusqu'ici un refus était un silence radio pour
+ *  l'applicant (statut passé à "rejetee" sans aucune notification). */
+export function emailRefusDemande({ prenom }: { prenom: string }): string {
+  return carteSimple({
+    etiquette: 'Ta demande',
+    titre: `Bonjour ${prenom},`,
+    paragraphes: [
+      `Après examen, le comité du <strong style="color:${COULEURS.encre};">Carreau Boules et Pétanque Mondorf</strong> n'a pas pu donner suite à ta demande d'adhésion.`,
+      `N'hésite pas à nous contacter directement si tu as des questions.`,
+    ],
+  });
+}
+
 /** Appel de paiement individuel (/outils/paiements) — envoyé à la demande
  *  du CA plutôt qu'automatiquement, avec le QR SEPA en pièce jointe `cid:`
  *  (voir src/lib/actions/paiements.ts) : plus fiable dans les clients mail
