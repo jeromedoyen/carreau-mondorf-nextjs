@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { creerMembre, modifierPersonne, enregistrerAdhesion } from '@/lib/actions/membres';
 import { marquerDemandeTraitee, creerAccesEtEnvoyerBienvenue, creerAppelCotisationPourMembre } from '@/lib/actions/demandes';
@@ -47,7 +46,6 @@ export function MembreForm({
   const router = useRouter();
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [avertissement, setAvertissement] = useState<string | null>(null);
   const [cotisationPayee, setCotisationPayee] = useState(personne?.adhesion?.cotisationPayee ?? false);
   const modeEdition = !!personne;
   // Sert uniquement de source de valeurs par défaut (édition OU
@@ -108,6 +106,15 @@ export function MembreForm({
     // regénérer un appel de paiement à chaque correction de fiche.
     const personneIdTraitee = modeEdition ? personne!.id : 'id' in resultat ? resultat.id : undefined;
     const declencherPostCreation = (demandeId || !modeEdition) && personneIdTraitee;
+    // Les étapes suivantes (cotisation, accès/bienvenue) sont secondaires :
+    // la fiche membre (et, s'il y en a une, la demande) sont déjà créées à
+    // ce stade. Un email qui échoue ne doit plus jamais bloquer la page
+    // (retour Jérôme, 29/07/2026 : "il faut que le workflow continue et
+    // que la page disparaisse" — le blocage précédent, pensé pour laisser
+    // le CA lire l'avertissement avant de partir, s'est révélé pire que le
+    // problème qu'il évitait). On continue vers la navigation finale dans
+    // tous les cas ; l'éventuel souci reste visible a posteriori sur
+    // /outils/paiements ou en recontactant la personne, pas en bloquant ici.
     if (declencherPostCreation) {
       const resultatCotisation = demandeId
         ? await marquerDemandeTraitee(
@@ -125,11 +132,7 @@ export function MembreForm({
             donneesAdhesion.cotisationPayee,
             modePaiement
           );
-      if (!resultatCotisation.ok) {
-        setAvertissement(resultatCotisation.error);
-        router.refresh();
-        return;
-      }
+      if (!resultatCotisation.ok) console.warn('[MembreForm] cotisation :', resultatCotisation.error);
 
       if (!modeEdition && fd.get('creerAcces') === 'on') {
         const resultatAcces = await creerAccesEtEnvoyerBienvenue(
@@ -138,15 +141,7 @@ export function MembreForm({
           donneesPersonne.email,
           donneesAdhesion.type === 'Licencié'
         );
-        if (!resultatAcces.ok) {
-          // La fiche membre existe déjà à ce stade — on affiche
-          // l'avertissement et on laisse le CA revenir manuellement,
-          // plutôt que de naviguer tout de suite et faire disparaître le
-          // message avant qu'il ait pu le lire.
-          setAvertissement(resultatAcces.error);
-          router.refresh();
-          return;
-        }
+        if (!resultatAcces.ok) console.warn('[MembreForm] accès/bienvenue :', resultatAcces.error);
       }
     }
     // Retour à la liste des demandes (pas la liste générale des membres)
@@ -334,15 +329,6 @@ export function MembreForm({
       )}
 
       {erreur && <p className="text-[13px] text-danger">{erreur}</p>}
-      {avertissement && (
-        <div className="rounded-lg bg-laiton/10 p-3 text-[13px] text-laiton">
-          <p>{avertissement}</p>
-          <p className="mt-1">La fiche membre a bien été créée.</p>
-          <Link href="/membres" className="mt-1 inline-block underline">
-            Retour à Membres
-          </Link>
-        </div>
-      )}
 
       <button
         type="submit"
