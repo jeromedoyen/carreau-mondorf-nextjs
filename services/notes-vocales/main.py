@@ -14,7 +14,6 @@ import tempfile
 import httpx
 from fastapi import FastAPI, Request
 from faster_whisper import WhisperModel
-from supabase import create_client
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
@@ -25,7 +24,15 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 TELEGRAM_CHAT_ID_AUTORISE = os.environ["TELEGRAM_CHAT_ID_AUTORISE"]
 
 app = FastAPI()
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+# Appel direct à l'API REST Supabase (PostgREST) plutôt que le SDK
+# supabase-py : ce dernier valide la clé côté client en s'attendant à un
+# JWT classique et rejette le nouveau format sb_secret_/sb_publishable_
+# avec "Invalid API key", alors que la clé est en réalité valide.
+SUPABASE_HEADERS = {
+    "apikey": SUPABASE_SERVICE_ROLE_KEY,
+    "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+    "Content-Type": "application/json",
+}
 # "small" : bon compromis précision/RAM pour le tier gratuit Render.
 modele = WhisperModel("small", device="cpu", compute_type="int8")
 
@@ -54,10 +61,12 @@ async def recevoir_webhook(request: Request):
     os.remove(chemin_local)
 
     if texte:
-        supabase.table("notes_vocales").insert({
-            "texte": texte,
-            "duree_secondes": voix.get("duration"),
-        }).execute()
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"{SUPABASE_URL}/rest/v1/notes_vocales",
+                headers=SUPABASE_HEADERS,
+                json={"texte": texte, "duree_secondes": voix.get("duration")},
+            )
 
     return {"ok": True}
 
