@@ -12,7 +12,7 @@ import os
 import tempfile
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from faster_whisper import WhisperModel
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -47,16 +47,16 @@ def obtenir_modele():
     return _modele
 
 
-@app.post("/webhook/telegram")
-async def recevoir_webhook(request: Request):
-    update = await request.json()
-    message = update.get("message", {})
-    chat_id = str(message.get("chat", {}).get("id", ""))
-    voix = message.get("voice")
+# Ids Telegram update_id déjà traités - Telegram réémet le même webhook
+# tant qu'il ne reçoit pas de 200 assez vite (la transcription prenait
+# largement plus que son délai d'attente), ce qui a produit des dizaines
+# de doublons de la même note avant ce correctif. En mémoire seulement
+# (une instance, tier gratuit) : suffisant puisque Telegram ne réessaie
+# que sur une fenêtre courte après l'envoi initial.
+_updates_traites = set()
 
-    if not voix or chat_id != TELEGRAM_CHAT_ID_AUTORISE:
-        return {"ok": True}
 
+async def traiter_vocal(voix: dict):
     async with httpx.AsyncClient() as client:
         info_fichier = await client.get(f"{TELEGRAM_API}/getFile", params={"file_id": voix["file_id"]})
         chemin_telegram = info_fichier.json()["result"]["file_path"]
@@ -78,6 +78,22 @@ async def recevoir_webhook(request: Request):
                 json={"texte": texte, "duree_secondes": voix.get("duration")},
             )
 
+
+@app.post("/webhook/telegram")
+async def recevoir_webhook(request: Request, background_tasks: BackgroundTasks):
+    update = await request.json()
+    update_id = update.get("update_id")
+    message = update.get("message", {})
+    chat_id = str(message.get("chat", {}).get("id", ""))
+    voix = message.get("voice")
+
+    if not voix or chat_id != TELEGRAM_CHAT_ID_AUTORISE or update_id in _updates_traites:
+        return {"ok": True}
+
+    _updates_traites.add(update_id)
+    # Répond immédiatement à Telegram (avant transcription, qui prend du
+    # temps) pour éviter qu'il ne réessaie et double le traitement.
+    background_tasks.add_task(traiter_vocal, voix)
     return {"ok": True}
 
 
