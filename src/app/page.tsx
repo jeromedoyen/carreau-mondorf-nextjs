@@ -32,10 +32,12 @@ export default function Home() {
             priority
             className="h-16 w-auto shrink-0 sm:h-24"
           />
-          <h1 className="font-display text-[clamp(2.2rem,7vw,5rem)] leading-[0.98] font-semibold italic text-encre">
-            Carreau Boules
+          <h1 className="font-display text-[clamp(2.2rem,6vw,4rem)] leading-[0.98] font-semibold italic text-encre">
+            Carreau
             <br />
-            &amp; Pétanque Mondorf-les-Bains
+            Boules &amp; Pétanque
+            <br />
+            Mondorf-les-Bains
           </h1>
         </div>
 
