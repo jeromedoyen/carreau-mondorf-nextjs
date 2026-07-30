@@ -35,7 +35,7 @@ export default function Home() {
           <h1 className="font-display text-[clamp(2.2rem,7vw,5rem)] leading-[0.98] font-semibold italic text-encre">
             Carreau Boules
             <br />
-            &amp; Pétanque Mondorf
+            &amp; Pétanque Mondorf-les-Bains
           </h1>
         </div>
 

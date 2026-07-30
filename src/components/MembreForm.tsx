@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { creerMembre, modifierPersonne, enregistrerAdhesion } from '@/lib/actions/membres';
 import { marquerDemandeTraitee, creerAccesEtEnvoyerBienvenue, creerAppelCotisationPourMembre } from '@/lib/actions/demandes';
+import { ChampNationalite } from './ChampNationalite';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
 const TYPES_ADHESION = ['Licencié', 'Membre (non-licencié)'];
@@ -201,12 +202,7 @@ export function MembreForm({
             aria-label="Date de naissance"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
-          <input
-            name="nationalite"
-            defaultValue={valeurs?.nationalite ?? (modeEdition ? '' : 'Française')}
-            placeholder="Nationalité"
-            className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
-          />
+          <ChampNationalite defaultValue={valeurs?.nationalite ?? (modeEdition ? undefined : 'Française')} />
         </div>
       </section>
 

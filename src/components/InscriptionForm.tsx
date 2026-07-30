@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { soumettreDemandeAdhesion } from '@/lib/actions/demandes';
+import { ChampNationalite } from './ChampNationalite';
 
 /** Réinscription retirée de ce formulaire public (26/07/2026, Jérôme) :
  *  une inscription est par nature une démarche libre, la réinscription
@@ -93,12 +94,7 @@ export function InscriptionForm() {
             aria-label="Date de naissance"
             className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
-          <input
-            name="nationalite"
-            defaultValue="Française"
-            placeholder="Nationalité"
-            className="rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
-          />
+          <ChampNationalite />
         </div>
       </section>
 
