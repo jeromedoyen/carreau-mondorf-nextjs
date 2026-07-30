@@ -49,6 +49,17 @@ export type PartieJoueurD2 = {
   scoreAdverse: number;
   gagne: boolean;
   partenaires: string[];
+  /** Points marqués sur cette partie (règlement FLBP : Triplette 5, Doublette
+   *  3, Tête à tête 2 — 3 en phase 3 — uniquement en cas de victoire, 0 sinon).
+   *  Voir pointsVictoirePartie() dans lib/stats.ts. */
+  points: number;
+};
+
+/** Points cumulés d'un joueur pour une journée donnée (une des deux
+ *  rencontres de championnat par journée). */
+export type PointsJourneeD2 = {
+  journee: number;
+  points: number;
 };
 
 export type StatJoueurD2 = {
@@ -58,6 +69,8 @@ export type StatJoueurD2 = {
   joues: number;
   victoires: number;
   tauxVictoire: number;
+  pointsTotal: number;
+  pointsParJournee: PointsJourneeD2[];
 };
 
 export type StatEquipeD2 = {
@@ -71,6 +84,9 @@ export type StatEquipeD2 = {
 export type StatistiquesD2 = {
   joueurs: StatJoueurD2[];
   equipes: StatEquipeD2[];
+  /** Mêmes joueurs que `joueurs`, triés par points marqués (règlement FLBP)
+   *  décroissants — classement demandé en plus du taux de victoire. */
+  classementPoints: StatJoueurD2[];
 };
 
 // Statistiques individuelles Promotion — pas de détail par partie disponible

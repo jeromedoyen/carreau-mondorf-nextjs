@@ -18,6 +18,17 @@ function sansAccents(texte: string): string {
     .replace(/[̀-ͯ]/g, '');
 }
 
+/** Port de pointsVictoirePartie_() (ChampionnatBackend.gs:54) — règlement
+ *  FLBP 2025 : Triplette 5 pts/victoire, Doublette 3 pts/victoire, Tête à
+ *  tête 2 pts/victoire (3 en phase 3). Uniquement en cas de victoire (0 en
+ *  cas de défaite, appelé conditionnellement par l'appelant). */
+function pointsVictoirePartie(phase: number, type: string): number {
+  if (type === 'Triplette') return 5;
+  if (type === 'Doublette') return 3;
+  if (type === 'Tête à tête') return phase === 3 ? 3 : 2;
+  throw new Error(`Type de partie inconnu pour le calcul des points : "${type}"`);
+}
+
 function meilleurAffichage(actuel: string | undefined, candidat: string): string {
   if (!actuel) return candidat;
   const premierMotMajuscule = (s: string) => {
@@ -109,6 +120,8 @@ function reduireStatistiquesD2(
     nomAffiche: string;
     parType: Record<string, { joues: number; victoires: number }>;
     parties: StatJoueurD2['parties'];
+    pointsTotal: number;
+    pointsParJournee: Map<number, number>;
   };
   const statsParJoueur = new Map<string, StatBrute>();
   const statsParEquipe = new Map<string, StatEquipeD2 & { joueurs: string[] }>();
@@ -126,16 +139,20 @@ function reduireStatistiquesD2(
     const gagne = scoreCM > scoreAdverse;
     const type = p.type;
 
+    const points = gagne ? pointsVictoirePartie(p.phase, type) : 0;
+
     noms.forEach((nom) => {
       const cleNom = sansAccents(nom);
       if (!statsParJoueur.has(cleNom)) {
-        statsParJoueur.set(cleNom, { nomAffiche: nom, parType: {}, parties: [] });
+        statsParJoueur.set(cleNom, { nomAffiche: nom, parType: {}, parties: [], pointsTotal: 0, pointsParJournee: new Map() });
       }
       const s = statsParJoueur.get(cleNom)!;
       s.nomAffiche = meilleurAffichage(s.nomAffiche, nom);
       if (!s.parType[type]) s.parType[type] = { joues: 0, victoires: 0 };
       s.parType[type].joues++;
       if (gagne) s.parType[type].victoires++;
+      s.pointsTotal += points;
+      s.pointsParJournee.set(rencontre.journee, (s.pointsParJournee.get(rencontre.journee) ?? 0) + points);
       s.parties.push({
         idRencontre: rencontre.id,
         journee: rencontre.journee,
@@ -147,6 +164,7 @@ function reduireStatistiquesD2(
         scoreAdverse,
         gagne,
         partenaires: noms.filter((n) => n !== nom),
+        points,
       });
     });
 
@@ -170,6 +188,9 @@ function reduireStatistiquesD2(
       victoires += t.victoires;
     });
     const partiesTri = [...s.parties].sort((a, b) => b.date.localeCompare(a.date));
+    const pointsParJournee = Array.from(s.pointsParJournee.entries())
+      .map(([journee, points]) => ({ journee, points }))
+      .sort((a, b) => a.journee - b.journee);
     return {
       nom: s.nomAffiche,
       parType: s.parType,
@@ -177,9 +198,13 @@ function reduireStatistiquesD2(
       joues,
       victoires,
       tauxVictoire: joues ? victoires / joues : 0,
+      pointsTotal: s.pointsTotal,
+      pointsParJournee,
     };
   });
   joueurs.sort((a, b) => b.tauxVictoire - a.tauxVictoire || b.joues - a.joues);
+
+  const classementPoints = [...joueurs].sort((a, b) => b.pointsTotal - a.pointsTotal || b.joues - a.joues);
 
   const equipes: StatEquipeD2[] = Array.from(statsParEquipe.values()).map((e) => ({
     ...e,
@@ -187,7 +212,7 @@ function reduireStatistiquesD2(
   }));
   equipes.sort((a, b) => b.tauxVictoire - a.tauxVictoire || b.joues - a.joues);
 
-  return { joueurs, equipes };
+  return { joueurs, equipes, classementPoints };
 }
 
 type LigneEquipePromotion = {

@@ -6,7 +6,7 @@ import type { StatistiquesD2 as StatistiquesD2Data, StatJoueurD2 } from '@/lib/t
 import { createClient } from '@/lib/supabase/client';
 import { getStatistiquesJoueursD2, getMesStatistiquesD2 } from '@/lib/stats';
 
-type TriColonne = 'tauxVictoire' | 'joues';
+type TriColonne = 'tauxVictoire' | 'joues' | 'points';
 type Etat = 'verification' | 'mesStats' | 'chargement' | 'pret' | 'nonLicencie';
 
 function formatPct(v: number) {
@@ -21,6 +21,7 @@ function formatDate(iso: string) {
 const COLONNES: [TriColonne, string][] = [
   ['tauxVictoire', 'Taux de victoire'],
   ['joues', 'Parties jouées'],
+  ['points', 'Points (règlement FLBP)'],
 ];
 
 /** Réservé au CA (décision Phase 1 : public "pour l'instant", reverrouillé
@@ -74,6 +75,7 @@ export function StatistiquesD2({ saison }: { saison: string }) {
 
   const joueursTries = useMemo(() => {
     if (!stats) return [];
+    if (tri === 'points') return stats.classementPoints;
     return [...stats.joueurs].sort((a, b) =>
       tri === 'tauxVictoire'
         ? b.tauxVictoire - a.tauxVictoire || b.joues - a.joues
@@ -153,7 +155,7 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                   <span className="font-medium text-encre">{j.nom}</span>
                   <span className="text-encre-douce">{j.joues} j.</span>
                   <span className="font-score text-base text-terracotta">
-                    {formatPct(j.tauxVictoire)}
+                    {tri === 'points' ? `${j.pointsTotal} pts` : formatPct(j.tauxVictoire)}
                   </span>
                   {estOuvert ? (
                     <ChevronUp size={15} className="text-encre-douce/50" />
@@ -162,7 +164,7 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                   )}
                 </button>
                 {estOuvert && (
-                  <div className="entree grid gap-4 border-t border-ligne bg-sable/40 px-2 py-4 sm:grid-cols-2">
+                  <div className="entree grid gap-4 border-t border-ligne bg-sable/40 px-2 py-4 sm:grid-cols-3">
                     <div>
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
                         Par type de partie
@@ -184,6 +186,26 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                     </div>
                     <div>
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
+                        Points par journée ({j.pointsTotal} au total)
+                      </p>
+                      <div className="flex flex-col gap-1">
+                        {j.pointsParJournee.length ? (
+                          j.pointsParJournee.map((pj) => (
+                            <div
+                              key={pj.journee}
+                              className="flex items-center justify-between text-[12.5px]"
+                            >
+                              <span className="text-encre-douce">Journée {pj.journee}</span>
+                              <span className="text-encre">{pj.points} pts</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[12.5px] text-encre-douce">Aucun point marqué.</p>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
                         Dernières parties
                       </p>
                       <div className="flex flex-col gap-1">
@@ -197,6 +219,7 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                             </span>
                             <span className={p.gagne ? 'shrink-0 text-pin' : 'shrink-0 text-danger'}>
                               {p.scoreCM}-{p.scoreAdverse}
+                              {p.gagne ? ` (+${p.points})` : ''}
                             </span>
                           </div>
                         ))}
@@ -242,11 +265,14 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
     <div className="rounded-2xl border border-ligne bg-sable-carte p-6 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
       <div className="mb-5 flex items-center justify-between gap-3">
         <h3 className="font-display m-0 text-xl">Mes statistiques — {joueur.nom}</h3>
-        <span className="font-score text-2xl text-terracotta">{formatPct(joueur.tauxVictoire)}</span>
+        <div className="flex items-center gap-4">
+          <span className="font-score text-2xl text-terracotta">{formatPct(joueur.tauxVictoire)}</span>
+          <span className="font-score text-2xl text-encre">{joueur.pointsTotal} pts</span>
+        </div>
       </div>
       <p className="mb-5 text-[13px] text-encre-douce">{joueur.joues} partie(s) jouée(s) cette saison.</p>
 
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-3">
         <div>
           <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Par type de partie</p>
           <div className="flex flex-col gap-1">
@@ -261,6 +287,21 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
           </div>
         </div>
         <div>
+          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Points par journée</p>
+          <div className="flex flex-col gap-1">
+            {joueur.pointsParJournee.length ? (
+              joueur.pointsParJournee.map((pj) => (
+                <div key={pj.journee} className="flex items-center justify-between text-[12.5px]">
+                  <span className="text-encre-douce">Journée {pj.journee}</span>
+                  <span className="text-encre">{pj.points} pts</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-[12.5px] text-encre-douce">Aucun point marqué.</p>
+            )}
+          </div>
+        </div>
+        <div>
           <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Dernières parties</p>
           <div className="flex flex-col gap-1">
             {joueur.parties.slice(0, 8).map((p) => (
@@ -270,6 +311,7 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
                 </span>
                 <span className={p.gagne ? 'shrink-0 text-pin' : 'shrink-0 text-danger'}>
                   {p.scoreCM}-{p.scoreAdverse}
+                  {p.gagne ? ` (+${p.points})` : ''}
                 </span>
               </div>
             ))}
