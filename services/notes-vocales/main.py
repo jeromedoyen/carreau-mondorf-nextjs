@@ -33,8 +33,18 @@ SUPABASE_HEADERS = {
     "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
     "Content-Type": "application/json",
 }
-# "small" : bon compromis précision/RAM pour le tier gratuit Render.
-modele = WhisperModel("small", device="cpu", compute_type="int8")
+# "base" (pas "small") : le tier gratuit Render est limité à 512 Mo de
+# RAM, "small" dépasse cette limite au chargement (OOM). Chargé à la
+# demande plutôt qu'à l'import, pour ne pas consommer de mémoire tant
+# qu'aucun vocal n'est arrivé.
+_modele = None
+
+
+def obtenir_modele():
+    global _modele
+    if _modele is None:
+        _modele = WhisperModel("base", device="cpu", compute_type="int8")
+    return _modele
 
 
 @app.post("/webhook/telegram")
@@ -56,7 +66,7 @@ async def recevoir_webhook(request: Request):
             f.write(reponse.content)
             chemin_local = f.name
 
-    segments, _ = modele.transcribe(chemin_local, language="fr")
+    segments, _ = obtenir_modele().transcribe(chemin_local, language="fr")
     texte = " ".join(segment.text.strip() for segment in segments).strip()
     os.remove(chemin_local)
 
