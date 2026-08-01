@@ -8,6 +8,7 @@ import {
   proposerCompositionEquipe,
   type JoueurSelectionnable,
   type CompositionEquipe,
+  type StrategieComposition,
 } from '@/lib/actions/propositionEquipe';
 
 const TAILLE_EQUIPE = 9;
@@ -121,14 +122,14 @@ export function PropositionEquipeIA({ saison }: { saison: string }) {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-3 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
           {joueurs.map((j) => {
             const coche = selection.has(j.nom);
             const desactive = !coche && selection.size >= TAILLE_EQUIPE;
             return (
               <label
                 key={j.nom}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] transition-colors ${
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors ${
                   coche ? 'bg-terracotta/10 text-encre' : 'text-encre-douce'
                 } ${desactive ? 'opacity-40' : 'cursor-pointer hover:bg-sable'}`}
               >
@@ -137,12 +138,14 @@ export function PropositionEquipeIA({ saison }: { saison: string }) {
                   checked={coche}
                   disabled={desactive}
                   onChange={() => basculer(j.nom)}
-                  className="accent-terracotta"
+                  className="shrink-0 accent-terracotta"
                 />
-                <span className="flex-1">{j.nom}</span>
-                {j.sexe === 'F' && <span className="text-[11px] text-terracotta">F</span>}
+                <span className="flex-1 truncate">{j.nom}</span>
+                {j.sexe === 'F' && <span className="shrink-0 text-[11px] text-terracotta">F</span>}
                 {j.aJoueCetteSaison && (
-                  <span className="rounded-full bg-pin/10 px-2 py-0.5 text-[10.5px] text-pin">a joué</span>
+                  <span className="shrink-0 rounded-full bg-pin/10 px-1.5 py-0.5 text-[10px] text-pin">
+                    a joué
+                  </span>
                 )}
               </label>
             );
@@ -161,7 +164,7 @@ export function PropositionEquipeIA({ saison }: { saison: string }) {
           className="mt-5 inline-flex items-center gap-2 rounded-lg bg-terracotta px-4 py-2.5 text-[13.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           <Sparkles size={15} />
-          {enCours ? 'Composition en cours…' : 'Demander la meilleure composition à l’IA'}
+          {enCours ? 'Analyse en cours…' : 'Demander les compositions à l’IA'}
         </button>
       </div>
 
@@ -182,18 +185,30 @@ function GroupeJoueurs({ joueurs }: { joueurs: string[] }) {
   );
 }
 
-function ResultatComposition({ composition }: { composition: CompositionEquipe }) {
+function CarteStrategie({
+  titre,
+  description,
+  strategie,
+}: {
+  titre: string;
+  description: string;
+  strategie: StrategieComposition;
+}) {
   return (
-    <div className="entree rounded-2xl border border-ligne bg-sable-carte p-6 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-      <h3 className="font-display m-0 mb-5 text-xl">Composition proposée</h3>
+    <div className="rounded-2xl border border-ligne bg-sable-carte p-6 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+      <div className="mb-1 flex items-baseline justify-between gap-3">
+        <h4 className="font-display m-0 text-lg">{titre}</h4>
+        <span className="font-score shrink-0 text-2xl text-terracotta">
+          {Math.round(strategie.probabiliteVictoireRencontre)}%
+        </span>
+      </div>
+      <p className="mb-5 text-[12px] leading-relaxed text-encre-douce/80">{description}</p>
 
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         <div>
-          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
-            Phase 2 — Triplettes
-          </p>
+          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Phase 2 — Triplettes</p>
           <div className="flex flex-col gap-2">
-            {composition.phase2Triplettes.map((g, i) => (
+            {strategie.phase2Triplettes.map((g, i) => (
               <GroupeJoueurs key={i} joueurs={g} />
             ))}
           </div>
@@ -204,29 +219,44 @@ function ResultatComposition({ composition }: { composition: CompositionEquipe }
             Phase 3 — Doublettes + tête à tête
           </p>
           <div className="flex flex-col gap-2">
-            {composition.phase3Doublettes.map((g, i) => (
+            {strategie.phase3Doublettes.map((g, i) => (
               <GroupeJoueurs key={i} joueurs={g} />
             ))}
-            <GroupeJoueurs joueurs={[composition.phase3TeteATeteSolo]} />
+            <GroupeJoueurs joueurs={[strategie.phase3TeteATeteSolo]} />
           </div>
         </div>
 
         <div>
-          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
-            Phase 4 — Triplettes
-          </p>
+          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Phase 4 — Triplettes</p>
           <div className="flex flex-col gap-2">
-            {composition.phase4Triplettes.map((g, i) => (
+            {strategie.phase4Triplettes.map((g, i) => (
               <GroupeJoueurs key={i} joueurs={g} />
             ))}
           </div>
         </div>
 
         <div className="border-t border-ligne pt-4">
-          <p className="mb-1.5 text-[11px] uppercase tracking-wide text-encre-douce/60">Justification</p>
-          <p className="text-[13px] leading-relaxed text-encre-douce">{composition.justification}</p>
+          <p className="mb-1.5 text-[11px] uppercase tracking-wide text-encre-douce/60">Analyse</p>
+          <p className="text-[13px] leading-relaxed text-encre-douce">{strategie.justification}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ResultatComposition({ composition }: { composition: CompositionEquipe }) {
+  return (
+    <div className="entree grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-start">
+      <CarteStrategie
+        titre="Agressive"
+        description="Chaque groupe est optimisé pour sa propre victoire — objectif : gagner le maximum de parties."
+        strategie={composition.agressive}
+      />
+      <CarteStrategie
+        titre="Défensive"
+        description="Une triplette rendue quasi-imbattable (les 3 meilleurs concentrés), quitte à affaiblir les deux autres — utile quand une seule victoire en triplette suffit."
+        strategie={composition.defensive}
+      />
     </div>
   );
 }
