@@ -50,6 +50,26 @@ function SectionRepliable({ titre, children }: { titre: string; children: React.
   );
 }
 
+/** Champs secondaires (retour Jérôme 01/08/2026 : "trop compliqué, trop de
+ *  paramètres") — restent DANS le formulaire (donc soumis avec leurs
+ *  valeurs par défaut via `hidden`, pas retirés du DOM) mais masqués tant
+ *  qu'on ne clique pas sur "Options avancées". */
+function OptionsAvancees({ children }: { children: React.ReactNode }) {
+  const [ouvert, setOuvert] = useState(false);
+  return (
+    <div className="col-span-full">
+      <button
+        type="button"
+        onClick={() => setOuvert(!ouvert)}
+        className="text-[12px] text-encre-douce underline hover:text-terracotta"
+      >
+        {ouvert ? 'Masquer les options avancées' : 'Options avancées'}
+      </button>
+      <div className={`mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 ${ouvert ? '' : 'hidden'}`}>{children}</div>
+    </div>
+  );
+}
+
 const CHAMP = 'rounded-lg border border-ligne bg-sable px-3 py-2 text-[13.5px] outline-none focus:border-terracotta';
 
 export function RemboursementsClient({
@@ -142,10 +162,12 @@ export function RemboursementsClient({
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
-          <input name="pays" defaultValue="LU" placeholder="Pays (LU)" className={CHAMP} />
           <input name="montantBase" type="number" step="0.01" min={0} required placeholder="Montant de base (€)" className={CHAMP} />
-          <input name="ratioRepas" type="number" step="0.01" min={0} max={1} placeholder="Ratio repas (0-1, optionnel)" className={CHAMP} />
-          <input name="anneeSportive" required placeholder="Année sportive (ex. 2026)" className={CHAMP} />
+          <input name="anneeSportive" required defaultValue={String(new Date().getFullYear())} className={CHAMP} />
+          <OptionsAvancees>
+            <input name="pays" defaultValue="LU" placeholder="Pays (LU)" className={CHAMP} />
+            <input name="ratioRepas" type="number" step="0.01" min={0} max={1} placeholder="Ratio repas (0-1, optionnel)" className={CHAMP} />
+          </OptionsAvancees>
           <button type="submit" disabled={enCours} className="col-span-full self-start rounded-lg bg-terracotta px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">
             <Plus size={14} className="mr-1 inline" />
             Ajouter le barème
@@ -165,7 +187,6 @@ export function RemboursementsClient({
         <form onSubmit={onCreerConcours} className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           <input name="date" type="date" required className={CHAMP} />
           <input name="lieu" required placeholder="Lieu" className={CHAMP} />
-          <input name="pays" defaultValue="LU" placeholder="Pays (LU)" className={CHAMP} />
           <select name="typeConcours" required className={CHAMP}>
             {TYPES_CONCOURS.map((t) => (
               <option key={t} value={t}>{t}</option>
@@ -176,10 +197,13 @@ export function RemboursementsClient({
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
-          <label className="flex items-center gap-2 text-[12.5px] text-encre-douce">
-            <input name="estCalendrier" type="checkbox" defaultChecked />
-            Au calendrier fédéral
-          </label>
+          <OptionsAvancees>
+            <input name="pays" defaultValue="LU" placeholder="Pays (LU)" className={CHAMP} />
+            <label className="flex items-center gap-2 text-[12.5px] text-encre-douce">
+              <input name="estCalendrier" type="checkbox" defaultChecked />
+              Au calendrier fédéral
+            </label>
+          </OptionsAvancees>
           <button type="submit" disabled={enCours} className="col-span-full self-start rounded-lg bg-terracotta px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">
             <Plus size={14} className="mr-1 inline" />
             Créer le concours
@@ -201,13 +225,15 @@ export function RemboursementsClient({
               <option key={l.id} value={l.id}>{l.nom}</option>
             ))}
           </select>
-          <select name="statutParticipation" required defaultValue="joue" className={CHAMP}>
-            <option value="prevu">Prévu</option>
-            <option value="confirme">Confirmé</option>
-            <option value="joue">Joué</option>
-            <option value="annule">Annulé</option>
-          </select>
-          <input name="montantManuel" type="number" step="0.01" min={0} placeholder="Montant manuel (optionnel)" className={CHAMP} />
+          <OptionsAvancees>
+            <select name="statutParticipation" required defaultValue="joue" className={CHAMP}>
+              <option value="prevu">Prévu</option>
+              <option value="confirme">Confirmé</option>
+              <option value="joue">Joué</option>
+              <option value="annule">Annulé</option>
+            </select>
+            <input name="montantManuel" type="number" step="0.01" min={0} placeholder="Montant manuel (optionnel)" className={CHAMP} />
+          </OptionsAvancees>
           <button type="submit" disabled={enCours} className="col-span-full self-start rounded-lg bg-terracotta px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50">
             <Plus size={14} className="mr-1 inline" />
             Enregistrer la participation
