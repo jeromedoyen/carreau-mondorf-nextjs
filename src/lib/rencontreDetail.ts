@@ -69,3 +69,35 @@ export async function getRencontreDetail(id: number): Promise<RencontreDetail | 
     })),
   };
 }
+
+/** Parties d'une rencontre en lecture seule, pour un joueur non-CA (vue
+ *  "consultation") — via la RPC `parties_rencontre_d2` (0046), qui ne
+ *  renvoie une réponse non vide que si l'appelant est CA/commission
+ *  sportive ou a lui-même joué dans cette rencontre. Contrairement à
+ *  getRencontreDetail, ne lève jamais d'erreur "accès refusé" : un tableau
+ *  vide veut dire "rien à montrer", à la page d'interpréter (accès restreint
+ *  ou simplement aucune partie saisie). */
+export async function getPartiesRencontreVisibles(id: number): Promise<PartieExistante[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('parties_rencontre_d2', { p_rencontre_id: id });
+  if (error) throw error;
+  return ((data ?? []) as {
+    phase: number;
+    type: string;
+    ordre: number;
+    joueurs_cm: string;
+    joueurs_adverse: string | null;
+    score_cm: number | null;
+    score_adverse: number | null;
+    terrain: string | null;
+  }[]).map((p) => ({
+    phase: p.phase,
+    type: p.type,
+    ordre: p.ordre,
+    joueursCM: p.joueurs_cm,
+    joueursAdverse: p.joueurs_adverse ?? '',
+    scoreCM: p.score_cm,
+    scoreAdverse: p.score_adverse,
+    terrain: p.terrain,
+  }));
+}

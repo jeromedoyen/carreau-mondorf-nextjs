@@ -22,11 +22,43 @@ function sansAccents(texte: string): string {
  *  FLBP 2025 : Triplette 5 pts/victoire, Doublette 3 pts/victoire, Tête à
  *  tête 2 pts/victoire (3 en phase 3). Uniquement en cas de victoire (0 en
  *  cas de défaite, appelé conditionnellement par l'appelant). */
-function pointsVictoirePartie(phase: number, type: string): number {
+export function pointsVictoirePartie(phase: number, type: string): number {
   if (type === 'Triplette') return 5;
   if (type === 'Doublette') return 3;
   if (type === 'Tête à tête') return phase === 3 ? 3 : 2;
   throw new Error(`Type de partie inconnu pour le calcul des points : "${type}"`);
+}
+
+/** Récap des points marqués par joueur pour UNE rencontre (structure
+ *  identique au regroupement de reduireStatistiquesD2, mais scopé à une
+ *  seule rencontre) — pour le "qui a marqué le plus de points" de la vue
+ *  consultation d'une journée (retour Jérôme via /pb, 01/08/2026). */
+export function calculerRecapJournee(
+  parties: { phase: number; type: string; joueurs_cm: string; score_cm: number | null; score_adverse: number | null }[]
+): { nom: string; points: number }[] {
+  const pointsParJoueur = new Map<string, { nomAffiche: string; points: number }>();
+
+  parties.forEach((p) => {
+    if (p.score_cm === null || p.score_adverse === null) return;
+    const noms = String(p.joueurs_cm || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!noms.length) return;
+    const gagne = p.score_cm > p.score_adverse;
+    const points = gagne ? pointsVictoirePartie(p.phase, p.type) : 0;
+    noms.forEach((nom) => {
+      const cle = sansAccents(nom);
+      if (!pointsParJoueur.has(cle)) pointsParJoueur.set(cle, { nomAffiche: nom, points: 0 });
+      const s = pointsParJoueur.get(cle)!;
+      s.nomAffiche = meilleurAffichage(s.nomAffiche, nom);
+      s.points += points;
+    });
+  });
+
+  return Array.from(pointsParJoueur.values())
+    .map((s) => ({ nom: s.nomAffiche, points: s.points }))
+    .sort((a, b) => b.points - a.points);
 }
 
 function meilleurAffichage(actuel: string | undefined, candidat: string): string {

@@ -42,13 +42,16 @@ export function StatistiquesD2({ saison }: { saison: string }) {
    *  parties_d2 dans son ensemble reste CA-only (0006_verrouillage_stats.sql),
    *  seule cette vue individuelle lui est ouverte. Un membre non-licencié
    *  (est_licencie() false) ne voit pas les stats du tout — "la seule
-   *  différence entre membre et licencié, c'est les stats" (même retour). */
+   *  différence entre membre et licencié, c'est les stats" (même retour).
+   *  La vue complète (classement de tous les joueurs) est aussi ouverte à la
+   *  commission sportive (0044), pas seulement au CA — est_membre_commission_sportive()
+   *  inclut déjà le CA, donc un seul appel suffit (retour Jérôme via /pb, 01/08/2026). */
   useEffect(() => {
     const supabase = createClient();
     let annule = false;
-    supabase.rpc('est_membre_ca').then(async ({ data: estCA }) => {
+    supabase.rpc('est_membre_commission_sportive').then(async ({ data: accesComplet }) => {
       if (annule) return;
-      if (estCA) {
+      if (accesComplet) {
         setEtat('chargement');
         const resultat = await getStatistiquesJoueursD2(supabase, saison);
         if (annule) return;
@@ -186,7 +189,8 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                     </div>
                     <div>
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
-                        Points par journée ({j.pointsTotal} au total)
+                        Points par journée ({j.pointsTotal} au total ·{' '}
+                        {(j.joues ? j.pointsTotal / j.joues : 0).toFixed(1)} pts/partie)
                       </p>
                       <div className="flex flex-col gap-1">
                         {j.pointsParJournee.length ? (
@@ -270,7 +274,10 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
           <span className="font-score text-2xl text-encre">{joueur.pointsTotal} pts</span>
         </div>
       </div>
-      <p className="mb-5 text-[13px] text-encre-douce">{joueur.joues} partie(s) jouée(s) cette saison.</p>
+      <p className="mb-5 text-[13px] text-encre-douce">
+        {joueur.joues} partie(s) jouée(s) cette saison — {(joueur.joues ? joueur.pointsTotal / joueur.joues : 0).toFixed(1)}{' '}
+        pts/partie en moyenne.
+      </p>
 
       <div className="grid gap-6 sm:grid-cols-3">
         <div>

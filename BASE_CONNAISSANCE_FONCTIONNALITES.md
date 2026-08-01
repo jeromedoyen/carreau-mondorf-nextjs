@@ -92,14 +92,14 @@
 **Description** : grille horaire (7h-22h) avec des bandes colorées par catégorie de tâche, personnes affectées listées par créneau. Peut être exportée en PDF imprimable. Accessible aussi bien depuis `/manifestations/[id]` (vue CA) que `/benevole/[id]` (vue licencié).
 
 ### `/national-d2` — championnat National D2
-**Accès** : public (pas de garde).
+**Accès** : public (pas de garde) pour le calendrier/classement ; les statistiques individuelles varient selon le rôle (voir ci-dessous).
 **Objectif** : suivre les résultats et le classement du championnat.
-**Description détaillée** : en-tête avec un sélecteur de saison. Deux blocs côte à côte (empilés sur mobile) : un calendrier des rencontres du club, et le classement complet de la division (les 7 clubs, pas seulement Carreau Mondorf). En bas, les statistiques individuelles par joueur pour la saison sélectionnée.
+**Description détaillée** : en-tête avec un sélecteur de saison, puis un bouton bascule "Calendrier & classement" / "Statistiques individuelles" (un seul bloc affiché à la fois, plus besoin de défiler). Le bloc calendrier montre le calendrier des rencontres du club et le classement complet de la division (les 7 clubs). Chaque rencontre déjà jouée (hors forfait) a une icône "œil" cliquable par tout visiteur, menant à `/national-d2/rencontres/[id]` en consultation. Le bloc statistiques : classement complet de tous les joueurs pour le CA et la commission sportive (rôle `est_membre_commission_sportive`, migration 0044) ; pour un licencié simple, uniquement ses propres statistiques (jamais le classement des autres) ; rien pour un membre non-licencié. Chaque ligne de joueur affiche aussi le ratio points marqués/partie jouée, en plus du total de points et du taux de victoire.
 
-### `/national-d2/rencontres/[id]` — saisie d'une rencontre
-**Accès** : CA uniquement pour la saisie (la page affiche "La saisie des résultats est réservée aux membres du comité" sinon).
-**Objectif** : enregistrer le résultat détaillé d'un match.
-**Description** : affiche la journée, le titre du match (domicile/extérieur selon le sens), un message si un forfait a déjà été déclaré. Deux outils : déclaration de forfait (pour le club ou l'adversaire), et saisie détaillée de la feuille de match (compositions, scores par partie).
+### `/national-d2/rencontres/[id]` — détail d'une rencontre
+**Accès** : trois cas — CA (consultation + édition), CA/commission sportive ou joueur ayant participé à cette rencontre (consultation seule), sinon "Accès restreint".
+**Objectif** : consulter et, pour le CA, enregistrer le résultat détaillé d'un match.
+**Description** : le CA arrive par défaut sur une vue de consultation (structure des parties par phase avec une colonne points, et un récap "qui a marqué le plus" pour la journée), avec un bouton "Modifier le résultat" pour basculer vers la feuille de match éditable (compositions, scores par partie) et la déclaration de forfait — une rencontre pas encore jouée démarre directement en édition. Un joueur non-CA qui a participé à cette rencontre (nom reconnu via `parties_rencontre_d2`, migration 0046) voit la même vue de consultation, sans les outils d'édition. Un visiteur non concerné voit "Accès restreint".
 
 ### `/promotion` — championnat Promotion
 **Accès** : public.

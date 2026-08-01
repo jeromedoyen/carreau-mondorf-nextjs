@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Home, Plane, Pencil, PenLine } from 'lucide-react';
+import { Home, Plane, Pencil, PenLine, Eye } from 'lucide-react';
 import type { RencontreD2 } from '@/lib/data';
 import { createClient } from '@/lib/supabase/client';
 
@@ -76,6 +76,15 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
                     à venir
                   </span>
                 ) : null}
+                {joue && !forfait && (
+                  <Link
+                    href={`/national-d2/rencontres/${r.id}`}
+                    aria-label="Voir le détail de la rencontre"
+                    className="text-encre-douce/60 hover:text-terracotta"
+                  >
+                    <Eye size={14} />
+                  </Link>
+                )}
                 {estCA && !exempt && (
                   <Link
                     href={`/national-d2/rencontres/${r.id}`}

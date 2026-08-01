@@ -167,3 +167,13 @@ export async function estMembreCA(): Promise<boolean> {
   if (error) return false;
   return !!data;
 }
+
+/** Inclut déjà le CA (voir est_membre_commission_sportive(), 0044) — accès
+ *  complet aux statistiques/détails de rencontre pour le CA ET la
+ *  commission sportive (retour Jérôme via /pb, 01/08/2026). */
+export async function estMembreCommissionSportive(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('est_membre_commission_sportive');
+  if (error) return false;
+  return !!data;
+}

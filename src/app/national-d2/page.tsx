@@ -3,6 +3,7 @@ import { CalendrierD2 } from '@/components/CalendrierD2';
 import { ClassementView } from '@/components/ClassementView';
 import { StatistiquesD2 } from '@/components/StatistiquesD2';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
+import { SectionToggle } from '@/components/SectionToggle';
 import { getClassementDivisionD2, getRencontresD2 } from '@/lib/data';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
 
@@ -36,18 +37,18 @@ export default async function NationalD2Page({
         </div>
         <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
-      {/* PC : calendrier à gauche, classement à droite, visibles ensemble
-          (pense-bête Jérôme, 24/07/2026) — empilés en une colonne sur mobile,
-          où la largeur ne permet pas un affichage côte à côte lisible. */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
-        <CalendrierD2 rencontres={rencontres} />
-        <ClassementView data={data} />
-      </div>
-
-      <div className="mt-12">
-        <h2 className="font-display mb-4 text-xl italic">Statistiques individuelles</h2>
-        <StatistiquesD2 saison={saison} />
-      </div>
+      <SectionToggle
+        calendrier={
+          // PC : calendrier à gauche, classement à droite, visibles ensemble
+          // (pense-bête Jérôme, 24/07/2026) — empilés en une colonne sur
+          // mobile, où la largeur ne permet pas un affichage côte à côte lisible.
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
+            <CalendrierD2 rencontres={rencontres} />
+            <ClassementView data={data} />
+          </div>
+        }
+        statistiques={<StatistiquesD2 saison={saison} />}
+      />
     </main>
   );
 }

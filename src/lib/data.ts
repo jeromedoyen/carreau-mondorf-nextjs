@@ -102,6 +102,29 @@ export type RencontreD2 = {
   statut: string;
 };
 
+/** Une seule rencontre par id — pour l'en-tête de la page de consultation
+ *  (/national-d2/rencontres/[id]), publique comme le reste de `rencontres_d2`
+ *  (seul le détail des parties, dans parties_d2, est restreint). */
+export async function getRencontreD2ParId(id: number): Promise<RencontreD2 | null> {
+  const { data, error } = await supabase
+    .from('rencontres_d2')
+    .select('id, journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    id: data.id as number,
+    journee: data.journee as number,
+    date: data.date as string,
+    domicile: data.domicile as boolean | null,
+    adversaire: data.club_adverse as string | null,
+    scoreCM: data.score_cm as number | null,
+    scoreAdverse: data.score_adverse as number | null,
+    statut: data.statut as string,
+  };
+}
+
 export async function getRencontresD2(saison: string): Promise<RencontreD2[]> {
   const { data, error } = await supabase
     .from('rencontres_d2')
