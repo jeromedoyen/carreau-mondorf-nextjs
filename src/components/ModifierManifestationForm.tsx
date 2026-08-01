@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, X } from 'lucide-react';
-import { modifierManifestation } from '@/lib/actions/manifestations';
+import { Pencil, Trash2, X } from 'lucide-react';
+import { modifierManifestation, supprimerManifestation } from '@/lib/actions/manifestations';
 
 const TYPES_CONNUS = ['Concours international', 'Tournoi interne', 'Festif', 'Championnat'];
 
@@ -24,8 +24,23 @@ export function ModifierManifestationForm({
   const [ouvert, setOuvert] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [confirmerSuppression, setConfirmerSuppression] = useState(false);
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false);
   const typeConnu = type && TYPES_CONNUS.includes(type);
   const [typeAutre, setTypeAutre] = useState(!!type && !typeConnu);
+
+  async function supprimer() {
+    setSuppressionEnCours(true);
+    setErreur(null);
+    const resultat = await supprimerManifestation(id);
+    setSuppressionEnCours(false);
+    if (!resultat.ok) {
+      setErreur(resultat.error);
+      return;
+    }
+    router.push('/manifestations');
+    router.refresh();
+  }
 
   async function soumettre(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -115,13 +130,45 @@ export function ModifierManifestationForm({
 
       {erreur && <p className="text-[12.5px] text-danger">{erreur}</p>}
 
-      <button
-        type="submit"
-        disabled={enCours}
-        className="self-start rounded-lg bg-terracotta px-4 py-2 text-[13.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
-        {enCours ? 'Enregistrement…' : 'Enregistrer'}
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          type="submit"
+          disabled={enCours}
+          className="rounded-lg bg-terracotta px-4 py-2 text-[13.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {enCours ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+
+        {confirmerSuppression ? (
+          <div className="flex items-center gap-2 text-[12.5px]">
+            <span className="text-encre-douce">Supprimer définitivement ?</span>
+            <button
+              type="button"
+              onClick={supprimer}
+              disabled={suppressionEnCours}
+              className="rounded-lg bg-danger px-3 py-1.5 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {suppressionEnCours ? 'Suppression…' : 'Confirmer'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmerSuppression(false)}
+              className="text-encre-douce underline hover:text-encre"
+            >
+              Annuler
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmerSuppression(true)}
+            className="inline-flex items-center gap-1.5 text-[12.5px] text-encre-douce transition-colors hover:text-danger"
+          >
+            <Trash2 size={13} />
+            Supprimer
+          </button>
+        )}
+      </div>
     </form>
   );
 }

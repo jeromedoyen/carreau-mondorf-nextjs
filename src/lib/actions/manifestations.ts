@@ -110,6 +110,17 @@ export async function modifierManifestation(
   return { ok: true };
 }
 
+export async function supprimerManifestation(id: number): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+
+  const { error } = await supabase.from('manifestations').update({ supprime: true }).eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/manifestations');
+  return { ok: true };
+}
+
 export async function creerCreneau(
   manifestationId: number,
   data: {
