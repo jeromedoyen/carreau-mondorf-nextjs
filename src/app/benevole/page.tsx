@@ -90,7 +90,7 @@ export default async function BenevolePage() {
                 <span className="font-display text-[16px]">{m.nom}</span>
                 <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-encre-douce">
                   <CalendarDays size={14} />
-                  {new Date(m.dateMin).toLocaleDateString('fr-FR', {
+                  {new Date(m.dateMin + 'T00:00:00').toLocaleDateString('fr-FR', {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',

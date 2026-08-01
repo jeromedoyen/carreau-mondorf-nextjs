@@ -77,7 +77,7 @@ export default async function BenevoleManifestationPage({ params }: { params: Pr
                   )}
                 </div>
                 <span className="text-[12.5px] text-encre-douce">
-                  {new Date(c.date).toLocaleDateString('fr-FR', {
+                  {new Date(c.date + 'T00:00:00').toLocaleDateString('fr-FR', {
                     weekday: 'short',
                     day: 'numeric',
                     month: 'short',

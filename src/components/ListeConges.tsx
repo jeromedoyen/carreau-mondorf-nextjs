@@ -9,9 +9,9 @@ import type { Conge } from '@/lib/conges';
 
 function formatPeriode(dateDebut: string, dateFin: string) {
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
-  const debut = new Date(dateDebut).toLocaleDateString('fr-FR', opts);
+  const debut = new Date(dateDebut + 'T00:00:00').toLocaleDateString('fr-FR', opts);
   if (dateDebut === dateFin) return debut;
-  const fin = new Date(dateFin).toLocaleDateString('fr-FR', { ...opts, year: 'numeric' });
+  const fin = new Date(dateFin + 'T00:00:00').toLocaleDateString('fr-FR', { ...opts, year: 'numeric' });
   return `${debut} – ${fin}`;
 }
 

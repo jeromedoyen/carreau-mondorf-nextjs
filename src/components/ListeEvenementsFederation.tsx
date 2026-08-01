@@ -37,7 +37,7 @@ export function ListeEvenementsFederation({ evenements }: { evenements: Evenemen
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[13px] text-encre-douce">
-              {new Date(e.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {new Date(e.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
             <button
               type="button"

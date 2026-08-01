@@ -29,9 +29,9 @@ export function ListeSaisons({ saisons }: { saisons: Saison[] }) {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-[13px] text-encre-douce">
-              {new Date(s.dateDebut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {new Date(s.dateDebut + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
               {' – '}
-              {new Date(s.dateFin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {new Date(s.dateFin + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
             {!s.active && (
               <button

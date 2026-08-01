@@ -14,7 +14,7 @@ const COULEURS_CATEGORIE: Record<string, string> = {
 };
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function LigneParticipation({ p }: { p: ParticipationBenevole }) {

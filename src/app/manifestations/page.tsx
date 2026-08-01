@@ -113,8 +113,8 @@ export default async function ManifestationsPage({
                 <span className="flex items-center gap-1.5">
                   <CalendarDays size={14} />
                   {m.dateDebut === m.dateFin
-                    ? new Date(m.dateDebut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-                    : `${new Date(m.dateDebut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} – ${new Date(m.dateFin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                    ? new Date(m.dateDebut + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+                    : `${new Date(m.dateDebut + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} – ${new Date(m.dateFin + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                 </span>
                 {m.lieu && (
                   <span className="flex items-center gap-1.5">

@@ -53,7 +53,7 @@ export function CreneauCard({
           </div>
           <div className="flex items-center gap-2.5">
             <span className="text-[12.5px] text-encre-douce">
-              {new Date(c.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+              {new Date(c.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
               {c.heureDebut && ` · ${c.heureDebut}${c.heureFin ? `–${c.heureFin}` : c.finImprecise ? '…' : ''}`}
             </span>
             {ca && (
