@@ -91,6 +91,25 @@ export async function creerManifestation(data: {
   return { ok: true, id: inserted.id };
 }
 
+export async function modifierManifestation(
+  id: number,
+  data: { nom: string; type?: string }
+): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+  if (!data.nom.trim()) return { ok: false, error: 'Nom obligatoire.' };
+
+  const { error } = await supabase
+    .from('manifestations')
+    .update({ nom: data.nom.trim(), type: data.type || null })
+    .eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/manifestations/${id}`);
+  revalidatePath('/manifestations');
+  return { ok: true };
+}
+
 export async function creerCreneau(
   manifestationId: number,
   data: {

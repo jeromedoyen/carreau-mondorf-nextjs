@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MapPin, CalendarRange } from 'lucide-react';
 import { NouveauCreneauForm } from '@/components/NouveauCreneauForm';
+import { ModifierManifestationForm } from '@/components/ModifierManifestationForm';
 import { CreneauAffectations } from '@/components/CreneauAffectations';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
 import { couleurCategorie } from '@/lib/categoriesCreneau';
@@ -20,7 +21,7 @@ export default async function ManifestationDetailPage({
     return (
       <main className="mx-auto max-w-5xl px-5 py-16 text-center">
         <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">ACCÈS RESTREINT</p>
-        <h1 className="font-display mt-1 text-3xl italic">Réservé aux licenciés</h1>
+        <h1 className="font-display mt-1 text-3xl italic">Accès restreint</h1>
         <Link
           href="/connexion"
           className="mt-5 inline-block rounded-lg bg-terracotta px-4 py-2.5 text-[14px] text-white transition-opacity hover:opacity-90"
@@ -54,6 +55,9 @@ export default async function ManifestationDetailPage({
           </p>
         )}
         {manifestation.notes && <p className="mt-3 text-[13.5px] leading-relaxed text-encre-douce">{manifestation.notes}</p>}
+        {ca && (
+          <ModifierManifestationForm id={manifestation.id} nom={manifestation.nom} type={manifestation.type} />
+        )}
       </header>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

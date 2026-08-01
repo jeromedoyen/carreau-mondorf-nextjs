@@ -19,7 +19,7 @@ export default async function MembresPage({
     return (
       <main className="mx-auto max-w-5xl px-5 py-16 text-center">
         <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">ACCÈS RESTREINT</p>
-        <h1 className="font-display mt-1 text-3xl italic">Réservé au comité</h1>
+        <h1 className="font-display mt-1 text-3xl italic">Accès restreint</h1>
         <p className="mx-auto mt-3 max-w-md text-[13.5px] text-encre-douce">
           Cette page est réservée aux membres du comité d&apos;administration,
           connectés avec leur adresse autorisée.

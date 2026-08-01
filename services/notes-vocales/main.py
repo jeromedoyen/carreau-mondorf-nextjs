@@ -56,6 +56,17 @@ def obtenir_modele():
 _updates_traites = set()
 
 
+async def inserer_note(texte: str, duree_secondes: int | None):
+    if not texte:
+        return
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            f"{SUPABASE_URL}/rest/v1/notes_vocales",
+            headers=SUPABASE_HEADERS,
+            json={"texte": texte, "duree_secondes": duree_secondes},
+        )
+
+
 async def traiter_vocal(voix: dict):
     async with httpx.AsyncClient() as client:
         info_fichier = await client.get(f"{TELEGRAM_API}/getFile", params={"file_id": voix["file_id"]})
@@ -70,13 +81,7 @@ async def traiter_vocal(voix: dict):
     texte = " ".join(segment.text.strip() for segment in segments).strip()
     os.remove(chemin_local)
 
-    if texte:
-        async with httpx.AsyncClient() as client:
-            await client.post(
-                f"{SUPABASE_URL}/rest/v1/notes_vocales",
-                headers=SUPABASE_HEADERS,
-                json={"texte": texte, "duree_secondes": voix.get("duration")},
-            )
+    await inserer_note(texte, voix.get("duration"))
 
 
 @app.post("/webhook/telegram")
@@ -86,14 +91,22 @@ async def recevoir_webhook(request: Request, background_tasks: BackgroundTasks):
     message = update.get("message", {})
     chat_id = str(message.get("chat", {}).get("id", ""))
     voix = message.get("voice")
+    # Texte tapé directement dans Telegram (demande via /pb, 01/08/2026) -
+    # pas de passage par le transcripteur voix -> texte, insertion directe.
+    texte = message.get("text")
 
-    if not voix or chat_id != TELEGRAM_CHAT_ID_AUTORISE or update_id in _updates_traites:
+    if chat_id != TELEGRAM_CHAT_ID_AUTORISE or update_id in _updates_traites:
+        return {"ok": True}
+    if not voix and not texte:
         return {"ok": True}
 
     _updates_traites.add(update_id)
-    # Répond immédiatement à Telegram (avant transcription, qui prend du
-    # temps) pour éviter qu'il ne réessaie et double le traitement.
-    background_tasks.add_task(traiter_vocal, voix)
+    if voix:
+        # Répond immédiatement à Telegram (avant transcription, qui prend
+        # du temps) pour éviter qu'il ne réessaie et double le traitement.
+        background_tasks.add_task(traiter_vocal, voix)
+    else:
+        background_tasks.add_task(inserer_note, texte.strip(), None)
     return {"ok": True}
 
 

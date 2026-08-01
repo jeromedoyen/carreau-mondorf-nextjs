@@ -19,7 +19,7 @@ export default async function MoncaroPage() {
     return (
       <main className="mx-auto max-w-5xl px-5 py-16 text-center">
         <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">ACCÈS RESTREINT</p>
-        <h1 className="font-display mt-1 text-3xl italic">Réservé aux licenciés</h1>
+        <h1 className="font-display mt-1 text-3xl italic">Accès restreint</h1>
         <Link
           href="/connexion"
           className="mt-5 inline-block rounded-lg bg-terracotta px-4 py-2.5 text-[14px] text-white transition-opacity hover:opacity-90"
