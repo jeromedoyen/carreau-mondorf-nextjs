@@ -164,6 +164,42 @@ export async function creerCreneau(
   return { ok: true };
 }
 
+export async function modifierCreneau(
+  manifestationId: number,
+  creneauId: number,
+  data: {
+    tache: string;
+    categorie?: string;
+    date: string;
+    heureDebut?: string;
+    heureFin?: string;
+    finImprecise?: boolean;
+    postesPrevus?: number;
+  }
+): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+  if (!data.tache.trim() || !data.date) return { ok: false, error: 'Tâche et date obligatoires.' };
+
+  const { error } = await supabase
+    .from('creneaux')
+    .update({
+      tache: data.tache.trim(),
+      categorie: data.categorie || 'Autre',
+      date: data.date,
+      heure_debut: data.heureDebut || null,
+      heure_fin: data.heureFin || null,
+      fin_imprecise: !!data.finImprecise,
+      postes_prevus: data.postesPrevus || 1,
+    })
+    .eq('id', creneauId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/manifestations/${manifestationId}`);
+  revalidatePath(`/manifestations/${manifestationId}/planning`);
+  return { ok: true };
+}
+
 /** Suppression douce d'un créneau (demande via /pb, note #105 : "prévoir de
  *  supprimer une tâche si on s'est trompé, c'est pas prévu") — même pattern
  *  que supprimerManifestation/retirerAffectation (colonne `supprime`, pas

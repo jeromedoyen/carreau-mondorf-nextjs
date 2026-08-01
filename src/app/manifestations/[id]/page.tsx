@@ -4,10 +4,8 @@ import { notFound } from 'next/navigation';
 import { MapPin, CalendarRange } from 'lucide-react';
 import { NouveauCreneauForm } from '@/components/NouveauCreneauForm';
 import { ModifierManifestationForm } from '@/components/ModifierManifestationForm';
-import { SupprimerCreneauButton } from '@/components/SupprimerCreneauButton';
-import { CreneauAffectations } from '@/components/CreneauAffectations';
+import { CreneauCard } from '@/components/CreneauCard';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
-import { couleurCategorie } from '@/lib/categoriesCreneau';
 import { estMembreCA, getNomsMembres } from '@/lib/membres';
 
 export const metadata: Metadata = { title: 'Détail manifestation' };
@@ -90,37 +88,13 @@ export default async function ManifestationDetailPage({
       ) : (
         <div className="flex flex-col gap-3">
           {creneaux.map((c) => (
-            <div
+            <CreneauCard
               key={c.id}
-              className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-[15px]">{c.tache}</span>
-                  <span
-                    className="rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white"
-                    style={{ background: couleurCategorie(c.categorie) }}
-                  >
-                    {c.categorie}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[12.5px] text-encre-douce">
-                    {new Date(c.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    {c.heureDebut && ` · ${c.heureDebut}${c.heureFin ? `–${c.heureFin}` : c.finImprecise ? '…' : ''}`}
-                  </span>
-                  {ca && <SupprimerCreneauButton manifestationId={manifestation.id} creneauId={c.id} />}
-                </div>
-              </div>
-
-              <CreneauAffectations
-                manifestationId={manifestation.id}
-                creneauId={c.id}
-                affectations={c.affectations}
-                postesPrevus={c.postesPrevus}
-                nomsMembres={nomsMembres}
-              />
-            </div>
+              manifestationId={manifestation.id}
+              creneau={c}
+              ca={ca}
+              nomsMembres={nomsMembres}
+            />
           ))}
         </div>
       )}
