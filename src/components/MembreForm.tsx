@@ -120,6 +120,21 @@ export function MembreForm({
     // navigation finale.
     if (declencherPostCreation) {
       try {
+        // Ordre inversé (demande via /pb, 01/08/2026) : le nouveau membre
+        // doit recevoir l'email de bienvenue avant l'appel à cotisation,
+        // pas l'inverse — plus accueillant que de commencer par une demande
+        // de paiement.
+        if (!modeEdition && fd.get('creerAcces') === 'on') {
+          setEtapeEnCours('bienvenue');
+          const resultatAcces = await creerAccesEtEnvoyerBienvenue(
+            donneesPersonne.nom,
+            donneesPersonne.prenom,
+            donneesPersonne.email,
+            donneesAdhesion.type === 'Licencié'
+          );
+          if (!resultatAcces.ok) console.warn('[MembreForm] accès/bienvenue :', resultatAcces.error);
+        }
+
         setEtapeEnCours('cotisation');
         const resultatCotisation = demandeId
           ? await marquerDemandeTraitee(
@@ -140,17 +155,6 @@ export function MembreForm({
               modePaiement
             );
         if (!resultatCotisation.ok) console.warn('[MembreForm] cotisation :', resultatCotisation.error);
-
-        if (!modeEdition && fd.get('creerAcces') === 'on') {
-          setEtapeEnCours('bienvenue');
-          const resultatAcces = await creerAccesEtEnvoyerBienvenue(
-            donneesPersonne.nom,
-            donneesPersonne.prenom,
-            donneesPersonne.email,
-            donneesAdhesion.type === 'Licencié'
-          );
-          if (!resultatAcces.ok) console.warn('[MembreForm] accès/bienvenue :', resultatAcces.error);
-        }
       } catch (e) {
         console.warn('[MembreForm] post-création :', (e as Error).message);
       }
