@@ -33,6 +33,23 @@ type LigneAdhesion = {
  *  ("lecture CA uniquement", cf. 0004_registre_membres.sql) ne renvoie des
  *  lignes que si l'utilisateur connecté est membre du CA — un licencié
  *  simple ou un visiteur anonyme reçoit un tableau vide, pas une erreur. */
+/** Liste "Prénom Nom" pour l'autocomplétion du champ bénévole d'un créneau
+ *  (demande via /pb, note #106 : "soit de la liste des membres et licenciés
+ *  du club, soit de la saisie manuelle d'un nom"). Ne renvoie que le nom —
+ *  pas le reste de la fiche (email, téléphone...) — même si la RLS
+ *  ("lecture CA uniquement") limite de toute façon l'accès aux membres du
+ *  CA, cohérent avec le fait que le champ reste une saisie libre pour tout
+ *  licencié non-CA (cf. CreneauAffectations.tsx). */
+export async function getNomsMembres(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('personnes').select('prenom, nom').eq('supprime', false);
+  if (error || !data) return [];
+  return data
+    .map((p) => `${p.prenom} ${p.nom}`.trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, 'fr'));
+}
+
 export async function getRegistreMembres(annee: string): Promise<PersonneAvecAdhesion[]> {
   const supabase = await createClient();
 

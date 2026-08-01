@@ -8,7 +8,7 @@ import { SupprimerCreneauButton } from '@/components/SupprimerCreneauButton';
 import { CreneauAffectations } from '@/components/CreneauAffectations';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
 import { couleurCategorie } from '@/lib/categoriesCreneau';
-import { estMembreCA } from '@/lib/membres';
+import { estMembreCA, getNomsMembres } from '@/lib/membres';
 
 export const metadata: Metadata = { title: 'Détail manifestation' };
 
@@ -37,6 +37,10 @@ export default async function ManifestationDetailPage({
   const [detail, ca] = await Promise.all([getManifestationDetail(Number(id)), estMembreCA()]);
   if (!detail) notFound();
   const { manifestation, creneaux } = detail;
+  // RLS ("lecture CA uniquement" sur personnes) filtre déjà cet appel pour
+  // un non-CA — ne le déclenche que si ca, pour ne pas payer l'aller-retour
+  // inutilement.
+  const nomsMembres = ca ? await getNomsMembres() : [];
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-12">
@@ -114,6 +118,7 @@ export default async function ManifestationDetailPage({
                 creneauId={c.id}
                 affectations={c.affectations}
                 postesPrevus={c.postesPrevus}
+                nomsMembres={nomsMembres}
               />
             </div>
           ))}

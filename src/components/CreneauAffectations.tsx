@@ -20,6 +20,7 @@ export function CreneauAffectations({
   affectations,
   postesPrevus,
   monNom,
+  nomsMembres,
 }: {
   manifestationId: number;
   creneauId: number;
@@ -32,6 +33,12 @@ export function CreneauAffectations({
    *  le détail de manifestation (CA), où on inscrit souvent quelqu'un
    *  d'autre. */
   monNom?: string | null;
+  /** Noms "Prénom Nom" des membres/licenciés (demande via /pb, note #106 :
+   *  pouvoir choisir dans la liste OU taper un nom libre). Alimente un
+   *  <datalist> — suggestions au clic/à la frappe, sans empêcher la saisie
+   *  d'un nom absent de la liste (bénévole non-membre). Vide/absent = champ
+   *  purement libre comme avant, cf. getNomsMembres() (CA uniquement, RLS). */
+  nomsMembres?: string[];
 }) {
   const router = useRouter();
   const [nom, setNom] = useState('');
@@ -121,8 +128,16 @@ export function CreneauAffectations({
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             placeholder="S'inscrire (prénom nom)"
+            list={nomsMembres?.length ? `noms-membres-${creneauId}` : undefined}
             className="flex-1 rounded-lg border border-ligne bg-sable px-3 py-1.5 text-[13px] outline-none focus:border-terracotta"
           />
+          {nomsMembres && nomsMembres.length > 0 && (
+            <datalist id={`noms-membres-${creneauId}`}>
+              {nomsMembres.map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+          )}
           <button
             type="submit"
             disabled={enCours || !nom.trim()}
