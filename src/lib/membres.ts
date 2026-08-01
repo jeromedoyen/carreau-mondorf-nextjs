@@ -28,11 +28,6 @@ type LigneAdhesion = {
   licence_payee: boolean | null;
 };
 
-/** Contrairement aux lectures publiques de src/lib/data.ts (client anonyme),
- *  ceci passe par le client Supabase avec session (server.ts) : la RLS
- *  ("lecture CA uniquement", cf. 0004_registre_membres.sql) ne renvoie des
- *  lignes que si l'utilisateur connecté est membre du CA — un licencié
- *  simple ou un visiteur anonyme reçoit un tableau vide, pas une erreur. */
 /** Liste "Prénom Nom" pour l'autocomplétion du champ bénévole d'un créneau
  *  (demande via /pb, note #106 : "soit de la liste des membres et licenciés
  *  du club, soit de la saisie manuelle d'un nom"). Ne renvoie que le nom —
@@ -50,6 +45,11 @@ export async function getNomsMembres(): Promise<string[]> {
     .sort((a, b) => a.localeCompare(b, 'fr'));
 }
 
+/** Contrairement aux lectures publiques de src/lib/data.ts (client anonyme),
+ *  ceci passe par le client Supabase avec session (server.ts) : la RLS
+ *  ("lecture CA uniquement", cf. 0004_registre_membres.sql) ne renvoie des
+ *  lignes que si l'utilisateur connecté est membre du CA — un licencié
+ *  simple ou un visiteur anonyme reçoit un tableau vide, pas une erreur. */
 export async function getRegistreMembres(annee: string): Promise<PersonneAvecAdhesion[]> {
   const supabase = await createClient();
 
