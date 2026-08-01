@@ -124,6 +124,20 @@ export async function declarerForfaitRencontre(
     return { ok: false, error: 'Action réservée aux membres du CA.' };
   }
 
+  // Demande via /pb (01/08/2026) : plus de forfait déclarable une fois le
+  // résultat de la journée déjà enregistré (statut 'Jouée' via
+  // enregistrerResultatRencontre) — évite d'écraser par erreur une feuille
+  // de match saisie.
+  const { data: rencontre, error: errRencontre } = await supabase
+    .from('rencontres_d2')
+    .select('statut')
+    .eq('id', rencontreId)
+    .single();
+  if (errRencontre) return { ok: false, error: errRencontre.message };
+  if (rencontre.statut === 'Jouée') {
+    return { ok: false, error: 'Impossible de déclarer forfait : le résultat de cette journée est déjà enregistré.' };
+  }
+
   const scoreCM = forfaitDe === 'CM' ? 0 : 32;
   const scoreAdverse = forfaitDe === 'CM' ? 32 : 0;
   const statut = forfaitDe === 'CM' ? 'ForfaitCM' : 'ForfaitAdverse';

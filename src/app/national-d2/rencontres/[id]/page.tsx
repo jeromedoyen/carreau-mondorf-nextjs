@@ -54,7 +54,9 @@ export default async function SaisieRencontrePage({
         )}
       </header>
       <div className="flex flex-col gap-6">
-        <ForfaitPanel rencontreId={rencontre.id} adversaire={rencontre.adversaire ?? 'l’adversaire'} />
+        {rencontre.statut !== 'Jouée' && (
+          <ForfaitPanel rencontreId={rencontre.id} adversaire={rencontre.adversaire ?? 'l’adversaire'} />
+        )}
         <FeuilleDeMatch rencontre={rencontre} />
       </div>
     </main>

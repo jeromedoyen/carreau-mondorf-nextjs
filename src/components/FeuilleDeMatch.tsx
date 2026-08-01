@@ -90,7 +90,7 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
           <div className="overflow-x-auto">
             <div className="flex min-w-[560px] flex-col gap-2.5">
               {lignesGroupe.map((l) => (
-                <div key={l.index} className="grid grid-cols-[1fr_1fr_60px_60px_70px] items-center gap-2 text-[13px]">
+                <div key={l.index} className="grid grid-cols-[1fr_1fr_60px_60px] items-center gap-2 text-[13px]">
                   <input
                     type="text"
                     value={l.joueursCM}
@@ -121,14 +121,6 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
                     value={l.scoreAdverse}
                     onChange={(e) => modifierLigne(l.index, 'scoreAdverse', Number(e.target.value))}
                     aria-label={`${LABEL_PHASE[phase]} ${type} ${l.ordre} — score adverse`}
-                    className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
-                  />
-                  <input
-                    type="text"
-                    value={l.terrain}
-                    onChange={(e) => modifierLigne(l.index, 'terrain', e.target.value)}
-                    placeholder="Terrain"
-                    aria-label={`${LABEL_PHASE[phase]} ${type} ${l.ordre} — terrain`}
                     className="rounded-lg border border-ligne bg-sable px-2 py-1.5 text-center text-encre outline-none focus:border-terracotta"
                   />
                 </div>
