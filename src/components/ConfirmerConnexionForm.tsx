@@ -23,7 +23,10 @@ export function ConfirmerConnexionForm({ code }: { code: string | null }) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     setEnCours(false);
     if (error) {
-      setErreur('Lien invalide ou expiré — redemande un lien de connexion.');
+      // TODO(01/08/2026) : diagnostic temporaire du bug "lien invalide" —
+      // remettre le message générique une fois la cause identifiée.
+      console.error('[ConfirmerConnexionForm] exchangeCodeForSession:', error);
+      setErreur(`Lien invalide ou expiré — redemande un lien de connexion. (debug: ${error.code ?? error.name} — ${error.message})`);
       return;
     }
     // /moncaro (pas /club) : tableau de bord personnel après connexion,
