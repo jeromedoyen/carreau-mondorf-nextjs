@@ -1,60 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-/** Page intermédiaire du lien magique (cf. commentaire ConnexionForm.tsx) :
- *  exige un clic explicite plutôt que d'échanger le code automatiquement
- *  au chargement — un scanner anti-spam qui pré-visite l'URL du lien
- *  (simple GET, pas d'exécution JS) n'atteint que cette page, sans jamais
- *  cliquer, donc sans consommer le jeton PKCE à la place de l'utilisateur
- *  réel. */
-export function ConfirmerConnexionForm({ code }: { code: string | null }) {
+/** Flow "implicit" (cf. lib/supabase/client.ts) : dès le chargement de
+ *  cette page, le client Supabase (detectSessionInUrl, activé par défaut)
+ *  lit automatiquement le fragment #access_token=... déposé par la
+ *  redirection de vérification et établit la session — aucun échange
+ *  manuel à faire ici, contrairement à l'ancien flow PKCE
+ *  (exchangeCodeForSession). On écoute juste l'événement pour rediriger
+ *  une fois la session prête. */
+export function ConfirmerConnexionForm() {
   const supabase = createClient();
   const router = useRouter();
-  const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  async function confirmer() {
-    if (!code) return;
-    setEnCours(true);
-    setErreur(null);
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    setEnCours(false);
-    if (error) {
-      // TODO(01/08/2026) : diagnostic temporaire du bug "lien invalide" —
-      // remettre le message générique une fois la cause identifiée.
-      console.error('[ConfirmerConnexionForm] exchangeCodeForSession:', error);
-      setErreur(`Lien invalide ou expiré — redemande un lien de connexion. (debug: ${error.code ?? error.name} — ${error.message})`);
-      return;
-    }
-    // /moncaro (pas /club) : tableau de bord personnel après connexion,
-    // demande explicite de Jérôme le 26/07/2026.
-    router.replace('/moncaro');
-  }
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // /moncaro (pas /club) : tableau de bord personnel après connexion,
+        // demande explicite de Jérôme le 26/07/2026.
+        router.replace('/moncaro');
+      }
+    });
 
-  if (!code) {
-    return (
-      <div className="w-full rounded-2xl border border-ligne bg-sable-carte p-7 text-center shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-        <p className="text-[14px] text-encre">Lien de connexion invalide.</p>
-        <p className="mt-1 text-[12.5px] text-encre-douce">Redemande un lien depuis la page de connexion.</p>
-      </div>
-    );
-  }
+    // Session déjà établie avant même le montage du composant (course
+    // possible entre detectSessionInUrl et l'abonnement ci-dessus).
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) router.replace('/moncaro');
+    });
+
+    // Si rien ne s'est passé après quelques secondes, le lien est
+    // probablement invalide/expiré (ex. déjà utilisé par un scanner
+    // anti-spam) — message d'erreur plutôt qu'une attente silencieuse.
+    const delai = setTimeout(() => {
+      setErreur('Lien invalide ou expiré — redemande un lien de connexion.');
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(delai);
+    };
+  }, [supabase, router]);
 
   return (
     <div className="w-full rounded-2xl border border-ligne bg-sable-carte p-7 text-center shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-      <p className="text-[14px] text-encre">Clique pour terminer ta connexion.</p>
-      {erreur && <p className="mt-2 text-[12.5px] text-danger">{erreur}</p>}
-      <button
-        type="button"
-        onClick={confirmer}
-        disabled={enCours}
-        className="font-display mt-4 rounded-lg bg-terracotta px-5 py-2.5 text-[14px] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
-        {enCours ? 'Connexion…' : 'Confirmer la connexion'}
-      </button>
+      {erreur ? (
+        <p className="text-[14px] text-danger">{erreur}</p>
+      ) : (
+        <p className="text-[14px] text-encre">Connexion en cours…</p>
+      )}
     </div>
   );
 }

@@ -3,27 +3,13 @@
 import { useState, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-/** Lien magique (redevenu la méthode, 01/08/2026, demande Jérôme via /pb
- *  #98 — retour conscient sur la décision du 27/07/2026 documentée
- *  ci-dessous, avec le nouveau SMTP custom en place) :
- *
- *  Historique : le code à 6 chiffres avait remplacé le lien magique à
- *  cause de deux bugs réels — (1) les scanners anti-spam (Yahoo
- *  notamment) pré-visitent l'URL de vérification avant l'ouverture réelle
- *  par l'utilisateur, consommant le jeton PKCE à usage unique ; (2) un
- *  lien ouvert depuis un autre appareil que celui de la demande pose
- *  structurellement problème avec PKCE (le "code verifier" est stocké
- *  dans un cookie du navigateur d'origine).
- *
- *  Mitigation du problème (1) ici : /auth/callback (ConfirmerConnexionForm)
- *  exige un clic explicite sur un bouton avant d'échanger le code — un
- *  scanner qui ne fait qu'un GET automatique sur le lien n'exécute pas ce
- *  clic JS, donc ne consomme plus le jeton à la place de l'utilisateur.
- *  Le problème (2) reste structurel à PKCE (inchangé, acceptable : usage
- *  prévu sur le même appareil que la demande). Message volontairement
- *  neutre après l'envoi, que l'adresse soit autorisée ou non — même
- *  principe que requestCode() dans l'app d'origine (Code.gs) : "on ne
- *  confirme pas si l'adresse est connue ou non". */
+/** Lien magique en flow "implicit" (01/08/2026, demande Jérôme via /pb
+ *  #98) — cf. commentaire lib/supabase/client.ts pour l'historique complet
+ *  (code à 6 chiffres → lien PKCE → lien implicit) et les compromis
+ *  assumés. Message volontairement neutre après l'envoi, que l'adresse
+ *  soit autorisée ou non — même principe que requestCode() dans l'app
+ *  d'origine (Code.gs) : "on ne confirme pas si l'adresse est connue ou
+ *  non". */
 export function ConnexionForm() {
   const supabase = createClient();
 
@@ -43,12 +29,10 @@ export function ConnexionForm() {
     }
 
     setEnCours(true);
-    const emailRedirectTo = `${window.location.origin}/auth/callback`;
-    // TODO(01/08/2026) : diagnostic temporaire — retirer une fois le bug
-    // "redirect_to sans /auth/callback" résolu (cf. contexte session).
-    console.log('[ConnexionForm] signInWithOtp emailRedirectTo =', emailRedirectTo);
-    const resultat = await supabase.auth.signInWithOtp({ email: adresse, options: { emailRedirectTo } });
-    console.log('[ConnexionForm] signInWithOtp resultat =', resultat);
+    await supabase.auth.signInWithOtp({
+      email: adresse,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
     setEnCours(false);
     setEnvoye(true);
   }
@@ -60,7 +44,7 @@ export function ConnexionForm() {
           Si cette adresse est autorisée, un lien de connexion vient de lui être envoyé.
         </p>
         <p className="mt-1 text-[12.5px] text-encre-douce">
-          Ouvre l&apos;email depuis cet appareil et clique sur le lien — vérifie aussi le dossier
+          Clique sur le lien depuis n&apos;importe quel appareil — vérifie aussi le dossier
           indésirables/spam.
         </p>
         <button
