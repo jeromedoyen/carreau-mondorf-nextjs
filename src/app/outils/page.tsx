@@ -15,6 +15,7 @@ import {
   UserPlus,
   Swords,
   Landmark,
+  Plane,
 } from 'lucide-react';
 import { estMembreCA } from '@/lib/membres';
 import { getAppelsPaiement } from '@/lib/paiements';
@@ -35,6 +36,7 @@ const OUTILS = [
   { href: '/outils/parametres', label: 'Paramètres cotisation & licence', description: 'Montants et coordonnées bancaires du club', Icon: Landmark },
   { href: '/outils/paiements', label: 'Appel à cotisation', description: 'Créer et envoyer un appel de paiement', Icon: Euro },
   { href: '/outils/paiements-en-attente', label: 'Paiements en attente', description: 'Valider les paiements reçus', Icon: Clock },
+  { href: '/outils/remboursements', label: 'Remboursements concours', description: 'Indemnités de participation extérieure (fondations)', Icon: Plane },
   { href: '/outils/renouvellement', label: 'Renouvellement', description: 'Relancer les adhésions', Icon: RefreshCw },
   { href: '/outils/fiches-membres', label: 'Fiches membres', description: 'Classeur PDF et exports', Icon: IdCard },
   { href: '/outils/statistiques-benevoles', label: 'Statistiques bénévoles', description: 'Classement des participations', Icon: Trophy },
