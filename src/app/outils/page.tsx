@@ -17,6 +17,7 @@ import {
   Landmark,
 } from 'lucide-react';
 import { estMembreCA } from '@/lib/membres';
+import { getAppelsPaiement } from '@/lib/paiements';
 
 export const metadata: Metadata = { title: 'Outils' };
 
@@ -45,6 +46,13 @@ const OUTILS = [
 export default async function OutilsPage() {
   const ca = await estMembreCA();
 
+  // Compteur de paiements en attente sur la tuile (demande via /pb,
+  // 01/08/2026) : "utile pour un trésorier d'un club" de savoir d'un
+  // coup d'œil à la connexion combien de paiements restent à pointer.
+  const paiementsEnAttente = ca
+    ? (await getAppelsPaiement()).filter((a) => a.statut === 'en_attente' && a.emailEnvoyeLe).length
+    : 0;
+
   if (!ca) {
     return (
       <main className="mx-auto max-w-5xl px-5 py-16 text-center">
@@ -72,8 +80,13 @@ export default async function OutilsPage() {
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-start gap-2.5 rounded-2xl border border-ligne bg-sable-carte p-4 shadow-[0_1px_3px_rgba(36,27,18,.04)] transition-transform hover:-translate-y-0.5 hover:border-terracotta"
+            className="relative flex flex-col items-start gap-2.5 rounded-2xl border border-ligne bg-sable-carte p-4 shadow-[0_1px_3px_rgba(36,27,18,.04)] transition-transform hover:-translate-y-0.5 hover:border-terracotta"
           >
+            {href === '/outils/paiements-en-attente' && paiementsEnAttente > 0 && (
+              <span className="absolute top-3 right-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-terracotta px-1.5 text-[11px] font-medium text-white">
+                {paiementsEnAttente}
+              </span>
+            )}
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
               <Icon size={17} />
             </span>

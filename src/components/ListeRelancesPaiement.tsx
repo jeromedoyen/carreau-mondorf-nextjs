@@ -41,6 +41,10 @@ export function ListeRelancesPaiement({
   const router = useRouter();
   const [qrOuvert, setQrOuvert] = useState<{ appel: AppelPaiement; dataUrl: string } | null>(null);
   const [erreur, setErreur] = useState<{ id: number; message: string } | null>(null);
+  // Retour Jérôme (01/08/2026, via /pb) : l'icône de validation était trop
+  // petite et sans retour visuel pendant la requête — le trésorier ne
+  // savait pas si son clic avait été pris en compte.
+  const [validationEnCours, setValidationEnCours] = useState<number | null>(null);
 
   async function genererQr(appel: AppelPaiement) {
     if (!parametres) return;
@@ -61,7 +65,9 @@ export function ListeRelancesPaiement({
 
   async function marquerPaye(id: number) {
     setErreur(null);
+    setValidationEnCours(id);
     const resultat = await marquerAppelPaye(id, 'Virement');
+    setValidationEnCours(null);
     if (!resultat.ok) {
       setErreur({ id, message: resultat.error });
     }
@@ -110,10 +116,11 @@ export function ListeRelancesPaiement({
               <button
                 type="button"
                 onClick={() => marquerPaye(a.id)}
-                aria-label="Marquer payé"
-                className="text-succes hover:opacity-70"
+                disabled={validationEnCours === a.id}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-succes px-3 py-1.5 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                <Check size={18} />
+                <Check size={14} />
+                {validationEnCours === a.id ? 'Validation…' : 'Payé'}
               </button>
               <button
                 type="button"

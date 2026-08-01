@@ -22,6 +22,11 @@ export function ListeAppelsPaiement({
   const [qrOuvert, setQrOuvert] = useState<{ appel: AppelPaiement; dataUrl: string } | null>(null);
   const [envoiEnCours, setEnvoiEnCours] = useState<number | null>(null);
   const [erreurEnvoi, setErreurEnvoi] = useState<{ id: number; message: string } | null>(null);
+  // Retour Jérôme (01/08/2026, via /pb) : le simple icône de validation
+  // était trop petit et ne donnait aucun retour visuel pendant la requête
+  // — le trésorier ne savait pas s'il avait bien cliqué. Bouton texte
+  // explicite + état "en cours" désactivé le temps de la réponse serveur.
+  const [validationEnCours, setValidationEnCours] = useState<number | null>(null);
 
   async function genererQr(appel: AppelPaiement) {
     if (!parametres) return;
@@ -42,7 +47,9 @@ export function ListeAppelsPaiement({
 
   async function marquerPaye(id: number) {
     setErreurEnvoi(null);
+    setValidationEnCours(id);
     const resultat = await marquerAppelPaye(id, 'Virement');
+    setValidationEnCours(null);
     if (!resultat.ok) {
       setErreurEnvoi({ id, message: resultat.error });
     }
@@ -130,10 +137,11 @@ export function ListeAppelsPaiement({
               <button
                 type="button"
                 onClick={() => marquerPaye(a.id)}
-                aria-label="Marquer payé"
-                className="text-succes hover:opacity-70"
+                disabled={validationEnCours === a.id}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-succes px-3 py-1.5 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                <Check size={18} />
+                <Check size={14} />
+                {validationEnCours === a.id ? 'Validation…' : 'Payé'}
               </button>
               <button
                 type="button"
