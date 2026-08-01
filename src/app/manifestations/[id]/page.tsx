@@ -64,6 +64,8 @@ export default async function ManifestationDetailPage({
             nom={manifestation.nom}
             type={manifestation.type}
             statut={manifestation.statut}
+            dateDebut={manifestation.dateDebut}
+            dateFin={manifestation.dateFin}
           />
         )}
       </header>

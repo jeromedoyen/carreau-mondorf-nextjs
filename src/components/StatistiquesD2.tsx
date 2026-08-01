@@ -196,10 +196,10 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                     </div>
                     <div>
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
-                        Dernières parties
+                        Toutes les parties ({j.parties.length})
                       </p>
-                      <div className="flex flex-col gap-1">
-                        {j.parties.slice(0, 6).map((p) => (
+                      <div className="flex max-h-64 flex-col gap-1 overflow-y-auto pr-1">
+                        {j.parties.map((p) => (
                           <div
                             key={`${p.idRencontre}-${p.phase}-${p.type}`}
                             className="flex items-center justify-between gap-3 text-[12.5px]"
@@ -286,9 +286,11 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
           )}
         </div>
         <div>
-          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Dernières parties</p>
-          <div className="flex flex-col gap-1">
-            {joueur.parties.slice(0, 8).map((p) => (
+          <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
+            Toutes les parties ({joueur.parties.length})
+          </p>
+          <div className="flex max-h-64 flex-col gap-1 overflow-y-auto pr-1">
+            {joueur.parties.map((p) => (
               <div key={`${p.idRencontre}-${p.phase}-${p.type}`} className="flex items-center justify-between gap-3 text-[12.5px]">
                 <span className="truncate text-encre-douce">
                   J{p.journee} · {formatDate(p.date)} · {p.adversaireClub}

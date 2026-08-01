@@ -24,11 +24,15 @@ export function ModifierManifestationForm({
   nom,
   type,
   statut,
+  dateDebut,
+  dateFin,
 }: {
   id: number;
   nom: string;
   type: string | null;
   statut: string;
+  dateDebut: string;
+  dateFin: string;
 }) {
   const router = useRouter();
   const [ouvert, setOuvert] = useState(false);
@@ -62,6 +66,8 @@ export function ModifierManifestationForm({
       nom: String(formData.get('nom') || ''),
       type: typeChoisi === 'Autre' ? String(formData.get('typeAutre') || '') : typeChoisi,
       statut: String(formData.get('statut') || ''),
+      dateDebut: String(formData.get('dateDebut') || ''),
+      dateFin: String(formData.get('dateFin') || ''),
     });
     setEnCours(false);
     if (!resultat.ok) {
@@ -170,6 +176,29 @@ export function ModifierManifestationForm({
                 className="mt-2 w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
               />
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-[11.5px] text-encre-douce">Date de début</label>
+              <input
+                type="date"
+                name="dateDebut"
+                required
+                defaultValue={dateDebut.slice(0, 10)}
+                className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11.5px] text-encre-douce">Date de fin</label>
+              <input
+                type="date"
+                name="dateFin"
+                required
+                defaultValue={dateFin.slice(0, 10)}
+                className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+              />
+            </div>
           </div>
 
           <div>

@@ -95,13 +95,16 @@ const STATUTS_CONNUS = ['Planifiée', 'Confirmée', 'Annulée', 'Terminée'];
 
 export async function modifierManifestation(
   id: number,
-  data: { nom: string; type?: string; statut?: string }
+  data: { nom: string; type?: string; statut?: string; dateDebut?: string; dateFin?: string }
 ): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
   if (!data.nom.trim()) return { ok: false, error: 'Nom obligatoire.' };
   if (data.statut && !STATUTS_CONNUS.includes(data.statut)) {
     return { ok: false, error: 'Statut invalide.' };
+  }
+  if (data.dateDebut && data.dateFin && data.dateFin < data.dateDebut) {
+    return { ok: false, error: 'La date de fin ne peut pas précéder la date de début.' };
   }
 
   const { error } = await supabase
@@ -110,6 +113,8 @@ export async function modifierManifestation(
       nom: data.nom.trim(),
       type: data.type || null,
       ...(data.statut ? { statut: data.statut } : {}),
+      ...(data.dateDebut ? { date_debut: data.dateDebut } : {}),
+      ...(data.dateFin ? { date_fin: data.dateFin } : {}),
     })
     .eq('id', id);
   if (error) return { ok: false, error: error.message };
