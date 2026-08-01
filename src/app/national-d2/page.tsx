@@ -4,6 +4,7 @@ import { ClassementView } from '@/components/ClassementView';
 import { StatistiquesD2 } from '@/components/StatistiquesD2';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
 import { SectionToggle } from '@/components/SectionToggle';
+import { PropositionEquipeIA } from '@/components/PropositionEquipeIA';
 import { getClassementDivisionD2, getRencontresD2 } from '@/lib/data';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
 
@@ -48,6 +49,7 @@ export default async function NationalD2Page({
           </div>
         }
         statistiques={<StatistiquesD2 saison={saison} />}
+        propositionIA={<PropositionEquipeIA saison={saison} />}
       />
     </main>
   );

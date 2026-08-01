@@ -8,12 +8,23 @@ import { useState, type ReactNode } from 'react';
  *  la partie statistique"). Les deux blocs sont fournis déjà rendus par la
  *  page (Server Component) — ce composant se contente d'en afficher un seul
  *  à la fois. */
-export function SectionToggle({ calendrier, statistiques }: { calendrier: ReactNode; statistiques: ReactNode }) {
-  const [vue, setVue] = useState<'calendrier' | 'statistiques'>('calendrier');
+export function SectionToggle({
+  calendrier,
+  statistiques,
+  propositionIA,
+}: {
+  calendrier: ReactNode;
+  statistiques: ReactNode;
+  /** Onglet supplémentaire (composition d'équipe assistée par IA, CA
+   *  uniquement) — absent pour un visiteur non-CA, l'onglet ne s'affiche
+   *  alors pas du tout. */
+  propositionIA?: ReactNode;
+}) {
+  const [vue, setVue] = useState<'calendrier' | 'statistiques' | 'propositionIA'>('calendrier');
 
   return (
     <div>
-      <div className="mb-6 flex gap-1.5">
+      <div className="mb-6 flex flex-wrap gap-1.5">
         <button
           type="button"
           onClick={() => setVue('calendrier')}
@@ -32,8 +43,21 @@ export function SectionToggle({ calendrier, statistiques }: { calendrier: ReactN
         >
           Statistiques individuelles
         </button>
+        {propositionIA && (
+          <button
+            type="button"
+            onClick={() => setVue('propositionIA')}
+            className={`font-display rounded-full px-4 py-1.5 text-[13px] transition-colors ${
+              vue === 'propositionIA' ? 'bg-terracotta text-white' : 'bg-sable text-encre-douce hover:text-encre'
+            }`}
+          >
+            Proposition IA
+          </button>
+        )}
       </div>
-      {vue === 'calendrier' ? calendrier : statistiques}
+      {vue === 'calendrier' && calendrier}
+      {vue === 'statistiques' && statistiques}
+      {vue === 'propositionIA' && propositionIA}
     </div>
   );
 }
