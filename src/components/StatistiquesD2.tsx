@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { StatistiquesD2 as StatistiquesD2Data, StatJoueurD2 } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getStatistiquesJoueursD2, getMesStatistiquesD2 } from '@/lib/stats';
+import { SparklinePoints, BarreProportion, GraphiquePointsParJournee } from './StatsCharts';
 
 type TriColonne = 'tauxVictoire' | 'joues' | 'points';
 type Etat = 'verification' | 'mesStats' | 'chargement' | 'pret' | 'nonLicencie';
@@ -152,11 +153,12 @@ export function StatistiquesD2({ saison }: { saison: string }) {
               <div key={j.nom} className="border-t border-ligne first:border-t-0">
                 <button
                   onClick={() => setOuvert(estOuvert ? null : j.nom)}
-                  className="grid w-full grid-cols-[28px_1fr_70px_90px_20px] items-center gap-3 py-2.5 text-left text-[13px] hover:bg-sable/60"
+                  className="grid w-full grid-cols-[28px_1fr_70px_64px_90px_20px] items-center gap-3 py-2.5 text-left text-[13px] hover:bg-sable/60"
                 >
                   <span className="font-score text-encre-douce/70">{i + 1}</span>
                   <span className="font-medium text-encre">{j.nom}</span>
                   <span className="text-encre-douce">{j.joues} j.</span>
+                  <SparklinePoints valeurs={j.pointsParJournee.map((pj) => pj.points)} />
                   <span className="font-score text-base text-terracotta">
                     {tri === 'points' ? `${j.pointsTotal} pts` : formatPct(j.tauxVictoire)}
                   </span>
@@ -172,17 +174,11 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
                         Par type de partie
                       </p>
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-2.5">
                         {Object.entries(j.parType).map(([type, t]) => (
-                          <div
-                            key={type}
-                            className="flex items-center justify-between text-[12.5px]"
-                          >
-                            <span className="text-encre-douce">{type}</span>
-                            <span className="text-encre">
-                              {t.victoires}/{t.joues} (
-                              {formatPct(t.joues ? t.victoires / t.joues : 0)})
-                            </span>
+                          <div key={type}>
+                            <span className="mb-0.5 block text-[11.5px] text-encre-douce">{type}</span>
+                            <BarreProportion victoires={t.victoires} joues={t.joues} />
                           </div>
                         ))}
                       </div>
@@ -192,21 +188,11 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                         Points par journée ({j.pointsTotal} au total ·{' '}
                         {(j.joues ? j.pointsTotal / j.joues : 0).toFixed(1)} pts/partie)
                       </p>
-                      <div className="flex flex-col gap-1">
-                        {j.pointsParJournee.length ? (
-                          j.pointsParJournee.map((pj) => (
-                            <div
-                              key={pj.journee}
-                              className="flex items-center justify-between text-[12.5px]"
-                            >
-                              <span className="text-encre-douce">Journée {pj.journee}</span>
-                              <span className="text-encre">{pj.points} pts</span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-[12.5px] text-encre-douce">Aucun point marqué.</p>
-                        )}
-                      </div>
+                      {j.pointsParJournee.length ? (
+                        <GraphiquePointsParJournee donnees={j.pointsParJournee} />
+                      ) : (
+                        <p className="text-[12.5px] text-encre-douce">Aucun point marqué.</p>
+                      )}
                     </div>
                     <div>
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
@@ -282,31 +268,22 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
       <div className="grid gap-6 sm:grid-cols-3">
         <div>
           <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Par type de partie</p>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2.5">
             {Object.entries(joueur.parType).map(([type, t]) => (
-              <div key={type} className="flex items-center justify-between text-[12.5px]">
-                <span className="text-encre-douce">{type}</span>
-                <span className="text-encre">
-                  {t.victoires}/{t.joues} ({formatPct(t.joues ? t.victoires / t.joues : 0)})
-                </span>
+              <div key={type}>
+                <span className="mb-0.5 block text-[11.5px] text-encre-douce">{type}</span>
+                <BarreProportion victoires={t.victoires} joues={t.joues} />
               </div>
             ))}
           </div>
         </div>
         <div>
           <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Points par journée</p>
-          <div className="flex flex-col gap-1">
-            {joueur.pointsParJournee.length ? (
-              joueur.pointsParJournee.map((pj) => (
-                <div key={pj.journee} className="flex items-center justify-between text-[12.5px]">
-                  <span className="text-encre-douce">Journée {pj.journee}</span>
-                  <span className="text-encre">{pj.points} pts</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-[12.5px] text-encre-douce">Aucun point marqué.</p>
-            )}
-          </div>
+          {joueur.pointsParJournee.length ? (
+            <GraphiquePointsParJournee donnees={joueur.pointsParJournee} />
+          ) : (
+            <p className="text-[12.5px] text-encre-douce">Aucun point marqué.</p>
+          )}
         </div>
         <div>
           <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Dernières parties</p>
