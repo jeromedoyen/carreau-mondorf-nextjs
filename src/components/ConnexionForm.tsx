@@ -43,10 +43,12 @@ export function ConnexionForm() {
     }
 
     setEnCours(true);
-    await supabase.auth.signInWithOtp({
-      email: adresse,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
+    const emailRedirectTo = `${window.location.origin}/auth/callback`;
+    // TODO(01/08/2026) : diagnostic temporaire — retirer une fois le bug
+    // "redirect_to sans /auth/callback" résolu (cf. contexte session).
+    console.log('[ConnexionForm] signInWithOtp emailRedirectTo =', emailRedirectTo);
+    const resultat = await supabase.auth.signInWithOtp({ email: adresse, options: { emailRedirectTo } });
+    console.log('[ConnexionForm] signInWithOtp resultat =', resultat);
     setEnCours(false);
     setEnvoye(true);
   }
