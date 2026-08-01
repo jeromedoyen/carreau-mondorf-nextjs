@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { MapPin, CalendarRange } from 'lucide-react';
 import { NouveauCreneauForm } from '@/components/NouveauCreneauForm';
 import { ModifierManifestationForm } from '@/components/ModifierManifestationForm';
+import { SupprimerCreneauButton } from '@/components/SupprimerCreneauButton';
 import { CreneauAffectations } from '@/components/CreneauAffectations';
 import { getManifestationDetail, estUtilisateurAutorise } from '@/lib/manifestations';
 import { couleurCategorie } from '@/lib/categoriesCreneau';
@@ -56,7 +57,12 @@ export default async function ManifestationDetailPage({
         )}
         {manifestation.notes && <p className="mt-3 text-[13.5px] leading-relaxed text-encre-douce">{manifestation.notes}</p>}
         {ca && (
-          <ModifierManifestationForm id={manifestation.id} nom={manifestation.nom} type={manifestation.type} />
+          <ModifierManifestationForm
+            id={manifestation.id}
+            nom={manifestation.nom}
+            type={manifestation.type}
+            statut={manifestation.statut}
+          />
         )}
       </header>
 
@@ -94,10 +100,13 @@ export default async function ManifestationDetailPage({
                     {c.categorie}
                   </span>
                 </div>
-                <span className="text-[12.5px] text-encre-douce">
-                  {new Date(c.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  {c.heureDebut && ` · ${c.heureDebut}${c.heureFin ? `–${c.heureFin}` : c.finImprecise ? '…' : ''}`}
-                </span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[12.5px] text-encre-douce">
+                    {new Date(c.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {c.heureDebut && ` · ${c.heureDebut}${c.heureFin ? `–${c.heureFin}` : c.finImprecise ? '…' : ''}`}
+                  </span>
+                  {ca && <SupprimerCreneauButton manifestationId={manifestation.id} creneauId={c.id} />}
+                </div>
               </div>
 
               <CreneauAffectations

@@ -91,17 +91,26 @@ export async function creerManifestation(data: {
   return { ok: true, id: inserted.id };
 }
 
+const STATUTS_CONNUS = ['Planifiée', 'Confirmée', 'Annulée', 'Terminée'];
+
 export async function modifierManifestation(
   id: number,
-  data: { nom: string; type?: string }
+  data: { nom: string; type?: string; statut?: string }
 ): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
   if (!data.nom.trim()) return { ok: false, error: 'Nom obligatoire.' };
+  if (data.statut && !STATUTS_CONNUS.includes(data.statut)) {
+    return { ok: false, error: 'Statut invalide.' };
+  }
 
   const { error } = await supabase
     .from('manifestations')
-    .update({ nom: data.nom.trim(), type: data.type || null })
+    .update({
+      nom: data.nom.trim(),
+      type: data.type || null,
+      ...(data.statut ? { statut: data.statut } : {}),
+    })
     .eq('id', id);
   if (error) return { ok: false, error: error.message };
 
@@ -149,6 +158,21 @@ export async function creerCreneau(
     postes_prevus: data.postesPrevus || 1,
     notes: data.notes || null,
   });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/manifestations/${manifestationId}`);
+  return { ok: true };
+}
+
+/** Suppression douce d'un créneau (demande via /pb, note #105 : "prévoir de
+ *  supprimer une tâche si on s'est trompé, c'est pas prévu") — même pattern
+ *  que supprimerManifestation/retirerAffectation (colonne `supprime`, pas
+ *  de policy RLS delete). Réservé au CA, comme la création du créneau. */
+export async function supprimerCreneau(manifestationId: number, creneauId: number): Promise<Resultat> {
+  const supabase = await createClient();
+  if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
+
+  const { error } = await supabase.from('creneaux').update({ supprime: true }).eq('id', creneauId);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/manifestations/${manifestationId}`);
