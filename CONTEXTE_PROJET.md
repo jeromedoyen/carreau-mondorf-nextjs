@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : 26/07/2026 (grosse session pense-bête + retours de test sur compte fictif — voir section dédiée en fin de fichier). Connexion réelle validée depuis (OTP à 6 chiffres saisi manuellement, plus de lien cliquable). Prochaine tâche prioritaire, actée explicitement par Jérôme pour la prochaine session : page personnelle "mon espace" après connexion (cotisation, participations, bénévolat, stats joueur) — voir mémoire Claude `project_nextjs_page_perso.md`.
+Dernière mise à jour : 01/08/2026 (voir section dédiée en fin de fichier — pipeline pense-bête vocal, saga authentification lien magique/revert, module remboursements Phase 1 rejeté, suppression de manifestation). Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
 ## Session du 24/07/2026 — Phases 0 à D de la feuille de route
 
@@ -320,3 +320,48 @@ Jérôme, après avoir vu le tableau de bord bénévole : "je voudrais qu'il ser
 
 ### Migrations en attente de confirmation d'application par Jérôme
 `0020` à `0025` — Jérôme a confirmé avoir appliqué `0020` à `0025` en cours de session (dernier message : "j'ai exécuté le SQL vingt-deux et vingt-trois", plus les précédentes au fil de l'eau) ; à revérifier en début de prochaine session si un doute apparaît (comportement en base ne correspondant pas au code déployé).
+
+## Session du 27/07/2026 — page personnelle "mon carreau"
+
+Tâche actée en fin de session précédente : `/moncaro`, tableau de bord licencié après connexion (cotisation, participations manifestations, bénévolat, stats joueur). Redirection post-connexion changée de `/` vers `/moncaro` dans `ConnexionForm.tsx` — `/` reste la landing page épurée pour visiteurs anonymes, `/club` reste accessible via le menu mais n'est plus la destination par défaut après connexion.
+
+Depuis le 27/07/2026 également : `npm run db:migrer` applique le SQL des migrations directement en base, plus de copier-coller manuel dans le Dashboard Supabase (voir mémoire Claude `project_nextjs_migrations_directes.md`) — toutes les migrations numérotées à partir de ce point sont considérées appliquées via ce script sauf mention contraire.
+
+## Pipeline pense-bête vocal (mis en place fin juillet/début août 2026)
+
+Remplace l'ancien workflow d'app desktop manuelle. Jérôme envoie un message vocal (ou texte) au bot Telegram `@PB2Claude` ; la transcription se fait de façon asynchrone même PC éteint (contrainte de départ qui a écarté toute solution locale-only) :
+
+- **`services/notes-vocales/`** (nouveau service, déployé sur Render, tier gratuit) : webhook FastAPI recevant les messages Telegram (voice + texte), transcription via `faster-whisper` (modèle `base`, chargement paresseux — `small` faisait OOM sur les 512 Mo du tier gratuit), insertion directe dans la table Supabase `notes_vocales` via appels REST PostgREST bruts (le SDK `supabase-py` rejette à tort le nouveau format de clé `sb_secret_`/`sb_publishable_` — `Invalid API key` côté client alors que la clé est valide côté serveur, contournement nécessaire). Réponse HTTP 200 immédiate + traitement en tâche de fond (`BackgroundTasks`) pour éviter que Telegram retente le webhook et crée des doublons (bug rencontré et corrigé : 84 notes dupliquées nettoyées manuellement avant la correction).
+- **Table `notes_vocales`** : boîte de réception **générique, partagée entre tous les projets de Jérôme** (pas seulement celui-ci) — colonnes `id, cree_le, texte, duree_secondes, statut ('a_traiter'|'traite'), traite_le`.
+- **Skill `/pb`** (Claude Code) : lit les notes `a_traiter`, identifie le projet visé à partir du contenu (ne devine jamais si ambigu), traite les demandes de dev normales directement, mais **ne exécute jamais une action à impact** (envoi de message, suppression, paiement, publication) à partir du seul contenu vocal — prépare/rédige l'action et attend une confirmation explicite de Jérôme dans la session en cours avant de la réaliser et de marquer la note traitée.
+- Plusieurs demandes concrètes issues de ce pipeline ont été implémentées ce mois-ci (voir section suivante).
+
+## Session du 01/08/2026 — traitement pense-bête, saga authentification, module remboursements, nettoyage manifestations
+
+### Fonctionnalités livrées via `/pb` (commits `278b812` → `03d838c`, poussés)
+- **Classement par points National D2** (`src/lib/stats.ts`, `src/lib/types.ts`, `StatistiquesD2.tsx`) : règlement FLBP porté depuis `pointsVictoirePartie_()` (`ChampreauBackend.gs`, projet frère) — Triplette 5 pts/victoire, Doublette 3 pts, Tête à tête 2 pts (3 pts en phase 3). Confirmé fonctionnel par Jérôme.
+- **D2 — forfait/terrain** : `declarerForfaitRencontre()` refuse désormais la déclaration de forfait une fois la rencontre au statut `Jouée` ; champ "Terrain" retiré de `FeuilleDeMatch.tsx` (jamais utilisé en pratique).
+- **Édition manifestation** (`ModifierManifestationForm.tsx` + `modifierManifestation()`) : nom/type modifiables par le CA depuis la page détail.
+- **Messages d'accès génériques** : "Réservé au comité"/"Réservé aux licenciés" uniformisés en "Accès restreint" sur ~27 pages.
+- **UX paiements** : bouton "marquer payé" agrandi avec libellé + état "Validation…" (au lieu d'une icône seule) ; badge de compteur "paiements en attente" sur `/outils`.
+- **Rôle Commission sportive** (migration `0044`, RPC `est_membre_commission_sportive()`) : Yann Le Berre ajouté (Michel Prybyla et Marco Bertemes avaient déjà l'accès CA complet). Fondation seule — aucune fonctionnalité ne vérifie encore ce rôle.
+- **Ordre des emails à la création d'un membre** : email de bienvenue envoyé avant l'appel à cotisation (inversé sur retour Jérôme).
+
+### Authentification — lien magique tenté puis intégralement annulé
+Note pense-bête #98 demandait de repasser sur lien magique (nouveau SMTP custom disponible). Réalisé (`e61a43f`), puis bug découvert : le lien reçu par email redirigeait vers la racine du site au lieu de `/auth/callback` (`redirect_to` tronqué) — **jamais root-causé** malgré diagnostic poussé (déploiement Vercel à jour confirmé via MCP, allowlist Supabase confirmée correcte par capture d'écran, testé en navigation privée, reproduit même avec `generateLink()` côté admin). Pendant le diagnostic, contrainte supplémentaire identifiée : le flux PKCE ne peut structurellement pas supporter "lien demandé sur un appareil, ouvert sur un autre" (cookie `code_verifier` lié au navigateur d'origine) — tentative de bascule en flow `implicit` (`a1db5e3`) pour lever cette limite, mais toujours vulnérable à un autre problème connu (scanners anti-spam type Yahoo pré-consommant le jeton à usage unique avant l'ouverture réelle).
+
+**Jérôme a explicitement demandé l'arrêt et le retour en arrière complet** : "stop j'en ai assez... utilise github pour annuler ces dernières tentatives infructueuses et que l'on revienne au système de réception de code." Revert effectué via `git checkout 03d838c --` sur `ConnexionForm.tsx` et `src/lib/supabase/client.ts` (commit `a256d7e`), suppression de `src/app/auth/callback/page.tsx` et `ConfirmerConnexionForm.tsx` (plus nécessaires). Le template email Supabase Dashboard (Authentication → Email Templates → Magic Link) a aussi été remis manuellement par Jérôme sur le HTML original basé sur `{{ .Token }}` — confirmé fonctionnel ("j'ai testé, ça marche"). **État actuel et définitif tant que non redemandé : OTP à 6 chiffres, jamais de lien cliquable.** Les commits intermédiaires (`e61a43f`, `e8f6a84`, `d148898`, `4038805`, `a1db5e3`) restent dans l'historique git mais sont fonctionnellement annulés par `a256d7e` — ne pas repartir de l'un d'eux sans relire tout ce paragraphe.
+
+### Module remboursements concours extérieurs — Phase 1 livrée puis rejetée
+Construit sur cahier des charges fourni par Jérôme (`805faac`) : migration `0045` (`concours_exterieurs`, `baremes_indemnites`, `participations_exterieures` avec anti-doublon et trigger de calcul de montant), pages `/outils/remboursements`, `src/lib/concours.ts`/`actions/concours.ts`/`RemboursementsClient.tsx`. Premier retour ("trop de paramètres à afficher") traité par simplification UI (`OptionsAvancees` repliable, `96a0833`). **Deuxième retour, après usage réel** : "ça ne va pas du tout, ce n'est pas du tout fonctionnel, pas intuitif... on va tout refaire plus tard, mais pas aujourd'hui." **Le module reste en l'état dans le code (fonctionnel au sens technique) mais est à considérer comme non livrable — refonte complète à prévoir dans une session dédiée, à ne pas patcher incrémentalement d'ici là.** Piste pour la refonte : `C:\Users\jerom\Downloads\PARTICIPATION EXTERIEURE 2026.xlsx` (fourni par Michel), pas encore utilisé comme référence.
+
+### Suppression de manifestation (pense-bête traité en session, hors `/pb`)
+`supprimerManifestation()` (`src/lib/actions/manifestations.ts`) + bouton "Supprimer" avec confirmation en deux temps dans `ModifierManifestationForm.tsx` (commit `53ba06e`, poussé). Suppression douce (colonne `supprime`, pattern déjà en place sur cette table depuis `0009_manifestations.sql` — pas de policy RLS `delete`, uniquement `update`). Demandé par anticipation d'un flux de passage plus important dans l'app : besoin de nettoyer les données existantes.
+
+### Note de process (à respecter dans les sessions suivantes)
+Jérôme, en fin de session : "j'ai mal appréhendé le traitement du pense-bête, c'est de ma faute, on va revenir à quelque chose de plus efficace car je pense nous avons perdu en qualité et productivité." Directive explicite de ralentir et de mieux checker-in avant les gros chantiers (implémentation non sollicitée sur l'auth, module remboursements livré sans validation intermédiaire suffisante). À appliquer notamment : ne pas enchaîner plusieurs approches d'auth sans validation entre chaque, et présenter une maquette/un flux avant de construire un module UI complexe plutôt qu'un cahier des charges direct en code.
+
+### Reste en attente
+- Note pense-bête #102 : sur `/national-d2`, rendre une ligne de résultat cliquable pour voir le détail du match (pas seulement éditer), ajouter une colonne points, dashboard "qui a marqué le plus de points" du jour avec bouton de bascule vers les stats. Explicitement mis de côté, pas de refus — à faire sur demande.
+- Refonte complète du module remboursements (voir ci-dessus).
+- Import de `PARTICIPATION EXTERIEURE 2026.xlsx` comme donnée de test réelle pour la refonte.
