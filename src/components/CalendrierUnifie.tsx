@@ -39,6 +39,13 @@ function formatMois(iso: string) {
 
 const JOURS_SEMAINE = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
 
+/** ISO locale (pas d.toISOString(), qui convertit en UTC et décale d'un
+ *  jour pour un fuseau en avance sur UTC comme Europe/Luxembourg — même bug
+ *  que CalendrierManifestations.tsx, signalé par Jérôme le 02/08/2026). */
+function versISOLocale(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** Grille mensuelle (28/07/2026, retour Jérôme en session : "j'ai besoin de
  *  voir un calendrier... mais avoir aussi le calendrier qui s'adapte au
  *  filtre qu'on a appliqué") — construite à partir du même `filtres` que la
@@ -59,7 +66,7 @@ function construireGrilleMois(anneeMois: string, items: ItemCalendrier[]) {
   return Array.from({ length: 42 }, (_, idx) => {
     const jour = new Date(debutGrille);
     jour.setDate(debutGrille.getDate() + idx);
-    const iso = jour.toISOString().slice(0, 10);
+    const iso = versISOLocale(jour);
     return {
       iso,
       numero: jour.getDate(),
@@ -96,7 +103,7 @@ export function CalendrierUnifie({ items }: { items: ItemCalendrier[] }) {
 
   const filtres = items.filter((i) => actives.has(i.categorie));
 
-  const aujourdhui = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const aujourdhui = useMemo(() => versISOLocale(new Date()), []);
   const moisCourant = aujourdhui.slice(0, 7); // yyyy-mm
   const [moisAffiche, setMoisAffiche] = useState(moisCourant);
 

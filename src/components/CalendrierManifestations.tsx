@@ -12,6 +12,14 @@ const MOIS_NOMS = [
 ];
 const JOURS_SEMAINE = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
+/** ISO locale (pas d.toISOString(), qui convertit en UTC et décale d'un
+ *  jour pour un fuseau en avance sur UTC comme Europe/Luxembourg — bug
+ *  réel signalé par Jérôme, note vocale du 02/08/2026 : "Amicale des
+ *  Français" 8-9 août affichée dans les cases du 9-10). */
+function versISOLocale(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const STATUT_COULEUR: Record<string, string> = {
   Planifiée: 'bg-marine/15 text-marine',
   Confirmée: 'bg-pin/15 text-pin',
@@ -37,7 +45,7 @@ export function CalendrierManifestations({
   const premiereManif = manifestations
     .map((m) => m.dateDebut)
     .sort()
-    .find((d) => d >= aujourdhui.toISOString().slice(0, 10));
+    .find((d) => d >= versISOLocale(aujourdhui));
   const depart = premiereManif ? new Date(premiereManif + 'T00:00:00') : aujourdhui;
 
   const [annee, setAnnee] = useState(depart.getFullYear());
@@ -58,9 +66,9 @@ export function CalendrierManifestations({
     const cellules = Array.from({ length: totalCellules }, (_, i) => {
       const numJour = i - decalage + 1;
       const d = new Date(annee, mois, numJour);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = versISOLocale(d);
       const horsMois = numJour < 1 || numJour > joursDansMois;
-      const estAujourdhui = iso === aujourdhui.toISOString().slice(0, 10);
+      const estAujourdhui = iso === versISOLocale(aujourdhui);
       const manifsJour = manifestations.filter((m) => m.dateDebut <= iso && iso <= m.dateFin);
       const champJour = evenementsChampionnat.filter((e) => e.date <= iso && iso <= e.dateFin);
       return { jour: d.getDate(), horsMois, estAujourdhui, manifsJour, champJour };
