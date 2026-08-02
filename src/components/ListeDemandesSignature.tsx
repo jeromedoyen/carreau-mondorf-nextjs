@@ -29,10 +29,9 @@ const STATUT_LABEL: Record<string, string> = {
   annulee: 'Annulée',
 };
 
-/** Envoi automatisé via l'API Documenso (27/07/2026, contrairement à
- *  DocuSeal dont l'API self-hosted est réservée au Pro) — le pointage
- *  manuel du "qui a signé" reste disponible en complément (pas de webhook
- *  branché pour l'instant, le CA vérifie dans Documenso puis reporte ici). */
+/** Envoi automatisé via l'API Documenso (27/07/2026) — le pointage manuel
+ *  du "qui a signé" reste disponible en complément (pas de webhook branché
+ *  pour l'instant, le CA vérifie dans Documenso puis reporte ici). */
 export function ListeDemandesSignature({ demandes }: { demandes: DemandeSignature[] }) {
   const router = useRouter();
   const [enCours, setEnCours] = useState<number | null>(null);

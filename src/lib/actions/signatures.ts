@@ -16,7 +16,7 @@ async function verifierCA(supabase: Awaited<ReturnType<typeof createClient>>) {
  *  navigateur, cf. NouvelleDemandeSignatureForm.tsx — un File n'a pas sa
  *  place dans un Server Action ici, autant garder le même client de
  *  session que le reste de la RLS). Cette action ne fait que créer les
- *  lignes en base ; l'envoi effectif aux signataires via DocuSeal est un
+ *  lignes en base ; l'envoi effectif aux signataires via Documenso est un
  *  geste séparé (envoyerDemandeSignature), même découplage que
  *  creerAppelPaiement()/envoyerAppelPaiementEmail(). */
 export async function creerDemandeSignature(data: {
@@ -62,9 +62,8 @@ export async function creerDemandeSignature(data: {
 }
 
 /** Envoie la demande aux signataires via l'API Documenso (instance
- *  auto-hébergée sur Render, 27/07/2026 — contrairement à DocuSeal,
- *  l'édition Community de Documenso inclut bien l'API en self-hosted).
- *  Récupère le PDF depuis Supabase Storage, crée l'"enveloppe" Documenso
+ *  auto-hébergée sur Render, 27/07/2026 — édition Community, API incluse
+ *  en self-hosted). Récupère le PDF depuis Supabase Storage, crée l'"enveloppe" Documenso
  *  avec un champ signature par signataire (empilés en bas de la page 1,
  *  déplaçables par le signataire) — chacun reçoit l'invitation par email
  *  directement depuis Documenso. */
@@ -116,7 +115,7 @@ export async function envoyerDemandeSignature(demandeId: number): Promise<Result
 }
 
 /** Pointage manuel : un signataire a signé (constaté par le CA en
- *  regardant DocuSeal). Si c'était le dernier signataire restant, la
+ *  regardant Documenso). Si c'était le dernier signataire restant, la
  *  demande passe automatiquement à "complete". */
 export async function marquerSignataireSigne(signataireId: number): Promise<Resultat> {
   const supabase = await createClient();
@@ -155,7 +154,7 @@ export async function marquerSignataireSigne(signataireId: number): Promise<Resu
 /** Enregistre le chemin du PDF signé (uploadé côté navigateur dans le
  *  même bucket, cf. ListeDemandesSignature.tsx) et clôt la demande —
  *  utile si le CA préfère téléverser directement le PDF final récupéré
- *  depuis DocuSeal plutôt que de pointer chaque signataire un par un. */
+ *  depuis Documenso plutôt que de pointer chaque signataire un par un. */
 export async function enregistrerPdfSigne(demandeId: number, cheminStorageSigne: string): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
