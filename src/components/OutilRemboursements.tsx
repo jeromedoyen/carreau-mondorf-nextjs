@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Check, Euro, Trash2 } from 'lucide-react';
+import { pdf } from '@react-pdf/renderer';
+import { Sparkles, Check, Euro, Trash2, FileDown } from 'lucide-react';
 import type { ParticipationConcours } from '@/lib/remboursements';
+import { RemboursementsPdf } from './RemboursementsPdf';
 import {
   genererListeChampionnatD2,
   validerParticipation,
@@ -37,9 +39,29 @@ export function OutilRemboursements({
   const [messageGeneration, setMessageGeneration] = useState<string | null>(null);
   const [montantFixe, setMontantFixe] = useState(montantFixeInitial);
   const [montantEnCours, setMontantEnCours] = useState(false);
+  const [pdfEnCours, setPdfEnCours] = useState(false);
 
   const championnat = participationsInitiales.filter((p) => p.type === 'Championnat_D2' || p.type === 'Promotion');
   const concours = participationsInitiales.filter((p) => p.type === 'Concours');
+
+  async function telechargerPdf() {
+    setPdfEnCours(true);
+    try {
+      const blob = await pdf(
+        <RemboursementsPdf saison={saison} championnat={championnat} concours={concours} />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Remboursements-concours-${saison}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setPdfEnCours(false);
+    }
+  }
 
   async function genererD2() {
     setGenereEnCours(true);
@@ -91,6 +113,16 @@ export function OutilRemboursements({
           </button>
         </form>
       </div>
+
+      <button
+        type="button"
+        onClick={telechargerPdf}
+        disabled={pdfEnCours}
+        className="inline-flex w-fit items-center gap-2 rounded-full border border-ligne bg-sable-carte px-4 py-2 text-[13px] font-medium text-encre-douce transition-colors hover:border-terracotta hover:text-terracotta disabled:opacity-50"
+      >
+        <FileDown size={15} />
+        {pdfEnCours ? 'Génération…' : 'Télécharger les listes en PDF'}
+      </button>
 
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

@@ -196,9 +196,9 @@ function FormulaireDeclaration({
 
   return (
     <div className="rounded-2xl border border-ligne bg-sable-carte p-6">
-      <h2 className="font-display mb-4 text-xl italic">Déclarer un concours (chef d&apos;équipe)</h2>
+      <h2 className="font-display mb-4 text-xl italic">Déclarer une participation à un concours (chef d&apos;équipe)</h2>
       <form onSubmit={soumettre} className="flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="mb-1 block text-[11.5px] text-encre-douce">Date</label>
             <input
@@ -217,9 +217,6 @@ function FormulaireDeclaration({
               className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
             />
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-[11.5px] text-encre-douce">Pays</label>
             <input
@@ -228,18 +225,19 @@ function FormulaireDeclaration({
               className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-[11.5px] text-encre-douce">Montant d&apos;inscription payé (€)</label>
-            <input
-              type="number"
-              name="inscriptionMontant"
-              step="0.5"
-              min="0"
-              required
-              placeholder="50"
-              className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
-            />
-          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-[11.5px] text-encre-douce">Montant d&apos;inscription payé (€)</label>
+          <input
+            type="number"
+            name="inscriptionMontant"
+            step="0.5"
+            min="0"
+            required
+            placeholder="50"
+            className="w-full max-w-[160px] rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+          />
         </div>
 
         <div className="flex flex-wrap gap-4 text-[13px] text-encre">
@@ -292,7 +290,7 @@ function FormulaireDeclaration({
           disabled={enCours}
           className="self-start rounded-lg bg-terracotta px-4 py-2 text-[13.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {enCours ? 'Enregistrement…' : 'Déclarer ce concours'}
+          {enCours ? 'Enregistrement…' : 'Déclarer cette participation'}
         </button>
       </form>
     </div>
