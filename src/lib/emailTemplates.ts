@@ -267,6 +267,58 @@ export function emailMerciPaiement({
   });
 }
 
+/** Confirmation de remboursement de frais de concours (module remboursements
+ *  v2, 02/08/2026) — envoyée au joueur (championnat automatique) ou au chef
+ *  d'équipe (concours manuel, qui reçoit pour tout le monde). */
+export function emailRemboursementConcours({
+  prenom,
+  concours,
+  montant,
+  estChefEquipe,
+  partenaires,
+}: {
+  prenom: string;
+  concours: string;
+  montant: number;
+  estChefEquipe: boolean;
+  partenaires: string[];
+}): string {
+  return carteSimple({
+    etiquette: 'Remboursement concours',
+    titre: `Remboursement viré, ${prenom} !`,
+    paragraphes: [
+      `Le remboursement de tes frais de participation à <strong style="color:${COULEURS.encre};">${concours}</strong> vient d'être validé et viré : <strong style="color:${COULEURS.encre};">${montant.toFixed(2)} €</strong>.`,
+      ...(estChefEquipe && partenaires.length
+        ? [
+            `Ce montant couvre toute l'équipe (${partenaires.join(', ')}) — c'est à toi de le redistribuer à tes partenaires.`,
+          ]
+        : []),
+      `À bientôt au boulodrome !`,
+    ],
+  });
+}
+
+/** Envoyée aux partenaires d'un chef d'équipe (pas eux-mêmes destinataires
+ *  du virement) — les invite à se tourner vers lui pour la répartition. */
+export function emailRemboursementPartenaire({
+  prenom,
+  concours,
+  nomChefEquipe,
+}: {
+  prenom: string;
+  concours: string;
+  nomChefEquipe: string;
+}): string {
+  return carteSimple({
+    etiquette: 'Remboursement concours',
+    titre: `Remboursement traité, ${prenom}`,
+    paragraphes: [
+      `Le remboursement des frais de <strong style="color:${COULEURS.encre};">${concours}</strong> vient d'être validé et versé à <strong style="color:${COULEURS.encre};">${nomChefEquipe}</strong>, qui a inscrit l'équipe.`,
+      `Rapproche-toi de lui/elle pour la répartition de ta part.`,
+    ],
+  });
+}
+
 /** Relance de renouvellement (Phase E du workflow adhésion) — envoyée en
  *  masse aux membres de la saison précédente qui n'ont pas encore
  *  d'adhésion pour la saison cible. Pointe vers /moncaro/renouveler

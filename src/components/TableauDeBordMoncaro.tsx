@@ -75,6 +75,16 @@ export function TableauDeBordMoncaro({
         )}
       </div>
 
+      <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+        <h3 className="font-display mb-1 text-[15px]">Concours &amp; remboursements</h3>
+        <p className="mb-2 text-[12.5px] text-encre-douce">
+          Déclare un concours (chef d&apos;équipe) et suis le statut de tes remboursements de frais.
+        </p>
+        <Link href="/concours" className="text-[12.5px] text-terracotta hover:underline">
+          Voir mes concours →
+        </Link>
+      </div>
+
       {statsVisibles && (
         <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
           <div className="mb-3 flex items-center gap-2">
