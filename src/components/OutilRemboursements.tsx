@@ -193,7 +193,7 @@ function GroupeJoueur({ groupe }: { groupe: GroupeJoueurT }) {
       <button
         type="button"
         onClick={() => setOuvert((v) => !v)}
-        className="flex w-full flex-wrap items-center justify-between gap-3 p-3.5 text-left text-[13px]"
+        className="flex w-full max-w-xl flex-wrap items-center justify-between gap-3 p-3.5 text-left text-[13px]"
       >
         <div className="flex items-center gap-2">
           <span className="font-medium text-encre">{groupe.personneNom}</span>
@@ -296,7 +296,7 @@ function LigneParticipation({ participation: p }: { participation: Participation
 
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ligne p-3.5 text-[13px] ${
+      className={`flex max-w-xl flex-wrap items-center justify-between gap-3 rounded-xl border border-ligne p-3.5 text-[13px] ${
         p.horsPays ? 'bg-sable/60 opacity-70' : 'bg-sable-carte'
       }`}
     >

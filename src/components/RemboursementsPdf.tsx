@@ -29,9 +29,10 @@ const styles = StyleSheet.create({
   cell: { padding: 4, fontSize: 8 },
   colType: { width: '20%' },
   colDate: { width: '18%' },
-  colClub: { width: '24%' },
+  colClub: { width: '19%' },
   colMontant: { width: '13%', textAlign: 'right' },
   colStatut: { width: '13%' },
+  colPaye: { width: '15%', textAlign: 'right', color: PIN },
   total: { marginTop: 8, fontSize: 9, fontWeight: 700, color: PIN, textAlign: 'right' },
 });
 
@@ -77,6 +78,9 @@ function Tableau({ participations }: { participations: ParticipationConcours[] }
               <Text style={[styles.cell, styles.colClub]}>{p.club ?? '—'}</Text>
               <Text style={[styles.cell, styles.colMontant]}>{p.montantFinal != null ? `${p.montantFinal.toFixed(2)} €` : '—'}</Text>
               <Text style={[styles.cell, styles.colStatut]}>{LIBELLE_STATUT[p.statut] ?? p.statut}</Text>
+              <Text style={[styles.cell, styles.colPaye]}>
+                {p.statut === 'paye' && p.payeLe ? `payé le ${formatDate(p.payeLe.slice(0, 10))}` : ''}
+              </Text>
             </View>
           ))}
         </View>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { creerParticipationManuelle } from '@/lib/actions/remboursements';
 
@@ -139,6 +139,20 @@ export function SaisieConcoursEtSuivi({ saison }: { saison: string }) {
   );
 }
 
+type TypePartie = 'tete_a_tete' | 'doublette' | 'triplette';
+
+const PARTENAIRES_REQUIS: Record<TypePartie, number> = {
+  tete_a_tete: 0,
+  doublette: 1,
+  triplette: 2,
+};
+
+const LIBELLE_TYPE_PARTIE: Record<TypePartie, string> = {
+  tete_a_tete: 'Tête-à-tête',
+  doublette: 'Doublette',
+  triplette: 'Triplette',
+};
+
 function FormulaireDeclaration({
   saison,
   monId,
@@ -150,24 +164,32 @@ function FormulaireDeclaration({
   licencies: Licencie[];
   onEnregistre: () => Promise<void>;
 }) {
-  const [partenaires, setPartenaires] = useState<Set<number>>(new Set());
+  const [typePartie, setTypePartie] = useState<TypePartie>('doublette');
+  // Un slot par partenaire requis selon le type de partie (0/1/2) —
+  // remplace la grille de cases à cocher (retour Jérôme, 02/08/2026 :
+  // "si j'ai 70 personnes je préfère chercher le nom") par une recherche
+  // par nom, un partenaire à la fois.
+  const [partenaires, setPartenaires] = useState<(number | null)[]>([null]);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [succes, setSucces] = useState(false);
 
-  function basculerPartenaire(id: number) {
-    setPartenaires((prev) => {
-      const suivant = new Set(prev);
-      if (suivant.has(id)) suivant.delete(id);
-      else suivant.add(id);
-      return suivant;
-    });
+  function changerTypePartie(t: TypePartie) {
+    setTypePartie(t);
+    setPartenaires(Array.from({ length: PARTENAIRES_REQUIS[t] }, () => null));
   }
 
   async function soumettre(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErreur(null);
     setSucces(false);
+    const partenaireIds = partenaires.filter((id): id is number => id != null);
+    if (partenaireIds.length !== PARTENAIRES_REQUIS[typePartie]) {
+      setErreur(
+        `Choisis ${PARTENAIRES_REQUIS[typePartie]} partenaire(s) pour une ${LIBELLE_TYPE_PARTIE[typePartie].toLowerCase()}.`
+      );
+      return;
+    }
     setEnCours(true);
     const formData = new FormData(e.currentTarget);
     const resultat = await creerParticipationManuelle({
@@ -179,7 +201,7 @@ function FormulaireDeclaration({
       horsPays: formData.get('horsPays') === 'on',
       inscriptionMontant: Number(formData.get('inscriptionMontant') || 0),
       repasInclus: formData.get('repasInclus') === 'on',
-      partenaireIds: [...partenaires],
+      partenaireIds,
       notes: String(formData.get('notes') || ''),
     });
     setEnCours(false);
@@ -188,7 +210,7 @@ function FormulaireDeclaration({
       return;
     }
     setSucces(true);
-    setPartenaires(new Set());
+    setPartenaires(Array.from({ length: PARTENAIRES_REQUIS[typePartie] }, () => null));
     (e.target as HTMLFormElement).reset();
     await onEnregistre();
   }
@@ -257,24 +279,44 @@ function FormulaireDeclaration({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[11.5px] text-encre-douce">
-            Partenaires (le remboursement te sera versé à toi, à charge de redistribuer)
-          </label>
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-            {autresLicencies.map((l) => {
-              const coche = partenaires.has(l.id);
-              return (
-                <label
-                  key={l.id}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] ${coche ? 'bg-terracotta/10 text-encre' : 'text-encre-douce'}`}
-                >
-                  <input type="checkbox" checked={coche} onChange={() => basculerPartenaire(l.id)} className="accent-terracotta" />
-                  {l.prenom} {l.nom}
-                </label>
-              );
-            })}
+          <label className="mb-1.5 block text-[11.5px] text-encre-douce">Type de partie</label>
+          <div className="flex gap-1.5">
+            {(Object.keys(LIBELLE_TYPE_PARTIE) as TypePartie[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => changerTypePartie(t)}
+                className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${
+                  typePartie === t ? 'bg-terracotta text-white' : 'bg-sable text-encre-douce hover:text-encre'
+                }`}
+              >
+                {LIBELLE_TYPE_PARTIE[t]}
+              </button>
+            ))}
           </div>
         </div>
+
+        {PARTENAIRES_REQUIS[typePartie] > 0 && (
+          <div>
+            <label className="mb-1.5 block text-[11.5px] text-encre-douce">
+              Partenaire{PARTENAIRES_REQUIS[typePartie] > 1 ? 's' : ''} (le remboursement te sera versé à toi, à
+              charge de redistribuer)
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {partenaires.map((idSelectionne, i) => (
+                <SelecteurPartenaire
+                  key={i}
+                  licencies={autresLicencies}
+                  exclureIds={partenaires.filter((id, j) => j !== i && id != null) as number[]}
+                  valeur={idSelectionne}
+                  onChange={(id) =>
+                    setPartenaires((prev) => prev.map((p, j) => (j === i ? id : p)))
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <textarea
           name="notes"
@@ -294,6 +336,96 @@ function FormulaireDeclaration({
           {enCours ? 'Enregistrement…' : 'Déclarer cette participation'}
         </button>
       </form>
+    </div>
+  );
+}
+
+function sansAccents(s: string) {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+/** Recherche par nom plutôt qu'une case à cocher parmi tous les licenciés
+ *  (retour Jérôme, 02/08/2026 : "si j'ai 70 personnes je préfère chercher
+ *  le nom") — un slot par partenaire requis selon le type de partie. */
+function SelecteurPartenaire({
+  licencies,
+  exclureIds,
+  valeur,
+  onChange,
+}: {
+  licencies: Licencie[];
+  exclureIds: number[];
+  valeur: number | null;
+  onChange: (id: number | null) => void;
+}) {
+  const [filtre, setFiltre] = useState('');
+  const [ouvert, setOuvert] = useState(false);
+
+  const selectionne = licencies.find((l) => l.id === valeur) ?? null;
+
+  const resultats = useMemo(() => {
+    if (!filtre.trim()) return [];
+    const q = sansAccents(filtre);
+    return licencies
+      .filter((l) => !exclureIds.includes(l.id))
+      .filter((l) => sansAccents(`${l.prenom} ${l.nom}`).includes(q))
+      .slice(0, 8);
+  }, [licencies, exclureIds, filtre]);
+
+  if (selectionne) {
+    return (
+      <div className="flex items-center gap-1.5 rounded-lg bg-terracotta/10 px-3 py-2 text-[13px] text-encre">
+        <span className="flex-1">
+          {selectionne.prenom} {selectionne.nom}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="text-encre-douce hover:text-danger"
+          aria-label="Changer de partenaire"
+        >
+          ×
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex-1">
+      <input
+        type="text"
+        value={filtre}
+        onChange={(e) => setFiltre(e.target.value)}
+        onFocus={() => setOuvert(true)}
+        onBlur={() => setTimeout(() => setOuvert(false), 150)}
+        placeholder="Chercher un nom…"
+        className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[13px] outline-none focus:border-terracotta"
+      />
+      {ouvert && filtre.trim() && (
+        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-ligne bg-sable-carte shadow-lg">
+          {resultats.length ? (
+            resultats.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onMouseDown={() => {
+                  onChange(l.id);
+                  setFiltre('');
+                }}
+                className="block w-full px-3 py-2 text-left text-[13px] text-encre hover:bg-terracotta/10"
+              >
+                {l.prenom} {l.nom}
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-[12.5px] text-encre-douce">Aucun résultat.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -253,9 +253,10 @@ export function StatistiquesD2({ saison }: { saison: string }) {
 function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
   return (
     <div className="rounded-2xl border border-ligne bg-sable-carte p-6 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-      <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-display m-0 text-xl">Mes statistiques — {joueur.nom}</h3>
         <div className="flex items-center gap-4">
+          <SparklinePoints valeurs={joueur.pointsParJournee.map((pj) => pj.points)} />
           <span className="font-score text-2xl text-terracotta">{formatPct(joueur.tauxVictoire)}</span>
           <span className="font-score text-2xl text-encre">{joueur.pointsTotal} pts</span>
         </div>
