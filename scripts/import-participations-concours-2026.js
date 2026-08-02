@@ -26,6 +26,11 @@ const COLONNES_A_IMPORTER = {
   SCHIERREN: { date: '2026-04-12', type: 'Promotion', club: 'Schieren' },
   "BOULE D'OR": { date: '2026-04-19', type: 'Promotion', club: 'Esch/Alzette' },
   DUDELANGE: { date: '2026-05-02', type: 'Promotion', club: 'Dudelange' },
+  // Confirmé par Jérôme (02/08/2026) : Promotion J5 à Schifflange. Daté du
+  // 09/05 (comme dans le fichier de Michel) — le calendrier fédéral a cette
+  // même journée datée du 10/05, écart d'un jour probablement une erreur de
+  // saisie fédération, à corriger séparément si besoin.
+  SCHIFFLANGE: { date: '2026-05-09', type: 'Promotion', club: 'Schifflange' },
   STEINHEIM_2: { date: '2026-05-17', type: 'Promotion', club: 'Steinheim' },
   BELVAUX: { date: '2026-07-05', type: 'Promotion', club: 'Belvaux' },
   STEINFORT: { date: '2026-07-12', type: 'Promotion', club: 'Steinfort' },
