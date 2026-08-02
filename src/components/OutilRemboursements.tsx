@@ -22,6 +22,7 @@ function formatDate(iso: string) {
 const LIBELLE_TYPE: Record<string, string> = {
   Championnat_D2: 'National D2',
   Promotion: 'Promotion',
+  Concours_National: 'Championnat national',
   Concours: 'Concours',
 };
 
@@ -41,7 +42,9 @@ export function OutilRemboursements({
   const [montantEnCours, setMontantEnCours] = useState(false);
   const [pdfEnCours, setPdfEnCours] = useState(false);
 
-  const championnat = participationsInitiales.filter((p) => p.type === 'Championnat_D2' || p.type === 'Promotion');
+  const championnat = participationsInitiales.filter(
+    (p) => p.type === 'Championnat_D2' || p.type === 'Promotion' || p.type === 'Concours_National'
+  );
   const concours = participationsInitiales.filter((p) => p.type === 'Concours');
 
   async function telechargerPdf() {

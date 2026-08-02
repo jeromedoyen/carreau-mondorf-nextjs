@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export type TypeParticipationConcours = 'Championnat_D2' | 'Promotion' | 'Concours';
+export type TypeParticipationConcours = 'Championnat_D2' | 'Promotion' | 'Concours_National' | 'Concours';
 export type StatutParticipationConcours = 'en_attente' | 'valide' | 'paye';
 
 export type ParticipationConcours = {

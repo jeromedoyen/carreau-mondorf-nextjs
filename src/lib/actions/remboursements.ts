@@ -180,7 +180,13 @@ async function envoyerNotificationsPaiement(
     if (!beneficiaire?.email || participation.montant_final == null) return;
 
     const libelleConcours = `${
-      participation.type === 'Championnat_D2' ? 'National D2' : participation.type === 'Promotion' ? 'Promotion' : 'concours'
+      participation.type === 'Championnat_D2'
+        ? 'National D2'
+        : participation.type === 'Promotion'
+          ? 'Promotion'
+          : participation.type === 'Concours_National'
+            ? 'championnat national'
+            : 'concours'
     }${participation.club ? ` — ${participation.club}` : ''} (${new Date(participation.date + 'T00:00:00').toLocaleDateString('fr-FR')})`;
     const estChef = participation.chef_equipe_id === participation.personne_id;
 

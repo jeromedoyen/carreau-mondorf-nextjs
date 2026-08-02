@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
 const LIBELLE_TYPE: Record<string, string> = {
   Championnat_D2: 'National D2',
   Promotion: 'Promotion',
+  Concours_National: 'Championnat national',
   Concours: 'Concours',
 };
 const LIBELLE_STATUT: Record<string, string> = { en_attente: 'En attente', valide: 'Validé', paye: 'Payé' };
