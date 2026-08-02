@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { StatistiquesD2 as StatistiquesD2Data, StatJoueurD2 } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getStatistiquesJoueursD2, getMesStatistiquesD2 } from '@/lib/stats';
-import { SparklinePoints, BarreProportion, GraphiquePointsParJournee } from './StatsCharts';
+import { SparklinePoints, BarreProportion, GraphiquePointsParJournee, IconeTypePartie } from './StatsCharts';
 
 type TriColonne = 'tauxVictoire' | 'joues' | 'points';
 type Etat = 'verification' | 'mesStats' | 'chargement' | 'pret' | 'nonLicencie';
@@ -204,7 +204,8 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                             key={`${p.idRencontre}-${p.phase}-${p.type}`}
                             className="flex items-center justify-between gap-3 text-[12.5px]"
                           >
-                            <span className="truncate text-encre-douce">
+                            <span className="flex min-w-0 items-center gap-1.5 truncate text-encre-douce">
+                              <IconeTypePartie type={p.type} />
                               J{p.journee} · {formatDate(p.date)} · {p.adversaireClub}
                             </span>
                             <span className={p.gagne ? 'shrink-0 text-pin' : 'shrink-0 text-danger'}>
@@ -293,7 +294,8 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
           <div className="flex max-h-64 flex-col gap-1 overflow-y-auto pr-1">
             {joueur.parties.map((p) => (
               <div key={`${p.idRencontre}-${p.phase}-${p.type}`} className="flex items-center justify-between gap-3 text-[12.5px]">
-                <span className="truncate text-encre-douce">
+                <span className="flex min-w-0 items-center gap-1.5 truncate text-encre-douce">
+                  <IconeTypePartie type={p.type} />
                   J{p.journee} · {formatDate(p.date)} · {p.adversaireClub}
                 </span>
                 <span className={p.gagne ? 'shrink-0 text-pin' : 'shrink-0 text-danger'}>

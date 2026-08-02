@@ -158,3 +158,26 @@ export function GraphiquePointsParJournee({
     </div>
   );
 }
+
+const NB_JOUEURS_PAR_TYPE: Record<string, number> = { 'Tête à tête': 1, Doublette: 2, Triplette: 3 };
+
+/** Petit repère visuel du type de partie (retour Jérôme, 02/08/2026 —
+ *  note vocale #120 : "un gugus, deux gugus, trois gugus") sur la liste
+ *  "toutes les parties" — un, deux ou trois pictogrammes de joueur selon
+ *  tête-à-tête / doublette / triplette, pour une lecture visuelle
+ *  immédiate sans avoir à lire le libellé texte. `currentColor` : hérite
+ *  la couleur du texte voisin (victoire/défaite déjà codées ailleurs). */
+export function IconeTypePartie({ type }: { type: string }) {
+  const n = NB_JOUEURS_PAR_TYPE[type] ?? 0;
+  if (!n) return null;
+  return (
+    <span className="inline-flex shrink-0 items-center gap-[1px]" title={type} aria-label={type}>
+      {Array.from({ length: n }).map((_, i) => (
+        <svg key={i} width="9" height="12" viewBox="0 0 9 12" fill="currentColor" aria-hidden="true">
+          <circle cx="4.5" cy="2.6" r="2.2" />
+          <path d="M0.5 11.5c0-2.8 1.8-4.4 4-4.4s4 1.6 4 4.4z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
