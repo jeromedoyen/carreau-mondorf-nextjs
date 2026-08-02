@@ -33,14 +33,16 @@ export default async function MoncaroPage() {
   const supabase = await createClient();
   const saison = await getSaisonActive();
 
-  const [monNom, adhesion, parametres, benevolat, { data: ca }, { data: licencie }] = await Promise.all([
-    getMonNomBenevole(),
-    getMonAdhesion(supabase, saison),
-    getParametresClub().catch(() => null),
-    getMonTableauDeBordBenevole().catch(() => null),
-    supabase.rpc('est_membre_ca'),
-    supabase.rpc('est_licencie', { p_saison: saison }),
-  ]);
+  const [monNom, adhesion, parametres, benevolat, { data: ca }, { data: licencie }, { data: participationsConcours }] =
+    await Promise.all([
+      getMonNomBenevole(),
+      getMonAdhesion(supabase, saison),
+      getParametresClub().catch(() => null),
+      getMonTableauDeBordBenevole().catch(() => null),
+      supabase.rpc('est_membre_ca'),
+      supabase.rpc('est_licencie', { p_saison: saison }),
+      supabase.rpc('mes_participations_concours', { p_saison: saison }),
+    ]);
 
   const statsVisibles = !!ca || !!licencie;
   // Une RPC manquante ici (migration pas encore appliquée) ne doit jamais
@@ -71,6 +73,7 @@ export default async function MoncaroPage() {
         monNom={monNom}
         mesStatsD2={mesStatsD2}
         statsPromotion={statsPromotion}
+        participationsConcours={participationsConcours ?? []}
       />
     </main>
   );
