@@ -36,6 +36,11 @@ const COLONNES_A_IMPORTER = {
   STEINFORT: { date: '2026-07-12', type: 'Promotion', club: 'Steinfort' },
   'TRIPLE MIXTE': { date: '2026-05-23', type: 'Concours_National', club: 'Boulodrome National, Belvaux' },
   'T à T': { date: '2026-05-30', type: 'Concours_National', club: 'Boulodrome National, Belvaux' },
+  // Confirmé par Jérôme (02/08/2026) : championnat national Triplette, date
+  // déplacée par la fédération — pas d'entrée calendrier_federation
+  // correspondante (calendrier pas mis à jour côté club), club/lieu non
+  // confirmé donc laissé vide plutôt que deviné.
+  TRIPLE: { date: '2026-05-13', type: 'Concours_National', club: null },
 };
 
 function excelDateToISO(serial) {
