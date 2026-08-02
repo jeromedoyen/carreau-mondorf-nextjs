@@ -16,22 +16,22 @@ const styles = StyleSheet.create({
   club: { fontSize: 12, fontWeight: 700, color: MARINE },
   titre: { fontSize: 11, fontWeight: 700, color: TERRACOTTA, marginTop: 2 },
   sousTitre: { fontSize: 9, color: ENCRE_DOUCE, marginTop: 2 },
-  ligneEntete: {
+  ligneMaitre: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: LIGNE,
     backgroundColor: SABLE_CARTE,
-    marginTop: 10,
+    marginTop: 6,
   },
-  ligne: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: LIGNE },
-  cellEntete: { padding: 4, fontSize: 7.5, fontWeight: 700, color: ENCRE_DOUCE },
+  cellMaitreNom: { padding: 4, fontSize: 8.5, fontWeight: 700, color: PIN, width: '65%' },
+  cellMaitreTotal: { padding: 4, fontSize: 8.5, fontWeight: 700, color: PIN, width: '35%', textAlign: 'right' },
+  ligne: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: LIGNE, paddingLeft: 12 },
   cell: { padding: 4, fontSize: 8 },
-  colNom: { width: '26%' },
-  colType: { width: '16%' },
-  colDate: { width: '16%' },
-  colClub: { width: '20%' },
-  colMontant: { width: '11%', textAlign: 'right' },
-  colStatut: { width: '11%' },
+  colType: { width: '20%' },
+  colDate: { width: '18%' },
+  colClub: { width: '24%' },
+  colMontant: { width: '13%', textAlign: 'right' },
+  colStatut: { width: '13%' },
   total: { marginTop: 8, fontSize: 9, fontWeight: 700, color: PIN, textAlign: 'right' },
 });
 
@@ -47,26 +47,38 @@ function formatDate(iso: string) {
   return new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function regrouperParJoueur(participations: ParticipationConcours[]) {
+  const parJoueur = new Map<number, { personneNom: string; lignes: ParticipationConcours[]; total: number }>();
+  for (const p of participations) {
+    const g = parJoueur.get(p.personneId) ?? { personneNom: p.personneNom, lignes: [], total: 0 };
+    g.lignes.push(p);
+    g.total += p.montantFinal ?? 0;
+    parJoueur.set(p.personneId, g);
+  }
+  for (const g of parJoueur.values()) g.lignes.sort((a, b) => a.date.localeCompare(b.date));
+  return [...parJoueur.values()].sort((a, b) => a.personneNom.localeCompare(b.personneNom));
+}
+
 function Tableau({ participations }: { participations: ParticipationConcours[] }) {
+  const groupes = regrouperParJoueur(participations);
   const total = participations.reduce((s, p) => s + (p.montantFinal ?? 0), 0);
   return (
     <View>
-      <View style={styles.ligneEntete}>
-        <Text style={[styles.cellEntete, styles.colNom]}>Joueur</Text>
-        <Text style={[styles.cellEntete, styles.colType]}>Type</Text>
-        <Text style={[styles.cellEntete, styles.colDate]}>Date</Text>
-        <Text style={[styles.cellEntete, styles.colClub]}>Club</Text>
-        <Text style={[styles.cellEntete, styles.colMontant]}>Montant</Text>
-        <Text style={[styles.cellEntete, styles.colStatut]}>Statut</Text>
-      </View>
-      {participations.map((p) => (
-        <View key={p.id} style={styles.ligne}>
-          <Text style={[styles.cell, styles.colNom]}>{p.personneNom}</Text>
-          <Text style={[styles.cell, styles.colType]}>{LIBELLE_TYPE[p.type]}</Text>
-          <Text style={[styles.cell, styles.colDate]}>{formatDate(p.date)}</Text>
-          <Text style={[styles.cell, styles.colClub]}>{p.club ?? '—'}</Text>
-          <Text style={[styles.cell, styles.colMontant]}>{p.montantFinal != null ? `${p.montantFinal.toFixed(2)} €` : '—'}</Text>
-          <Text style={[styles.cell, styles.colStatut]}>{LIBELLE_STATUT[p.statut] ?? p.statut}</Text>
+      {groupes.map((g) => (
+        <View key={g.personneNom} wrap={false}>
+          <View style={styles.ligneMaitre}>
+            <Text style={styles.cellMaitreNom}>{g.personneNom}</Text>
+            <Text style={styles.cellMaitreTotal}>{g.total.toFixed(2)} €</Text>
+          </View>
+          {g.lignes.map((p) => (
+            <View key={p.id} style={styles.ligne}>
+              <Text style={[styles.cell, styles.colType]}>{LIBELLE_TYPE[p.type]}</Text>
+              <Text style={[styles.cell, styles.colDate]}>{formatDate(p.date)}</Text>
+              <Text style={[styles.cell, styles.colClub]}>{p.club ?? '—'}</Text>
+              <Text style={[styles.cell, styles.colMontant]}>{p.montantFinal != null ? `${p.montantFinal.toFixed(2)} €` : '—'}</Text>
+              <Text style={[styles.cell, styles.colStatut]}>{LIBELLE_STATUT[p.statut] ?? p.statut}</Text>
+            </View>
+          ))}
         </View>
       ))}
       <Text style={styles.total}>Total : {total.toFixed(2)} €</Text>
