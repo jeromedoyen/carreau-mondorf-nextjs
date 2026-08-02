@@ -62,6 +62,18 @@ function levenshtein(a, b) {
   return d[m][n];
 }
 
+// Confirmé par Jérôme (02/08/2026) : ces 4 noms Excel ne matchaient pas
+// automatiquement (prénom composé coupé par un point, ou surnom/orthographe
+// trop éloignée pour le rapprochement tolérant) — correspondance actée
+// manuellement plutôt qu'un seuil de tolérance plus large qui risquerait
+// des faux positifs ailleurs.
+const CORRECTIONS_CONFIRMEES = {
+  'FLAMMANG.MARIE.JEAN': { nom: 'FLAMMANG', prenom: 'MARIE-JEAN' },
+  'SCHMITT.MARELYSE': { nom: 'SCHMIT', prenom: 'MARIE-LOUISE' },
+  'SZCZUCKI.BERNARD': { nom: 'SCZUCCIK', prenom: 'BERNARD ALBERT' },
+  'KAPPLER .STEPHANIE': { nom: 'KÄPPELLE', prenom: 'STEFANIE' },
+};
+
 /** "BAC. YVES" -> {nom:"BAC", prenom:"YVES"} ; "LE BERRE YAN" -> {nom:"LE BERRE", prenom:"YAN"} */
 function parserNomExcel(brut) {
   const tokens = String(brut).replace(/\./g, ' ').split(/\s+/).filter(Boolean);
@@ -72,7 +84,8 @@ function parserNomExcel(brut) {
 }
 
 function trouverPersonne(nomExcel, personnes) {
-  const { nom, prenom } = parserNomExcel(nomExcel);
+  const correction = CORRECTIONS_CONFIRMEES[nomExcel];
+  const { nom, prenom } = correction ? { nom: sansAccents(correction.nom), prenom: sansAccents(correction.prenom) } : parserNomExcel(nomExcel);
 
   // Passe 1 : nom exact + prénom exact ou préfixe (gère "ANTONIO" vs "José Antonio").
   let trouve = personnes.find((p) => {
