@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { getParticipationsConcours, getMontantRemboursementConcours } from '@/lib/remboursements';
+import { getParticipationsConcours } from '@/lib/remboursements';
 import { getSaisonActive } from '@/lib/saisons';
 import { OutilRemboursements } from '@/components/OutilRemboursements';
 
@@ -39,10 +39,7 @@ export default async function RemboursementsPage() {
   }
 
   const saison = await getSaisonActive();
-  const [participations, montantFixe] = await Promise.all([
-    getParticipationsConcours(supabase, saison),
-    getMontantRemboursementConcours(supabase),
-  ]);
+  const participations = await getParticipationsConcours(supabase, saison);
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-12">
@@ -55,7 +52,7 @@ export default async function RemboursementsPage() {
         </p>
       </header>
 
-      <OutilRemboursements saison={saison} participationsInitiales={participations} montantFixeInitial={montantFixe} />
+      <OutilRemboursements saison={saison} participationsInitiales={participations} />
     </main>
   );
 }

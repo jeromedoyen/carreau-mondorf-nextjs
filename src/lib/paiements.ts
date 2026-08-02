@@ -7,6 +7,7 @@ export type ParametresClub = {
   ville: string | null;
   montantCarteMembre: number | null;
   montantLicence: number | null;
+  montantRemboursementConcours: number;
 };
 
 export type TypeAppelPaiement = 'Carte de membre' | 'Licence' | 'Carte de membre + Licence' | 'Autre';
@@ -31,7 +32,7 @@ export async function getParametresClub(): Promise<ParametresClub | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('parametres_club')
-    .select('nom_beneficiaire, iban, bic, ville, montant_carte_membre, montant_licence')
+    .select('nom_beneficiaire, iban, bic, ville, montant_carte_membre, montant_licence, montant_remboursement_concours')
     .eq('id', 1)
     .maybeSingle();
   if (error) throw error;
@@ -43,6 +44,7 @@ export async function getParametresClub(): Promise<ParametresClub | null> {
     ville: data.ville,
     montantCarteMembre: data.montant_carte_membre,
     montantLicence: data.montant_licence,
+    montantRemboursementConcours: data.montant_remboursement_concours ?? 10,
   };
 }
 

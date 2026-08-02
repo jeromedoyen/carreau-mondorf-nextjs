@@ -19,6 +19,7 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
     const formData = new FormData(e.currentTarget);
     const montantCarteMembre = Number(formData.get('montantCarteMembre') || 0);
     const montantLicence = Number(formData.get('montantLicence') || 0);
+    const montantRemboursementConcours = Number(formData.get('montantRemboursementConcours') || 0);
     const resultat = await enregistrerParametresClub({
       nomBeneficiaire: String(formData.get('nomBeneficiaire') || ''),
       iban: String(formData.get('iban') || ''),
@@ -26,6 +27,7 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
       ville: String(formData.get('ville') || ''),
       montantCarteMembre: montantCarteMembre > 0 ? montantCarteMembre : undefined,
       montantLicence: montantLicence > 0 ? montantLicence : undefined,
+      montantRemboursementConcours: montantRemboursementConcours >= 0 ? montantRemboursementConcours : undefined,
     });
     setEnCours(false);
     if (!resultat.ok) {
@@ -45,7 +47,7 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
       >
         <span className="flex items-center gap-2">
           <Landmark size={16} className="text-pin" />
-          <span className="font-display text-[15px]">Coordonnées bancaires & montants (cotisation, licence)</span>
+          <span className="font-display text-[15px]">Coordonnées bancaires & montants (cotisation, licence, remboursement concours)</span>
         </span>
         <ChevronDown size={16} className={`text-encre-douce transition-transform ${ouvert ? 'rotate-180' : ''}`} />
       </button>
@@ -67,6 +69,9 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
           <strong className={parametres.montantLicence ? 'text-encre' : 'text-encre-douce'}>
             {parametres.montantLicence ? `${parametres.montantLicence.toFixed(2)} €` : 'non renseignée'}
           </strong>
+          {' · '}
+          Remboursement concours :{' '}
+          <strong className="text-encre">{parametres.montantRemboursementConcours.toFixed(2)} €</strong>
         </p>
       )}
       {!ouvert && !parametres && (
@@ -131,6 +136,20 @@ export function ParametresClubForm({ parametres }: { parametres: ParametresClub 
                 className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
               />
             </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11.5px] text-encre-douce">
+              Remboursement concours (EUR par joueur, championnat D2/Promotion/national)
+            </label>
+            <input
+              type="number"
+              name="montantRemboursementConcours"
+              step="0.5"
+              min="0"
+              defaultValue={parametres?.montantRemboursementConcours ?? 10}
+              placeholder="10"
+              className="w-full max-w-[160px] rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+            />
           </div>
           {erreur && <p className="text-[12.5px] text-danger">{erreur}</p>}
           <button

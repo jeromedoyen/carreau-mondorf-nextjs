@@ -247,21 +247,6 @@ export async function supprimerParticipation(id: number): Promise<Resultat> {
   return { ok: true };
 }
 
-export async function enregistrerMontantRemboursementConcours(montant: number): Promise<Resultat> {
-  const supabase = await createClient();
-  if (!(await verifierTresorerie(supabase))) return { ok: false, error: 'Action réservée à la trésorerie.' };
-  if (!(montant >= 0)) return { ok: false, error: 'Montant invalide.' };
-
-  const { error } = await supabase
-    .from('parametres_club')
-    .update({ montant_remboursement_concours: montant, maj_le: new Date().toISOString() })
-    .eq('id', 1);
-  if (error) return { ok: false, error: error.message };
-
-  revalidatePath('/outils/remboursements');
-  return { ok: true };
-}
-
 // --- Saisie manuelle (côté joueur / chef d'équipe) ---
 
 /** Un licencié quelconque déclare sa participation (comme chef d'équipe) à

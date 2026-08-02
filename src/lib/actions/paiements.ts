@@ -23,6 +23,7 @@ export async function enregistrerParametresClub(data: {
   ville?: string;
   montantCarteMembre?: number;
   montantLicence?: number;
+  montantRemboursementConcours?: number;
 }): Promise<Resultat> {
   const supabase = await createClient();
   if (!(await verifierCA(supabase))) return { ok: false, error: 'Action réservée au comité.' };
@@ -38,11 +39,13 @@ export async function enregistrerParametresClub(data: {
     ville: data.ville?.trim() || null,
     montant_carte_membre: data.montantCarteMembre ?? null,
     montant_licence: data.montantLicence ?? null,
+    ...(data.montantRemboursementConcours != null ? { montant_remboursement_concours: data.montantRemboursementConcours } : {}),
     maj_le: new Date().toISOString(),
   });
   if (error) return { ok: false, error: error.message };
 
   revalidatePath('/outils/paiements');
+  revalidatePath('/outils/remboursements');
   return { ok: true };
 }
 

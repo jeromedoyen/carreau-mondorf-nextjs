@@ -96,8 +96,3 @@ export async function getParticipationsConcours(
     notes: l.notes,
   }));
 }
-
-export async function getMontantRemboursementConcours(supabase: SupabaseClient): Promise<number> {
-  const { data } = await supabase.from('parametres_club').select('montant_remboursement_concours').eq('id', 1).maybeSingle();
-  return data?.montant_remboursement_concours ?? 10;
-}
