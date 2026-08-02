@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { RencontreCAPanel } from '@/components/RencontreCAPanel';
 import { VueRencontreD2 } from '@/components/VueRencontreD2';
@@ -26,6 +27,12 @@ function EnTete({
 }) {
   return (
     <header className="entree mb-9">
+      <Link
+        href="/national-d2"
+        className="mb-3 inline-flex items-center gap-1.5 text-[13px] text-encre-douce transition-colors hover:text-terracotta"
+      >
+        <ArrowLeft size={15} /> Retour au National D2
+      </Link>
       <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
         J{journee} · {sousTitre}
       </p>

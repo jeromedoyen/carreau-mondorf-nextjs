@@ -24,7 +24,7 @@ export function SectionToggle({
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap gap-1.5">
+      <div className="sticky top-[64px] z-10 -mx-5 mb-6 flex flex-wrap gap-1.5 bg-sable/90 px-5 py-2 backdrop-blur-sm">
         <button
           type="button"
           onClick={() => setVue('calendrier')}
