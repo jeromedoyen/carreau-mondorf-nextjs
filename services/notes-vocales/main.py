@@ -1,11 +1,17 @@
 """Service webhook Telegram -> transcription -> Supabase.
 
 Reçoit les mémos vocaux envoyés par Jérôme au bot Telegram, les transcrit
-avec faster-whisper (local, gratuit, tourne dans ce service Render) et
-insère le texte dans la table Supabase `notes_vocales` (statut
+et insère le texte dans la table Supabase `notes_vocales` (statut
 `a_traiter`), lue ensuite par la commande /pb côté Claude Code. Aucun
 traitement automatique du contenu : ce service ne fait que capter et
 transcrire, jamais interpréter ni agir.
+
+Transcription via l'API Groq (Whisper large-v3-turbo) depuis le
+03/08/2026 — remplace faster-whisper en local, qui mettait 85 à 90
+secondes pour 13 secondes d'audio sur le tier gratuit Render (mesuré lors
+du chantier de déclaration vocale des concours, cf. app Next.js). Groq
+tourne à ~220x le temps réel, gratuit jusqu'à 2000 requêtes/jour — très
+au-delà du volume d'un pense-bête personnel.
 """
 
 import os
@@ -13,7 +19,6 @@ import tempfile
 
 import httpx
 from fastapi import BackgroundTasks, FastAPI, File, Header, HTTPException, Request, UploadFile
-from faster_whisper import WhisperModel
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
@@ -30,6 +35,7 @@ TRANSCRIPTION_API_SECRET = os.environ.get("TRANSCRIPTION_API_SECRET")
 # L'endpoint est public (protégé par le seul secret) : on plafonne la
 # taille pour qu'une fuite du secret ne permette pas de saturer le service.
 TAILLE_MAX_AUDIO = 10 * 1024 * 1024
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
 app = FastAPI()
 # Appel direct à l'API REST Supabase (PostgREST) plutôt que le SDK
@@ -41,18 +47,17 @@ SUPABASE_HEADERS = {
     "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
     "Content-Type": "application/json",
 }
-# "base" (pas "small") : le tier gratuit Render est limité à 512 Mo de
-# RAM, "small" dépasse cette limite au chargement (OOM). Chargé à la
-# demande plutôt qu'à l'import, pour ne pas consommer de mémoire tant
-# qu'aucun vocal n'est arrivé.
-_modele = None
-
-
-def obtenir_modele():
-    global _modele
-    if _modele is None:
-        _modele = WhisperModel("base", device="cpu", compute_type="int8")
-    return _modele
+async def transcrire_via_groq(chemin_local: str, nom_fichier: str) -> str:
+    async with httpx.AsyncClient(timeout=60) as client:
+        with open(chemin_local, "rb") as f:
+            reponse = await client.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                files={"file": (nom_fichier, f)},
+                data={"model": "whisper-large-v3-turbo", "language": "fr", "response_format": "json"},
+            )
+        reponse.raise_for_status()
+        return (reponse.json().get("text") or "").strip()
 
 
 # Ids Telegram update_id déjà traités - Telegram réémet le même webhook
@@ -85,9 +90,10 @@ async def traiter_vocal(voix: dict):
             f.write(reponse.content)
             chemin_local = f.name
 
-    segments, _ = obtenir_modele().transcribe(chemin_local, language="fr")
-    texte = " ".join(segment.text.strip() for segment in segments).strip()
-    os.remove(chemin_local)
+    try:
+        texte = await transcrire_via_groq(chemin_local, "vocal.ogg")
+    finally:
+        os.remove(chemin_local)
 
     await inserer_note(texte, voix.get("duration"))
 
@@ -140,17 +146,13 @@ async def transcrire(
     if len(contenu) > TAILLE_MAX_AUDIO:
         raise HTTPException(status_code=413, detail="Audio trop volumineux (10 Mo maximum).")
 
-    # Suffixe conservé : faster-whisper (via ffmpeg) s'appuie dessus pour
-    # deviner le conteneur, et le navigateur envoie du .webm là où Telegram
-    # envoie du .ogg.
-    suffixe = os.path.splitext(fichier.filename or "")[1] or ".webm"
-    with tempfile.NamedTemporaryFile(suffix=suffixe, delete=False) as f:
+    nom_fichier = fichier.filename or "vocal.webm"
+    with tempfile.NamedTemporaryFile(suffix=os.path.splitext(nom_fichier)[1] or ".webm", delete=False) as f:
         f.write(contenu)
         chemin_local = f.name
 
     try:
-        segments, _ = obtenir_modele().transcribe(chemin_local, language="fr")
-        texte = " ".join(segment.text.strip() for segment in segments).strip()
+        texte = await transcrire_via_groq(chemin_local, nom_fichier)
     finally:
         os.remove(chemin_local)
 
