@@ -121,11 +121,10 @@ Extrait uniquement ce qu'il répond réellement. Ce qui n'est pas dit reste null
   }
 
   const club = reponse.club?.trim() || (extraitInitial.club as string | null) || null;
-  const montant =
-    reponse.inscriptionMontant ?? ((extraitInitial.inscriptionMontant as number | null) ?? null);
-  const repasInclus = reponse.repasInclus ?? ((extraitInitial.repasInclus as boolean | null) ?? false);
 
-  const complet = !!club && !!montant && montant > 0 && encoreAmbigus.length === 0;
+  // Le montant n'entre plus dans la complétude : une déclaration vocale est
+  // remboursée au forfait par personne depuis la migration 0054.
+  const complet = !!club && encoreAmbigus.length === 0;
 
   if (!complet) {
     const relances = (dossier.relances ?? 0) + 1;
@@ -143,10 +142,7 @@ Extrait uniquement ce qu'il répond réellement. Ce qui n'est pas dit reste null
   // les partenaires nouvellement identifiés sont ajoutés à l'équipe.
   const ids = (dossier.participations_ids ?? []) as number[];
   if (ids.length) {
-    await supabase
-      .from('participations_concours')
-      .update({ statut: 'en_attente', club, inscription_montant: montant, repas_inclus: repasInclus })
-      .in('id', ids);
+    await supabase.from('participations_concours').update({ statut: 'en_attente', club }).in('id', ids);
   }
 
   const { data: existantes } = await supabase
@@ -167,8 +163,6 @@ Extrait uniquement ce qu'il répond réellement. Ce qui n'est pas dit reste null
       pays: 'LU',
       hors_calendrier: (extraitInitial.horsCalendrier as boolean) ?? true,
       hors_pays: false,
-      inscription_montant: montant,
-      repas_inclus: repasInclus,
       statut: 'en_attente',
       transcript: dossier.transcript,
       donnees_extraites: extraitInitial,

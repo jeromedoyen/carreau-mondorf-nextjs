@@ -180,12 +180,12 @@ export function DeclarationVocaleForm({ saison }: { saison: string }) {
         <h2 className="font-display mb-2 text-xl italic">Déclarer au vocal</h2>
         <p className="text-[13px] text-encre-douce">
           Enregistre-toi en précisant que tu déclares <strong>en tant que chef d&apos;équipe</strong>, puis&nbsp;: la
-          ville du concours, le nom de tes partenaires, et le montant d&apos;inscription payé par l&apos;équipe
-          (dis si le repas est compris).
+          ville du concours et le nom de tes partenaires. Le remboursement est forfaitaire par joueur, inutile de
+          donner le prix d&apos;inscription.
         </p>
         <p className="mt-2 rounded-xl bg-sable p-3 text-[12.5px] italic text-encre-douce">
           « Je déclare pour mon équipe, on est au concours de Differdange, je suis avec Paul Martin et Jean-Marie
-          Weber, on a payé 30 euros d&apos;inscription, repas compris. »
+          Weber. »
         </p>
       </div>
 

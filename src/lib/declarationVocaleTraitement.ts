@@ -20,7 +20,13 @@ export type Ambiguite = { champ: string; question: string };
 export async function transcrireAudio(audio: Blob, nomFichier: string): Promise<string> {
   const url = process.env.NOTES_VOCALES_URL;
   const secret = process.env.NOTES_VOCALES_SECRET;
-  if (!url || !secret) throw new Error('NOTES_VOCALES_URL / NOTES_VOCALES_SECRET manquants — voir .env.local.');
+  if (!url || !secret) {
+    throw new Error(
+      "Le service de transcription n'est pas encore branché : déploie services/notes-vocales sur Render avec " +
+        'TRANSCRIPTION_API_SECRET, puis renseigne NOTES_VOCALES_URL et NOTES_VOCALES_SECRET (.env.local en local, ' +
+        'variables du projet côté Vercel).'
+    );
+  }
 
   const formulaire = new FormData();
   formulaire.append('fichier', audio, nomFichier);
@@ -85,19 +91,16 @@ export function resoudrePartenaires(
 }
 
 /** Liste ce qui manque encore pour créer une participation exploitable.
- *  Le club et le montant d'inscription sont indispensables : sans club, la
- *  ligne n'est pas identifiable ; sans montant, le trigger laisse
- *  montant_final à null et rien n'est remboursable. */
+ *
+ *  Seul le club l'est réellement : depuis la migration 0054, une
+ *  déclaration vocale est remboursée au forfait par personne
+ *  (parametres_club.montant_remboursement_concours), donc le prix
+ *  d'inscription n'a plus à être dit — c'était la principale cause de
+ *  relance inutile lors du premier test. */
 export function listerAmbiguitesChamps(extrait: DeclarationVocaleExtraite): Ambiguite[] {
   const ambiguites: Ambiguite[] = [];
   if (!extrait.club?.trim()) {
     ambiguites.push({ champ: 'club', question: 'Dans quelle ville / quel club se déroule le concours ?' });
-  }
-  if (extrait.inscriptionMontant === null || !(extrait.inscriptionMontant > 0)) {
-    ambiguites.push({
-      champ: 'inscriptionMontant',
-      question: "Combien votre équipe a-t-elle payé d'inscription au total (en euros) ? Précise si le repas est compris.",
-    });
   }
   return ambiguites;
 }

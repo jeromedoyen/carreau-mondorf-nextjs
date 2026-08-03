@@ -152,13 +152,20 @@ export async function traiterDeclarationVocale(data: {
   });
   if (errDossier) return { ok: false, error: errDossier.message };
 
+  // Phase de test (demande explicite de Jérôme, 03/08/2026) : aucun e-mail
+  // ne doit partir vers les autres licenciés tant que la fonctionnalité
+  // n'est pas validée. Tant que DECLARATION_VOCALE_EMAIL_TEST est défini,
+  // toute relance est redirigée vers cette seule adresse. Vider la variable
+  // rétablit l'envoi normal au déclarant.
   const { data: moi } = await supabase.rpc('mes_informations_personnelles');
-  if (moi?.email) {
+  const emailTest = process.env.DECLARATION_VOCALE_EMAIL_TEST?.trim();
+  const destinataire = emailTest || moi?.email;
+  if (destinataire) {
     await envoyerEmail({
-      destinataire: moi.email,
+      destinataire,
       sujet: 'Ta déclaration de concours — il me manque une précision',
       html: emailClarificationConcours({
-        prenom: moi.prenom,
+        prenom: moi?.prenom ?? '',
         resume,
         questions: ambiguites.map((a) => a.question),
       }),
