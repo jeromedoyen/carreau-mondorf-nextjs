@@ -12,7 +12,7 @@ import os
 import tempfile
 
 import httpx
-from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, File, Header, HTTPException, Request, UploadFile
 from faster_whisper import WhisperModel
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -22,6 +22,14 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 # Autorisé à envoyer des vocaux au bot - évite qu'un tiers ayant trouvé
 # le bot Telegram (public par nature) puisse écrire dans notes_vocales.
 TELEGRAM_CHAT_ID_AUTORISE = os.environ["TELEGRAM_CHAT_ID_AUTORISE"]
+# Secret partagé avec l'app Next.js pour /transcrire (déclaration vocale
+# d'une participation à un concours). Volontairement distinct du garde
+# Telegram ci-dessus : ce bot-là reste le pense-bête perso de Jérôme, alors
+# que /transcrire sert n'importe quel licencié, via le backend de l'app.
+TRANSCRIPTION_API_SECRET = os.environ.get("TRANSCRIPTION_API_SECRET")
+# L'endpoint est public (protégé par le seul secret) : on plafonne la
+# taille pour qu'une fuite du secret ne permette pas de saturer le service.
+TAILLE_MAX_AUDIO = 10 * 1024 * 1024
 
 app = FastAPI()
 # Appel direct à l'API REST Supabase (PostgREST) plutôt que le SDK
@@ -108,6 +116,45 @@ async def recevoir_webhook(request: Request, background_tasks: BackgroundTasks):
     else:
         background_tasks.add_task(inserer_note, texte.strip(), None)
     return {"ok": True}
+
+
+@app.post("/transcrire")
+async def transcrire(
+    fichier: UploadFile = File(...),
+    authorization: str = Header(default=""),
+):
+    """Transcrit un audio et renvoie le texte, sans rien écrire en base.
+
+    Appelé par le backend Next.js (déclaration vocale d'une participation
+    à un concours). Contrairement au webhook Telegram, la réponse est
+    synchrone : l'appelant a besoin du texte pour la suite du traitement.
+    """
+    if not TRANSCRIPTION_API_SECRET:
+        raise HTTPException(status_code=503, detail="TRANSCRIPTION_API_SECRET non configuré.")
+    if authorization != f"Bearer {TRANSCRIPTION_API_SECRET}":
+        raise HTTPException(status_code=401, detail="Secret invalide.")
+
+    contenu = await fichier.read()
+    if not contenu:
+        raise HTTPException(status_code=400, detail="Fichier audio vide.")
+    if len(contenu) > TAILLE_MAX_AUDIO:
+        raise HTTPException(status_code=413, detail="Audio trop volumineux (10 Mo maximum).")
+
+    # Suffixe conservé : faster-whisper (via ffmpeg) s'appuie dessus pour
+    # deviner le conteneur, et le navigateur envoie du .webm là où Telegram
+    # envoie du .ogg.
+    suffixe = os.path.splitext(fichier.filename or "")[1] or ".webm"
+    with tempfile.NamedTemporaryFile(suffix=suffixe, delete=False) as f:
+        f.write(contenu)
+        chemin_local = f.name
+
+    try:
+        segments, _ = obtenir_modele().transcribe(chemin_local, language="fr")
+        texte = " ".join(segment.text.strip() for segment in segments).strip()
+    finally:
+        os.remove(chemin_local)
+
+    return {"texte": texte}
 
 
 @app.get("/")

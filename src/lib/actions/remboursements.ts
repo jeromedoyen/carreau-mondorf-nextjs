@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { envoyerEmail, chargerLogoClub } from '@/lib/email';
 import { emailRemboursementConcours, emailRemboursementPartenaire } from '@/lib/emailTemplates';
+import { creerLignesParticipation } from '@/lib/participationsConcours';
 
 type Resultat = { ok: true; genere?: number } | { ok: false; error: string };
 
@@ -278,41 +279,8 @@ export async function creerParticipationManuelle(data: {
     return { ok: false, error: 'Date, club et montant d\'inscription obligatoires.' };
   }
 
-  // Anti-doublon (cahier des charges §3.2) : un concours déjà enregistré
-  // (même date + club, tous joueurs de l'équipe confondus) ne doit pas être
-  // resaisi par un partenaire — vérifié en amont avec un message clair,
-  // plutôt qu'un rejet muet côté base.
-  const idsEquipe = [monId, ...data.partenaireIds];
-  const { data: existants } = await supabase
-    .from('participations_concours')
-    .select('id, personne_id')
-    .eq('date', data.date)
-    .ilike('club', data.club.trim())
-    .eq('source', 'manuel')
-    .eq('supprime', false)
-    .in('personne_id', idsEquipe);
-  if (existants && existants.length > 0) {
-    return { ok: false, error: 'Ce concours est déjà enregistré pour un ou plusieurs joueurs de cette équipe.' };
-  }
-
-  const base = {
-    saison: data.saison,
-    type: 'Concours' as const,
-    source: 'manuel' as const,
-    chef_equipe_id: monId,
-    date: data.date,
-    club: data.club.trim(),
-    pays: data.pays || 'LU',
-    hors_calendrier: data.horsCalendrier,
-    hors_pays: data.horsPays,
-    inscription_montant: data.inscriptionMontant,
-    repas_inclus: data.repasInclus,
-    notes: data.notes?.trim() || null,
-  };
-
-  const lignes = idsEquipe.map((personneId) => ({ ...base, personne_id: personneId }));
-  const { error } = await supabase.from('participations_concours').insert(lignes);
-  if (error) return { ok: false, error: error.message };
+  const resultat = await creerLignesParticipation(supabase, monId, { ...data, source: 'manuel' });
+  if (!resultat.ok) return resultat;
 
   revalidatePath('/concours');
   revalidatePath('/outils/remboursements');

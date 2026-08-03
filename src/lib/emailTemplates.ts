@@ -374,3 +374,33 @@ export function emailRelanceRenouvellement({ prenom, annee }: { prenom: string; 
   </tr>
 </table>`;
 }
+
+/** Déclaration vocale d'un concours dont l'extraction automatique n'a pas
+ *  tout résolu (partenaire non reconnu, montant d'inscription non dit...).
+ *  Le licencié répond simplement à cet e-mail en langage naturel : la
+ *  réponse revient par le webhook Resend Inbound, qui la fait analyser et
+ *  complète la déclaration. D'où l'absence de bouton d'action ici — c'est
+ *  la réponse elle-même qui est l'action attendue. */
+export function emailClarificationConcours({
+  prenom,
+  resume,
+  questions,
+}: {
+  prenom: string;
+  /** Ce que le système a compris, pour que le licencié corrige plutôt que resaisir. */
+  resume: string;
+  questions: string[];
+}): string {
+  return carteSimple({
+    etiquette: 'Déclaration de concours',
+    titre: `Petite précision, ${prenom} ?`,
+    paragraphes: [
+      `J'ai bien reçu ta déclaration vocale. Voici ce que j'ai compris : <strong style="color:${COULEURS.encre};">${resume}</strong>`,
+      `Il me manque encore ${questions.length > 1 ? 'quelques éléments' : 'un élément'} pour lancer le remboursement :`,
+      `<ul style="margin:0 0 16px;padding-left:20px;">${questions
+        .map((q) => `<li style="margin:0 0 8px;">${q}</li>`)
+        .join('')}</ul>`,
+      `<strong style="color:${COULEURS.encre};">Réponds simplement à cet e-mail</strong>, en écrivant normalement — je m'occupe du reste.`,
+    ],
+  });
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { creerParticipationManuelle } from '@/lib/actions/remboursements';
 
@@ -25,7 +26,12 @@ const LIBELLE_TYPE: Record<string, string> = {
   Concours_National: 'Championnat national',
   Concours: 'Concours',
 };
-const LIBELLE_STATUT: Record<string, string> = { en_attente: 'En attente', valide: 'Validé', paye: 'Payé' };
+const LIBELLE_STATUT: Record<string, string> = {
+  a_clarifier: 'Précisions demandées',
+  en_attente: 'En attente',
+  valide: 'Validé',
+  paye: 'Payé',
+};
 
 function formatDate(iso: string) {
   return new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -92,6 +98,19 @@ export function SaisieConcoursEtSuivi({ saison }: { saison: string }) {
 
   return (
     <div className="flex flex-col gap-8">
+      <Link
+        href="/concours/declarer-vocal"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-ligne bg-sable-carte p-4 transition-opacity hover:opacity-80"
+      >
+        <span className="flex flex-col gap-0.5">
+          <span className="text-[14px]">Déclarer au vocal depuis le terrain</span>
+          <span className="text-[12.5px] text-encre-douce">
+            Enregistre un vocal et une photo d&apos;équipe, l&apos;app remplit le reste.
+          </span>
+        </span>
+        <span className="text-[18px] text-terracotta">→</span>
+      </Link>
+
       <FormulaireDeclaration saison={saison} monId={monId} licencies={licencies} onEnregistre={recharger} />
 
       <section>
@@ -125,7 +144,18 @@ export function SaisieConcoursEtSuivi({ saison }: { saison: string }) {
                         {p.montant_final != null ? `${p.montant_final.toFixed(2)} €` : '—'}
                       </span>
                     )}
-                    <span className="rounded-full bg-sable px-2 py-0.5 text-[11px] text-encre-douce">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] ${
+                        p.statut === 'a_clarifier'
+                          ? 'bg-terracotta/10 text-terracotta'
+                          : 'bg-sable text-encre-douce'
+                      }`}
+                      title={
+                        p.statut === 'a_clarifier'
+                          ? "Déclaration vocale incomplète — réponds à l'e-mail reçu pour la compléter."
+                          : undefined
+                      }
+                    >
                       {LIBELLE_STATUT[p.statut] ?? p.statut}
                     </span>
                   </div>

@@ -48,10 +48,16 @@ export async function envoyerEmail({
   sujet,
   html,
   attachments,
+  replyTo,
 }: {
   destinataire: string;
   sujet: string;
   html: string;
+  /** Adresse de réponse distincte de l'expéditeur — utilisée par la
+   *  déclaration vocale de concours, qui encode un jeton dans l'adresse
+   *  (concours+<jeton>@...) pour raccrocher la réponse du licencié au bon
+   *  dossier de clarification. */
+  replyTo?: string;
   /** `cid` sert aux images intégrées référencées depuis le HTML (ex. logo)
    *  — plus fiable qu'une `data:` URI, que certains clients mail de bureau
    *  (Outlook) suppriment silencieusement. Omis pour une pièce jointe
@@ -61,5 +67,5 @@ export async function envoyerEmail({
 }) {
   const transporteur = creerTransporteur();
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;
-  await transporteur.sendMail({ from, to: destinataire, subject: sujet, html, attachments });
+  await transporteur.sendMail({ from, to: destinataire, subject: sujet, html, attachments, replyTo });
 }
