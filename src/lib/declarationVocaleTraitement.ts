@@ -14,20 +14,44 @@ import { rapprocherNom, type Licencie } from '@/lib/fuzzyMatch';
 
 export type Ambiguite = { champ: string; question: string };
 
-/** Envoie l'audio au service Render (faster-whisper) et renvoie le texte.
- *  Service gratuit mis en veille après inactivité : le premier appel après
- *  une pause paie un réveil de plusieurs secondes, d'où le timeout large. */
-export async function transcrireAudio(audio: Blob, nomFichier: string): Promise<string> {
-  const url = process.env.NOTES_VOCALES_URL;
-  const secret = process.env.NOTES_VOCALES_SECRET;
-  if (!url || !secret) {
-    throw new Error(
-      "Le service de transcription n'est pas encore branché : déploie services/notes-vocales sur Render avec " +
-        'TRANSCRIPTION_API_SECRET, puis renseigne NOTES_VOCALES_URL et NOTES_VOCALES_SECRET (.env.local en local, ' +
-        'variables du projet côté Vercel).'
-    );
-  }
+/** Transcription via Groq (Whisper large-v3-turbo).
+ *
+ *  Choisi le 03/08/2026 après mesure du service auto-hébergé : le modèle
+ *  "base" sur le tier gratuit Render mettait 85 à 90 secondes pour 13
+ *  secondes d'audio (~7× le temps réel), inutilisable pour quelqu'un qui
+ *  attend au bord d'un terrain. Groq tourne à ~220× le temps réel, avec
+ *  un palier gratuit (2 000 requêtes/jour) très au-delà des besoins du
+ *  club, et un modèle nettement plus fiable sur les noms propres — ce qui
+ *  réduit d'autant les relances de clarification.
+ *
+ *  Le service Render reste en place et inchangé pour le pense-bête
+ *  Telegram ; il sert ici de solution de repli si aucune clé Groq n'est
+ *  configurée. */
+async function transcrireViaGroq(audio: Blob, nomFichier: string, cle: string): Promise<string> {
+  const formulaire = new FormData();
+  formulaire.append('file', audio, nomFichier);
+  formulaire.append('model', 'whisper-large-v3-turbo');
+  formulaire.append('language', 'fr');
+  formulaire.append('response_format', 'json');
 
+  const reponse = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${cle}` },
+    body: formulaire,
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!reponse.ok) {
+    const detail = await reponse.text().catch(() => '');
+    throw new Error(`Transcription indisponible (${reponse.status}). ${detail.slice(0, 200)}`);
+  }
+  const { text } = (await reponse.json()) as { text: string };
+  return (text || '').trim();
+}
+
+/** Repli auto-hébergé (services/notes-vocales sur Render). Lent, mais
+ *  gratuit et sans dépendance externe — garde le système fonctionnel si
+ *  la clé Groq venait à manquer. */
+async function transcrireViaRender(audio: Blob, nomFichier: string, url: string, secret: string): Promise<string> {
   const formulaire = new FormData();
   formulaire.append('fichier', audio, nomFichier);
 
@@ -35,13 +59,27 @@ export async function transcrireAudio(audio: Blob, nomFichier: string): Promise<
     method: 'POST',
     headers: { Authorization: `Bearer ${secret}` },
     body: formulaire,
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(240_000),
   });
   if (!reponse.ok) {
     throw new Error(`Transcription indisponible (${reponse.status}). Réessaie dans un instant.`);
   }
   const { texte } = (await reponse.json()) as { texte: string };
   return (texte || '').trim();
+}
+
+export async function transcrireAudio(audio: Blob, nomFichier: string): Promise<string> {
+  const cleGroq = process.env.GROQ_API_KEY;
+  if (cleGroq) return transcrireViaGroq(audio, nomFichier, cleGroq);
+
+  const url = process.env.NOTES_VOCALES_URL;
+  const secret = process.env.NOTES_VOCALES_SECRET;
+  if (url && secret) return transcrireViaRender(audio, nomFichier, url, secret);
+
+  throw new Error(
+    "Le service de transcription n'est pas configuré : renseigne GROQ_API_KEY (clé gratuite sur console.groq.com), " +
+      'ou à défaut NOTES_VOCALES_URL et NOTES_VOCALES_SECRET pour le service auto-hébergé.'
+  );
 }
 
 const CONSIGNE_EXTRACTION = `Tu analyses la déclaration orale d'un joueur de pétanque luxembourgeois qui enregistre sa participation à un concours pour son équipe.

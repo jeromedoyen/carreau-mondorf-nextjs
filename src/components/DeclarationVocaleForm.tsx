@@ -238,8 +238,7 @@ export function DeclarationVocaleForm({ saison }: { saison: string }) {
       </button>
       {etat === 'envoi' && (
         <p className="text-[12.5px] text-encre-douce">
-          Transcription et analyse en cours — cela peut prendre jusqu&apos;à une minute la première fois de la
-          journée. Ne ferme pas cette page.
+          Transcription et analyse en cours — quelques secondes. Ne ferme pas cette page.
         </p>
       )}
     </div>
