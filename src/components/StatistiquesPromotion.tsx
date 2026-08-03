@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { StatistiquesPromotion as StatistiquesPromotionData } from '@/lib/types';
+import { sansAccentsMinuscules } from '@/lib/normalisationTexte';
 
 type TriColonne = 'tauxVictoire' | 'participations';
 
@@ -13,14 +14,6 @@ const COLONNES: [TriColonne, string][] = [
   ['tauxVictoire', 'Taux de victoire'],
   ['participations', 'Journées jouées'],
 ];
-
-function sansAccents(s: string) {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim()
-    .toLowerCase();
-}
 
 /** Pas de drill-down par partie ici (contrairement au National D2) : seul le
  *  bilan du trio par journée a été importé, pas le détail individuel — voir
@@ -79,7 +72,7 @@ export function StatistiquesPromotion({
         </div>
         <div className="flex flex-col">
           {joueursTries.map((j, i) => {
-            const cToi = !!monNom && sansAccents(j.nom) === sansAccents(monNom);
+            const cToi = !!monNom && sansAccentsMinuscules(j.nom) === sansAccentsMinuscules(monNom);
             return (
               <div
                 key={j.nom}

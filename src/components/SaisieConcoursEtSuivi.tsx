@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
+import { Mic } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { creerParticipationManuelle } from '@/lib/actions/remboursements';
+import { sansAccentsMinuscules } from '@/lib/normalisationTexte';
 
 type Etat = 'verification' | 'refuse' | 'chargement' | 'pret';
 type Licencie = { id: number; nom: string; prenom: string };
@@ -98,17 +100,21 @@ export function SaisieConcoursEtSuivi({ saison }: { saison: string }) {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Entrée principale de la page : sur le terrain, c'est le geste
+          attendu. Le formulaire détaillé reste dessous pour les cas que le
+          vocal ne couvre pas (retour Jérôme, 03/08/2026 : "j'aimerais
+          plutôt voir un gros bouton d'enregistrement"). */}
       <Link
         href="/concours/declarer-vocal"
-        className="flex items-center justify-between gap-3 rounded-2xl border border-ligne bg-sable-carte p-4 transition-opacity hover:opacity-80"
+        className="flex flex-col items-center gap-3 rounded-2xl bg-terracotta px-6 py-8 text-center text-white transition-opacity hover:opacity-90"
       >
-        <span className="flex flex-col gap-0.5">
-          <span className="text-[14px]">Déclarer au vocal depuis le terrain</span>
-          <span className="text-[12.5px] text-encre-douce">
-            Enregistre un vocal et une photo d&apos;équipe, l&apos;app remplit le reste.
-          </span>
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15">
+          <Mic className="h-8 w-8" strokeWidth={1.5} />
         </span>
-        <span className="text-[18px] text-terracotta">→</span>
+        <span className="font-display text-2xl italic">Déclarer au vocal</span>
+        <span className="max-w-xs text-[13px] text-white/80">
+          Enregistre-toi au bord du terrain et prends une photo de l&apos;équipe — l&apos;app remplit le reste.
+        </span>
       </Link>
 
       <FormulaireDeclaration saison={saison} monId={monId} licencies={licencies} onEnregistre={recharger} />
@@ -370,14 +376,6 @@ function FormulaireDeclaration({
   );
 }
 
-function sansAccents(s: string) {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim()
-    .toLowerCase();
-}
-
 /** Recherche par nom plutôt qu'une case à cocher parmi tous les licenciés
  *  (retour Jérôme, 02/08/2026 : "si j'ai 70 personnes je préfère chercher
  *  le nom") — un slot par partenaire requis selon le type de partie. */
@@ -399,10 +397,10 @@ function SelecteurPartenaire({
 
   const resultats = useMemo(() => {
     if (!filtre.trim()) return [];
-    const q = sansAccents(filtre);
+    const q = sansAccentsMinuscules(filtre);
     return licencies
       .filter((l) => !exclureIds.includes(l.id))
-      .filter((l) => sansAccents(`${l.prenom} ${l.nom}`).includes(q))
+      .filter((l) => sansAccentsMinuscules(`${l.prenom} ${l.nom}`).includes(q))
       .slice(0, 8);
   }, [licencies, exclureIds, filtre]);
 

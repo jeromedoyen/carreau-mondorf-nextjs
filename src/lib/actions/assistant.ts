@@ -2,10 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getMeteoDuJour, type Meteo } from '@/lib/meteo';
-
-function sansAccents(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-}
+import { sansAccentsMinuscules } from '@/lib/normalisationTexte';
 
 /** Salutation dans la langue associée à la nationalité de la personne
  *  (28/07/2026, demande Jérôme) — couvre les nationalités les plus
@@ -25,7 +22,7 @@ const SALUTATIONS: { motsCles: string[]; salutation: string }[] = [
 
 function salutationPourNationalite(nationalite: string | null): string {
   if (!nationalite) return 'Bonjour';
-  const normalisee = sansAccents(nationalite);
+  const normalisee = sansAccentsMinuscules(nationalite);
   const trouvee = SALUTATIONS.find((s) => s.motsCles.some((mot) => normalisee.includes(mot)));
   return trouvee?.salutation ?? 'Bonjour';
 }

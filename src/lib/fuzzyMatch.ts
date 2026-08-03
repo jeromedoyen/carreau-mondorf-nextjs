@@ -11,6 +11,8 @@
  *  qui déclenchera un e-mail de clarification. Un faux positif ici, c'est
  *  un remboursement versé au nom de quelqu'un qui n'a pas joué. */
 
+import { sansAccentsMinuscules } from './normalisationTexte';
+
 export type Licencie = { id: number; nom: string; prenom: string };
 
 export type Rapprochement =
@@ -20,10 +22,7 @@ export type Rapprochement =
 /** Casse/accents/ponctuation neutralisés — "Jean-Marie WÉBER" et
  *  "jean marie weber" doivent produire la même chose. */
 export function normaliserNom(texte: string): string {
-  return String(texte || '')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
+  return sansAccentsMinuscules(texte)
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 }

@@ -7,16 +7,7 @@ import type {
   StatJoueurPromotion,
   StatTrioPromotion,
 } from './types';
-
-/** Port de sansAccents_() (ChampionnatBackend.gs) : clé de regroupement
- *  insensible à la casse/aux accents, pour fusionner les variantes d'écriture
- *  d'un même nom de joueur ("BACK Yves" vs "Back Yves"). */
-function sansAccents(texte: string): string {
-  return String(texte || '')
-    .toUpperCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-}
+import { cleNomMajuscules } from './normalisationTexte';
 
 /** Port de pointsVictoirePartie_() (ChampionnatBackend.gs:54) — règlement
  *  FLBP 2025 : Triplette 5 pts/victoire, Doublette 3 pts/victoire, Tête à
@@ -48,7 +39,7 @@ export function calculerRecapJournee(
     const gagne = p.score_cm > p.score_adverse;
     const points = gagne ? pointsVictoirePartie(p.phase, p.type) : 0;
     noms.forEach((nom) => {
-      const cle = sansAccents(nom);
+      const cle = cleNomMajuscules(nom);
       if (!pointsParJoueur.has(cle)) pointsParJoueur.set(cle, { nomAffiche: nom, points: 0 });
       const s = pointsParJoueur.get(cle)!;
       s.nomAffiche = meilleurAffichage(s.nomAffiche, nom);
@@ -174,7 +165,7 @@ function reduireStatistiquesD2(
     const points = gagne ? pointsVictoirePartie(p.phase, type) : 0;
 
     noms.forEach((nom) => {
-      const cleNom = sansAccents(nom);
+      const cleNom = cleNomMajuscules(nom);
       if (!statsParJoueur.has(cleNom)) {
         statsParJoueur.set(cleNom, { nomAffiche: nom, parType: {}, parties: [], pointsTotal: 0, pointsParJournee: new Map() });
       }
@@ -201,8 +192,8 @@ function reduireStatistiquesD2(
     });
 
     if (noms.length > 1) {
-      const nomsTries = [...noms].sort((a, b) => sansAccents(a).localeCompare(sansAccents(b)));
-      const cle = type + '|' + nomsTries.map(sansAccents).join(' + ');
+      const nomsTries = [...noms].sort((a, b) => cleNomMajuscules(a).localeCompare(cleNomMajuscules(b)));
+      const cle = type + '|' + nomsTries.map(cleNomMajuscules).join(' + ');
       if (!statsParEquipe.has(cle)) {
         statsParEquipe.set(cle, { type, joueurs: nomsTries, joues: 0, victoires: 0, tauxVictoire: 0 });
       }
@@ -290,7 +281,7 @@ export async function getStatistiquesPromotion(
     if (!noms.length) return;
 
     noms.forEach((nom) => {
-      const cle = sansAccents(nom);
+      const cle = cleNomMajuscules(nom);
       if (!statsParJoueur.has(cle)) {
         statsParJoueur.set(cle, { nomAffiche: nom, participations: 0, partiesGagnees: 0 });
       }
@@ -301,8 +292,8 @@ export async function getStatistiquesPromotion(
     });
 
     if (noms.length > 1) {
-      const nomsTries = [...noms].sort((a, b) => sansAccents(a).localeCompare(sansAccents(b)));
-      const cle = nomsTries.map(sansAccents).join(' + ');
+      const nomsTries = [...noms].sort((a, b) => cleNomMajuscules(a).localeCompare(cleNomMajuscules(b)));
+      const cle = nomsTries.map(cleNomMajuscules).join(' + ');
       if (!statsParTrio.has(cle)) {
         statsParTrio.set(cle, { joueurs: nomsTries, participations: 0, partiesGagnees: 0 });
       }

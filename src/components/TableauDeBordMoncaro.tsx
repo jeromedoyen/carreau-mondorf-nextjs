@@ -5,6 +5,7 @@ import type { MonAdhesion } from '@/lib/moncaro';
 import type { ParametresClub } from '@/lib/paiements';
 import type { TableauDeBordBenevole } from '@/lib/benevolat';
 import type { StatJoueurD2, StatistiquesPromotion } from '@/lib/types';
+import { sansAccentsMinuscules } from '@/lib/normalisationTexte';
 
 type MaParticipationConcours = {
   id: number;
@@ -19,14 +20,6 @@ const LIBELLE_TYPE_CONCOURS: Record<string, string> = {
   Concours_National: 'Championnat national',
   Concours: 'Concours',
 };
-
-function sansAccents(s: string) {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim()
-    .toLowerCase();
-}
 
 export function TableauDeBordMoncaro({
   saison,
@@ -50,7 +43,7 @@ export function TableauDeBordMoncaro({
   participationsConcours: MaParticipationConcours[];
 }) {
   const monEntreePromotion =
-    monNom && statsPromotion ? statsPromotion.joueurs.find((j) => sansAccents(j.nom) === sansAccents(monNom)) : null;
+    monNom && statsPromotion ? statsPromotion.joueurs.find((j) => sansAccentsMinuscules(j.nom) === sansAccentsMinuscules(monNom)) : null;
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">

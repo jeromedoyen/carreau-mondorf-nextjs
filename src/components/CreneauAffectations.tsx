@@ -5,14 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Users, X } from 'lucide-react';
 import { ajouterAffectation, retirerAffectation } from '@/lib/actions/manifestations';
 import type { Creneau } from '@/lib/manifestations';
-
-function sansAccents(s: string) {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim()
-    .toLowerCase();
-}
+import { sansAccentsMinuscules } from '@/lib/normalisationTexte';
 
 export function CreneauAffectations({
   manifestationId,
@@ -45,7 +38,7 @@ export function CreneauAffectations({
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const postesRestants = postesPrevus - affectations.length;
-  const dejaInscrit = !!monNom && affectations.some((a) => sansAccents(a.nom) === sansAccents(monNom));
+  const dejaInscrit = !!monNom && affectations.some((a) => sansAccentsMinuscules(a.nom) === sansAccentsMinuscules(monNom));
 
   async function sInscrire(e: FormEvent) {
     e.preventDefault();
