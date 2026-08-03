@@ -391,3 +391,14 @@ Jérôme, en fin de session : "j'ai mal appréhendé le traitement du pense-bêt
 - `npx tsc --noEmit` et `npm run build` passent. Migration `0046` appliquée via `npm run db:migrer`.
 
 **Non fait/à vérifier avec Jérôme** : pas de test manuel en conditions réelles (compte joueur participant vs non-participant) — à faire au premier accès réel avant de considérer la fonctionnalité pleinement validée, vu l'écart à la note de process ci-dessus.
+
+## Idée captée le 03/08/2026 (Granola, note "Concours participation feature ideas") — saisie vocale des participations concours
+
+Idée brute, non cadrée, pas de chantier ouvert. Consignée aussi côté Obsidian (`Idee_Saisie_Vocale_Concours.md`, vault Automind Consulting, liée à `Solution_Carreau_Mondorf.md`).
+
+- Flux proposé : le chef d'équipe déclare sa participation en 2 étapes mobile — (1) vocal (ville, compétition, partenaires), (2) photo/selfie de l'équipe.
+- Traitement automatique visé : identification des partenaires parmi les licenciés, déclenchement du remboursement (10 €/participation, cohérent avec le barème déjà en place dans le module remboursements ci-dessus), vérification calendrier fédération + statut du concours.
+- Cas ambigu (partenaire inconnu, événement hors calendrier) : e-mail automatique de demande de complément, réponse du chef d'équipe qui met à jour l'entrée.
+- Piste technique évoquée : "Hermès" pour porter ce flux — nom non identifié dans le stack actuel, à clarifier avec Jérôme avant tout chantier. Cloud reste un environnement de dev, pas un composant de l'app.
+- **Lien direct avec l'existant** : chevauche `SaisieConcoursEtSuivi.tsx` (saisie manuelle actuelle, `/concours`) et pourrait réutiliser le pipeline `services/notes-vocales/` (Telegram → faster-whisper → Supabase) déjà en prod plutôt qu'un nouveau canal de capture.
+- Vu le rejet Phase 1 du module remboursements ("pas intuitif", voir plus haut) et la note de process du 01/08/2026, toute suite à donner devra repasser par une maquette/discussion avec Jérôme avant du code.
