@@ -256,7 +256,13 @@ export async function supprimerParticipation(id: number): Promise<Resultat> {
  *  d'équipe désigné est bien l'utilisateur connecté : la RLS autorise déjà
  *  toute insertion "manuel" par un licencié, cette vérification applicative
  *  est ce qui empêche réellement quelqu'un de se faire passer pour chef
- *  d'une équipe qui n'est pas la sienne. */
+ *  d'une équipe qui n'est pas la sienne.
+ *
+ *  Depuis le 03/08/2026 (migration 0055), chaque joueur de l'équipe est
+ *  remboursé au forfait pour lui-même — le "chef d'équipe" ne reçoit plus
+ *  la totalité à redistribuer, et le prix d'inscription n'entre plus dans
+ *  le calcul. Le champ chef_equipe_id ne trace donc plus que l'auteur de
+ *  la déclaration. */
 export async function creerParticipationManuelle(data: {
   saison: string;
   date: string;
@@ -264,10 +270,12 @@ export async function creerParticipationManuelle(data: {
   pays: string;
   horsCalendrier: boolean;
   horsPays: boolean;
-  inscriptionMontant: number;
-  repasInclus: boolean;
   partenaireIds: number[]; // autres joueurs de l'équipe, en plus du chef
   notes?: string;
+  /** Ignorés depuis le passage au forfait par joueur (migration 0055) —
+   *  acceptés encore pour ne pas casser un formulaire qui les enverrait. */
+  inscriptionMontant?: number;
+  repasInclus?: boolean;
 }): Promise<Resultat> {
   const supabase = await createClient();
   const { data: autorise } = await supabase.rpc('est_utilisateur_autorise');
@@ -275,11 +283,18 @@ export async function creerParticipationManuelle(data: {
 
   const { data: monId } = await supabase.rpc('mon_id_personne');
   if (!monId) return { ok: false, error: 'Aucune fiche licencié trouvée pour ta session — contacte le comité.' };
-  if (!data.date || !data.club.trim() || !(data.inscriptionMontant > 0)) {
-    return { ok: false, error: 'Date, club et montant d\'inscription obligatoires.' };
+  if (!data.date || !data.club.trim()) {
+    return { ok: false, error: 'Date et club obligatoires.' };
   }
 
-  const resultat = await creerLignesParticipation(supabase, monId, { ...data, source: 'manuel' });
+  const resultat = await creerLignesParticipation(supabase, monId, {
+    ...data,
+    // Le remboursement est forfaitaire par joueur depuis le 03/08/2026
+    // (migration 0055) : le prix d'inscription n'est plus demandé.
+    inscriptionMontant: null,
+    repasInclus: false,
+    source: 'manuel',
+  });
   if (!resultat.ok) return resultat;
 
   revalidatePath('/concours');
