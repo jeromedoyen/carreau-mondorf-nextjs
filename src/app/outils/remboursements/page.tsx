@@ -50,6 +50,12 @@ export default async function RemboursementsPage() {
           Liste 1 (Championnat, automatique) et liste 2 (autres concours, saisis par les chefs d&apos;équipe) —
           validation et suivi des virements.
         </p>
+        <Link
+          href="/outils/remboursements/photos"
+          className="mt-3 inline-block text-[13px] text-terracotta underline"
+        >
+          Voir le pêle-mêle des photos d&apos;équipe →
+        </Link>
       </header>
 
       <OutilRemboursements saison={saison} participationsInitiales={participations} />
