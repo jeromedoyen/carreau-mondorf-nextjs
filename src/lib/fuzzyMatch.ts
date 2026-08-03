@@ -55,22 +55,34 @@ function similarite(a: string, b: string): number {
  *  prénom ("je suis avec Paul") : un prénom seul qui correspond exactement
  *  vaut donc un bon score, mais la levée d'ambiguïté entre deux Paul est
  *  laissée à l'appelant (deux scores égaux = ambigu). */
+/** Espaces retirés : les noms composés sont le point faible de la
+ *  transcription automatique, qui rend "Le Berre" en "Lebert" ou
+ *  "Leberre". En comparant aussi les formes collées, ces variantes se
+ *  ressemblent beaucoup plus qu'en gardant les espaces (cas réel observé
+ *  au test du 03/08/2026). */
+function colle(texte: string): string {
+  return texte.replace(/ /g, '');
+}
+
 function scorerCandidat(dicteNormalise: string, licencie: Licencie): number {
   const prenom = normaliserNom(licencie.prenom);
   const nom = normaliserNom(licencie.nom);
   const complet = `${prenom} ${nom}`.trim();
   const inverse = `${nom} ${prenom}`.trim();
+  const dicteColle = colle(dicteNormalise);
 
   return Math.max(
     similarite(dicteNormalise, complet),
     similarite(dicteNormalise, inverse),
+    similarite(dicteColle, colle(complet)),
+    similarite(dicteColle, colle(inverse)),
     // Prénom ou nom seul : plafonné à 0.9 pour qu'une correspondance
     // complète l'emporte toujours sur une correspondance partielle. La
     // pénalité reste légère (0.95) car Whisper écorche régulièrement les
     // noms de famille ("Prybila" pour "Prybyla") — trop sévère, on
     // relancerait le déclarant à chaque déclaration.
     dicteNormalise === prenom ? 0.9 : similarite(dicteNormalise, prenom) * 0.95,
-    dicteNormalise === nom ? 0.9 : similarite(dicteNormalise, nom) * 0.95
+    dicteNormalise === nom ? 0.9 : similarite(dicteColle, colle(nom)) * 0.95
   );
 }
 
