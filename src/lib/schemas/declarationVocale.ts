@@ -37,12 +37,3 @@ export const schemaDeclarationVocale = z.object({
 });
 
 export type DeclarationVocaleExtraite = z.infer<typeof schemaDeclarationVocale>;
-
-/** Réponse du licencié à l'e-mail de clarification. Mêmes règles : ce qui
- *  n'est pas dit reste null, on ne comble pas les trous par déduction. */
-export const schemaReponseClarification = z.object({
-  club: z.string().nullable(),
-  partenaires: z.array(z.string()).describe('Noms de coéquipiers cités dans la réponse, y compris ceux déjà connus.'),
-  inscriptionMontant: z.number().nullable(),
-  repasInclus: z.boolean().nullable(),
-});

@@ -348,20 +348,22 @@ export function emailRelanceRenouvellement({ prenom, annee }: { prenom: string; 
 }
 
 /** Déclaration vocale d'un concours dont l'extraction automatique n'a pas
- *  tout résolu (partenaire non reconnu, montant d'inscription non dit...).
- *  Le licencié répond simplement à cet e-mail en langage naturel : la
- *  réponse revient par le webhook Resend Inbound, qui la fait analyser et
- *  complète la déclaration. D'où l'absence de bouton d'action ici — c'est
- *  la réponse elle-même qui est l'action attendue. */
+ *  tout résolu (partenaire non reconnu, club non dit...). Pointe vers un
+ *  formulaire dans l'app (/concours/clarifier/[jeton]) plutôt qu'une
+ *  réponse en texte libre par e-mail : la réception d'e-mails entrants a
+ *  été abandonnée le 03/08/2026 faute d'option gratuite chez Resend (plan
+ *  limité à 1 domaine, déjà consommé par l'envoi transactionnel). */
 export function emailClarificationConcours({
   prenom,
   resume,
   questions,
+  lien,
 }: {
   prenom: string;
   /** Ce que le système a compris, pour que le licencié corrige plutôt que resaisir. */
   resume: string;
   questions: string[];
+  lien: string;
 }): string {
   return carteSimple({
     etiquette: 'Déclaration de concours',
@@ -372,7 +374,8 @@ export function emailClarificationConcours({
       `<ul style="margin:0 0 16px;padding-left:20px;">${questions
         .map((q) => `<li style="margin:0 0 8px;">${q}</li>`)
         .join('')}</ul>`,
-      `<strong style="color:${COULEURS.encre};">Réponds simplement à cet e-mail</strong>, en écrivant normalement — je m'occupe du reste.`,
+      `Complète-les en un clic, ça prend dix secondes.`,
     ],
+    cta: { href: lien, texte: 'Compléter ma déclaration' },
   });
 }

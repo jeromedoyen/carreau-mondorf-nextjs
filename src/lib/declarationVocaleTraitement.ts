@@ -171,19 +171,14 @@ export function genererJeton(): string {
   return randomBytes(12).toString('hex');
 }
 
-/** Adresse de réponse porteuse du jeton (concours+<jeton>@...). Le
- *  plus-addressing survit aux réponses des clients mail, contrairement à
- *  un marqueur dans l'objet, que beaucoup traduisent ou tronquent. */
-export function adresseReponse(jeton: string): string | null {
-  const base = process.env.CONCOURS_REPLY_TO;
-  if (!base || !base.includes('@')) return null;
-  const [locale, domaine] = base.split('@');
-  return `${locale}+${jeton}@${domaine}`;
-}
-
-export function extraireJetonAdresse(adresse: string): string | null {
-  const correspondance = /\+([a-f0-9]{16,})@/i.exec(adresse || '');
-  return correspondance ? correspondance[1] : null;
+/** Lien de clarification envoyé par e-mail (03/08/2026) : remplace une
+ *  réception d'e-mails entrants abandonnée faute d'option gratuite chez
+ *  Resend (plan limité à 1 domaine, déjà consommé par l'envoi). Le jeton
+ *  fait office de jeton d'accès — non deviné, généré par genererJeton() —
+ *  la page /concours/clarifier/[jeton] vérifie en plus que le licencié est
+ *  bien connecté. */
+export function lienClarification(jeton: string): string {
+  return `https://carreau-mondorf.com/concours/clarifier/${jeton}`;
 }
 
 export function resumerExtraction(extrait: DeclarationVocaleExtraite, date: string): string {

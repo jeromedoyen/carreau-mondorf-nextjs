@@ -13,7 +13,7 @@ import {
   listerAmbiguitesChamps,
   estAuCalendrierFederation,
   genererJeton,
-  adresseReponse,
+  lienClarification,
   resumerExtraction,
   type Ambiguite,
 } from '@/lib/declarationVocaleTraitement';
@@ -30,11 +30,12 @@ type Resultat =
  *  "Chef d'équipe" n'est pas un rôle : c'est le déclarant, pour ce
  *  concours-là. Son identité vient de mon_id_personne(), jamais du client.
  *
- *  Quand l'extraction ne résout pas tout (partenaire non reconnu, montant
- *  non dit), on n'abandonne pas et on ne devine pas : les lignes sûres sont
+ *  Quand l'extraction ne résout pas tout (partenaire non reconnu, club non
+ *  dit), on n'abandonne pas et on ne devine pas : les lignes sûres sont
  *  créées au statut 'a_clarifier' — invisibles pour le paiement — et un
- *  e-mail part demander le complément, dont la réponse est traitée par
- *  /api/webhooks/resend-entrant. */
+ *  e-mail part avec un lien vers /concours/clarifier/[jeton], un vrai
+ *  formulaire dans l'app (pas une réception d'e-mails entrants, abandonnée
+ *  faute d'option gratuite chez Resend). */
 export async function traiterDeclarationVocale(data: {
   saison: string;
   audioChemin: string;
@@ -168,9 +169,9 @@ export async function traiterDeclarationVocale(data: {
         prenom: moi?.prenom ?? '',
         resume,
         questions: ambiguites.map((a) => a.question),
+        lien: lienClarification(jeton),
       }),
       attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
-      replyTo: adresseReponse(jeton) ?? undefined,
     });
   }
 
