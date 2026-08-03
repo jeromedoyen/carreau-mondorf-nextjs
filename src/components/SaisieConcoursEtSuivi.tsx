@@ -133,8 +133,11 @@ export function SaisieConcoursEtSuivi({ saison }: { saison: string }) {
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-sable px-2 py-0.5 text-[10.5px] text-encre-douce">{LIBELLE_TYPE[p.type]}</span>
-                      {estChef && <span className="rounded-full bg-terracotta/10 px-2 py-0.5 text-[10.5px] text-terracotta">chef d&apos;équipe</span>}
-                      {estPartenaire && <span className="text-[12px] text-encre-douce">via {p.chef_equipe_nom}</span>}
+                      {/* "chef d'équipe" ne désigne plus qu'un rôle de saisie
+                          (l'auteur de la déclaration), plus le destinataire
+                          unique du virement — d'où le libellé neutre. */}
+                      {estChef && <span className="rounded-full bg-terracotta/10 px-2 py-0.5 text-[10.5px] text-terracotta">déclaré par toi</span>}
+                      {estPartenaire && <span className="text-[12px] text-encre-douce">déclaré par {p.chef_equipe_nom}</span>}
                     </div>
                     <span className="text-[12px] text-encre-douce">
                       {formatDate(p.date)}
@@ -143,13 +146,12 @@ export function SaisieConcoursEtSuivi({ saison }: { saison: string }) {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {estPartenaire ? (
-                      <span className="text-[12.5px] text-encre-douce">à répartir par {p.chef_equipe_nom}</span>
-                    ) : (
-                      <span className="font-score text-[15px] text-terracotta">
-                        {p.montant_final != null ? `${p.montant_final.toFixed(2)} €` : '—'}
-                      </span>
-                    )}
+                    {/* Depuis le forfait par joueur (migration 0055), chacun
+                        est remboursé pour lui-même : plus de "à répartir par
+                        le chef d'équipe", le montant s'affiche pour tous. */}
+                    <span className="font-score text-[15px] text-terracotta">
+                      {p.montant_final != null ? `${p.montant_final.toFixed(2)} €` : '—'}
+                    </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] ${
                         p.statut === 'a_clarifier'
@@ -235,8 +237,6 @@ function FormulaireDeclaration({
       pays: String(formData.get('pays') || 'LU'),
       horsCalendrier: formData.get('horsCalendrier') === 'on',
       horsPays: formData.get('horsPays') === 'on',
-      inscriptionMontant: Number(formData.get('inscriptionMontant') || 0),
-      repasInclus: formData.get('repasInclus') === 'on',
       partenaireIds,
       notes: String(formData.get('notes') || ''),
     });
@@ -286,24 +286,12 @@ function FormulaireDeclaration({
           </div>
         </div>
 
-        <div>
-          <label className="mb-1 block text-[11.5px] text-encre-douce">Montant d&apos;inscription payé (€)</label>
-          <input
-            type="number"
-            name="inscriptionMontant"
-            step="0.5"
-            min="0"
-            required
-            placeholder="50"
-            className="w-full max-w-[160px] rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
-          />
-        </div>
+        {/* Montant d'inscription et "repas inclus" retirés le 03/08/2026 :
+            le remboursement est forfaitaire par joueur (montant réglé dans
+            /outils/parametres), ces champs n'entraient plus dans aucun
+            calcul et laissaient croire le contraire. */}
 
         <div className="flex flex-wrap gap-4 text-[13px] text-encre">
-          <label className="flex items-center gap-1.5">
-            <input type="checkbox" name="repasInclus" className="accent-terracotta" />
-            Repas inclus dans l&apos;inscription (remboursé à 50%)
-          </label>
           <label className="flex items-center gap-1.5">
             <input type="checkbox" name="horsCalendrier" className="accent-terracotta" />
             Hors calendrier fédéral
@@ -335,8 +323,7 @@ function FormulaireDeclaration({
         {PARTENAIRES_REQUIS[typePartie] > 0 && (
           <div>
             <label className="mb-1.5 block text-[11.5px] text-encre-douce">
-              Partenaire{PARTENAIRES_REQUIS[typePartie] > 1 ? 's' : ''} (le remboursement te sera versé à toi, à
-              charge de redistribuer)
+              Partenaire{PARTENAIRES_REQUIS[typePartie] > 1 ? 's' : ''} (chacun est remboursé pour lui-même)
             </label>
             <div className="flex flex-col gap-2 sm:flex-row">
               {partenaires.map((idSelectionne, i) => (

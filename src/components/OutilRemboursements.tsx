@@ -304,9 +304,11 @@ function LigneParticipation({ participation: p }: { participation: Participation
         <div className="flex items-center gap-2">
           <span className="font-medium text-encre">{p.personneNom}</span>
           <span className="rounded-full bg-sable px-2 py-0.5 text-[10.5px] text-encre-douce">{LIBELLE_TYPE[p.type]}</span>
+          {/* Simple traçabilité de qui a saisi la déclaration : ce joueur
+              est remboursé directement, comme tous les autres. */}
           {estPartenaire && (
             <span className="rounded-full bg-marine/10 px-2 py-0.5 text-[10.5px] text-marine">
-              partenaire de {p.chefEquipeNom}
+              déclaré par {p.chefEquipeNom}
             </span>
           )}
           {p.horsPays && (
@@ -324,9 +326,10 @@ function LigneParticipation({ participation: p }: { participation: Participation
         {erreur && <span className="text-[12px] text-danger">{erreur}</span>}
       </div>
 
-      {estPartenaire ? (
-        <span className="text-[12.5px] text-encre-douce">à répartir par le chef d&apos;équipe</span>
-      ) : p.horsPays && p.montantFinal == null ? (
+      {/* Plus de branche "partenaire" : depuis le forfait par joueur
+          (migration 0055), chaque ligne porte son propre montant à virer,
+          y compris celles des partenaires d'un concours déclaré en équipe. */}
+      {p.horsPays && p.montantFinal == null ? (
         <div className="flex items-center gap-2">
           <input
             type="number"

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { envoyerEmail, chargerLogoClub } from '@/lib/email';
-import { emailRemboursementConcours, emailRemboursementPartenaire } from '@/lib/emailTemplates';
+import { emailRemboursementConcours } from '@/lib/emailTemplates';
 import { creerLignesParticipation } from '@/lib/participationsConcours';
 
 type Resultat = { ok: true; genere?: number } | { ok: false; error: string };
@@ -165,10 +165,9 @@ type ParticipationAvecPersonne = {
 };
 
 /** Envoie les notifications de paiement (cahier des charges §4) : email au
- *  bénéficiaire réel du virement (joueur en Championnat/Promotion, chef
- *  d'équipe en concours manuel) avec le détail, puis — uniquement s'il
- *  s'agit d'un chef d'équipe — un email distinct à chacun de ses
- *  partenaires les invitant à se tourner vers lui pour la répartition.
+ *  joueur remboursé. Depuis le forfait par joueur (migration 0055),
+ *  chacun reçoit son propre virement : un seul e-mail par ligne payée,
+ *  et plus d'e-mail "répartition" aux partenaires d'un chef d'équipe.
  *  Échecs d'envoi non bloquants : le paiement réel a déjà eu lieu hors de
  *  l'app, on ne veut pas laisser une participation "non payée" juste à
  *  cause d'un souci SMTP passager. */
@@ -189,23 +188,6 @@ async function envoyerNotificationsPaiement(
             ? 'championnat national'
             : 'concours'
     }${participation.club ? ` — ${participation.club}` : ''} (${new Date(participation.date + 'T00:00:00').toLocaleDateString('fr-FR')})`;
-    const estChef = participation.chef_equipe_id === participation.personne_id;
-
-    let partenaires: { prenom: string; nom: string; email: string | null }[] = [];
-    if (estChef) {
-      const { data: coequipiers } = await supabase
-        .from('participations_concours')
-        .select('personnes!participations_concours_personne_id_fkey(nom, prenom, email)')
-        .eq('chef_equipe_id', participation.chef_equipe_id)
-        .eq('date', participation.date)
-        .neq('personne_id', participation.personne_id)
-        .eq('supprime', false);
-      partenaires = (coequipiers ?? [])
-        .map((c) => (Array.isArray(c.personnes) ? c.personnes[0] : c.personnes))
-        .filter((l): l is { nom: string; prenom: string; email: string | null } => !!l);
-    }
-
-    const logo = chargerLogoClub();
     await envoyerEmail({
       destinataire: beneficiaire.email,
       sujet: 'Remboursement de tes frais de concours',
@@ -213,25 +195,9 @@ async function envoyerNotificationsPaiement(
         prenom: beneficiaire.prenom,
         concours: libelleConcours,
         montant: participation.montant_final,
-        estChefEquipe: estChef,
-        partenaires: partenaires.map((p) => `${p.prenom} ${p.nom}`),
       }),
-      attachments: [{ filename: 'logo.png', content: logo, cid: 'logo-club' }],
+      attachments: [{ filename: 'logo.png', content: chargerLogoClub(), cid: 'logo-club' }],
     });
-
-    for (const partenaire of partenaires) {
-      if (!partenaire.email) continue;
-      await envoyerEmail({
-        destinataire: partenaire.email,
-        sujet: 'Remboursement de ton concours — répartition',
-        html: emailRemboursementPartenaire({
-          prenom: partenaire.prenom,
-          concours: libelleConcours,
-          nomChefEquipe: `${beneficiaire.prenom} ${beneficiaire.nom}`,
-        }),
-        attachments: [{ filename: 'logo.png', content: logo, cid: 'logo-club' }],
-      });
-    }
   } catch {
     // Échec d'envoi non bloquant — le paiement reste enregistré.
   }
