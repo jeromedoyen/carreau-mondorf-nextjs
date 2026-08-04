@@ -379,3 +379,55 @@ export function emailClarificationConcours({
     cta: { href: lien, texte: 'Compléter ma déclaration' },
   });
 }
+
+/** Notification CA — demande d'organisation de manifestation signée
+ *  (04/08/2026). Envoyée automatiquement dès que le demandeur a signé son
+ *  propre protocole (finaliser_protocole_signe, migration 0057), PDF
+ *  signé en pièce jointe — pas besoin d'aller le chercher soi-même dans
+ *  Documenso ou l'outil de signature. */
+export function emailProtocoleSigne({
+  nomPrestation,
+  datePrestation,
+  responsables,
+}: {
+  nomPrestation: string;
+  datePrestation: string;
+  responsables: string;
+}): string {
+  return `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COULEURS.sable};padding:32px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" style="max-width:480px;background:${COULEURS.sableCarte};border-radius:16px;overflow:hidden;border:1px solid ${COULEURS.ligne};">
+        <tr>
+          <td style="background:${COULEURS.sable};padding:28px 32px;text-align:center;border-bottom:1px solid ${COULEURS.ligne};">
+            <img src="cid:logo-club" alt="Carreau Mondorf" width="140" style="display:block;margin:0 auto;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:${COULEURS.terracotta};font-weight:600;">Protocole manifestation signé</p>
+            <h1 style="margin:0 0 20px;font-size:24px;line-height:1.3;color:${COULEURS.encre};font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:600;">
+              ${nomPrestation}
+            </h1>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:${COULEURS.encreDouce};">
+              <strong style="color:${COULEURS.encre};">${responsables}</strong> vient de signer sa demande d'organisation de manifestation, pour le
+              <strong style="color:${COULEURS.encre};">${datePrestation}</strong>.
+            </p>
+            <p style="margin:0;font-size:15px;line-height:1.6;color:${COULEURS.encreDouce};">
+              Le document signé est joint à cet e-mail.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 32px;border-top:1px solid ${COULEURS.ligne};">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:${COULEURS.encreDouce};">
+              <strong style="color:${COULEURS.pin};">Carreau Boules et Pétanque Mondorf — comité</strong>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
