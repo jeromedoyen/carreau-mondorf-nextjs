@@ -15,9 +15,10 @@
  * en base), pour amorcer le suivi sans tout rejouer.
  *
  * Usage :
- *   node scripts/appliquer-migrations.js                  applique les migrations en attente
+ *   node scripts/appliquer-migrations.js                  applique les migrations en attente (.env.local)
  *   node scripts/appliquer-migrations.js --sec             idem
  *   node scripts/appliquer-migrations.js --marquer-appliquees 0001..0026   marque une plage comme déjà appliquée, sans exécuter
+ *   node scripts/appliquer-migrations.js --env-fichier .env.test.local     cible un autre fichier d'env (ex. base de test) plutôt que .env.local
  */
 const fs = require('fs');
 const path = require('path');
@@ -26,10 +27,12 @@ const { Client } = require('pg');
 const DOSSIER_MIGRATIONS = path.join(__dirname, '..', 'supabase', 'migrations');
 
 function chargerDatabaseUrl() {
-  const envPath = path.join(__dirname, '..', '.env.local');
+  const envFichierIdx = process.argv.indexOf('--env-fichier');
+  const nomFichier = envFichierIdx !== -1 ? process.argv[envFichierIdx + 1] : '.env.local';
+  const envPath = path.join(__dirname, '..', nomFichier);
   const contenu = fs.readFileSync(envPath, 'utf8');
   const ligne = contenu.split('\n').find((l) => l.startsWith('DATABASE_URL='));
-  if (!ligne) throw new Error('DATABASE_URL absent de .env.local');
+  if (!ligne) throw new Error(`DATABASE_URL absent de ${nomFichier}`);
   return ligne.slice('DATABASE_URL='.length).trim();
 }
 

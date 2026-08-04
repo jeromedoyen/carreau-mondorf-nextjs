@@ -71,7 +71,7 @@ export async function creerEnveloppe({
   pdfBuffer: Buffer;
   nomFichier: string;
   signataires: { email: string; nom: string }[];
-}): Promise<{ envelopeId: string }> {
+}): Promise<{ envelopeId: string; urlsSignature: Record<string, string> }> {
   const { url, token } = configuration();
 
   const document = await PDFDocument.load(pdfBuffer);
@@ -134,7 +134,27 @@ export async function creerEnveloppe({
     );
   }
 
-  return { envelopeId: String(envelopeId) };
+  /** URL de signature directe par destinataire (04/08/2026, demande
+   *  Jérôme — flux "auto-signature" du protocole manifestation : le
+   *  demandeur signe lui-même son propre document tout de suite, sans
+   *  attendre l'e-mail). Le token de signature apparaît dans la réponse de
+   *  /distribute — nom de champ non documenté publiquement, on essaie les
+   *  variantes plausibles (`token`/`signingToken`) et on retombe sur le
+   *  flux e-mail existant si absent plutôt que de faire planter l'envoi. */
+  const urlsSignature: Record<string, string> = {};
+  try {
+    const donneesDistribution = await reponseDistribution.json();
+    const recipients = donneesDistribution?.recipients ?? donneesDistribution?.envelope?.recipients ?? [];
+    for (const r of recipients as Record<string, unknown>[]) {
+      const jeton = (r.token as string | undefined) ?? (r.signingToken as string | undefined);
+      const email = r.email as string | undefined;
+      if (jeton && email) urlsSignature[email] = `${url}/sign/${jeton}`;
+    }
+  } catch {
+    // Réponse non-JSON ou format inattendu : pas bloquant, urlsSignature reste vide.
+  }
+
+  return { envelopeId: String(envelopeId), urlsSignature };
 }
 
 /** Télécharge le PDF signé final d'une enveloppe complète (28/07/2026,

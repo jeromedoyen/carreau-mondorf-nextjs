@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CalendarDays, MapPin } from 'lucide-react';
+import { CalendarDays, MapPin, ClipboardList, ArrowRight } from 'lucide-react';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
 import { NouvelleManifestationForm } from '@/components/NouvelleManifestationForm';
 import { CalendrierManifestations } from '@/components/CalendrierManifestations';
+import { ReveilDocumensoAuChargement } from '@/components/ReveilDocumensoAuChargement';
 import { getManifestations, estUtilisateurAutorise } from '@/lib/manifestations';
 import { getSaisons, getSaisonActive } from '@/lib/saisons';
 import { getRencontresD2, getCalendrierFederation, fusionnerCalendrier } from '@/lib/data';
@@ -72,6 +73,7 @@ export default async function ManifestationsPage({
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-12">
+      <ReveilDocumensoAuChargement />
       <header className="entree mb-9 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">SAISON {saison}</p>
@@ -79,6 +81,22 @@ export default async function ManifestationsPage({
         </div>
         <SaisonSwitcher saisons={saisons.map((s) => s.libelle)} actuelle={saison} />
       </header>
+
+      <Link
+        href="/manifestations/protocole"
+        className="entree mb-6 flex items-center justify-between gap-3 rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] transition-transform hover:-translate-y-0.5"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
+            <ClipboardList size={18} />
+          </span>
+          <div>
+            <p className="font-display text-[16px]">Vous organisez un événement ?</p>
+            <p className="text-[12.5px] text-encre-douce">Anniversaire, repas, réunion privée… faites une demande simplifiée.</p>
+          </div>
+        </div>
+        <ArrowRight size={18} className="shrink-0 text-terracotta" />
+      </Link>
 
       <CalendrierManifestations manifestations={manifestations} evenementsChampionnat={evenementsChampionnat} />
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { HeartHandshake, Trophy, Euro } from 'lucide-react';
+import { HeartHandshake, Trophy, ReceiptText, ClipboardList, ArrowRight } from 'lucide-react';
 import { CarteCotisationMoncaro } from './CarteCotisationMoncaro';
 import type { MonAdhesion } from '@/lib/moncaro';
 import type { ParametresClub } from '@/lib/paiements';
@@ -86,7 +86,7 @@ export function TableauDeBordMoncaro({
 
       <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
         <div className="mb-3 flex items-center gap-2">
-          <Euro size={16} className="text-pin" />
+          <ReceiptText size={16} className="text-pin" />
           <h2 className="font-display text-[15px]">Concours &amp; remboursements</h2>
         </div>
         {participationsConcours.length > 0 ? (
@@ -162,6 +162,22 @@ export function TableauDeBordMoncaro({
           </div>
         </div>
       )}
+
+      <Link
+        href="/manifestations/protocole"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] transition-transform hover:-translate-y-0.5 sm:col-span-2"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
+            <ClipboardList size={16} />
+          </span>
+          <div>
+            <p className="font-display text-[15px]">Organiser une manifestation</p>
+            <p className="text-[12px] text-encre-douce">Formulaire de demande simplifiée</p>
+          </div>
+        </div>
+        <ArrowRight size={16} className="shrink-0 text-terracotta" />
+      </Link>
     </div>
   );
 }
