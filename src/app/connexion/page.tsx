@@ -11,6 +11,11 @@ export const metadata: Metadata = { title: 'Connexion' };
  *  utiliser. "Espace privé" plutôt que "licenciés" (26/07/2026) : les
  *  membres non-licenciés et le CA s'y connectent aussi. */
 export default function ConnexionPage() {
+  // VERCEL_ENV, pas NODE_ENV : Next.js build toujours en mode "production"
+  // même pour un déploiement preview — seul VERCEL_ENV distingue fiablement
+  // la vraie prod. Absent en local (hors Vercel) → traité comme non-prod.
+  const modeDevBypass = process.env.VERCEL_ENV !== 'production';
+
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-5 py-16">
       <div className="mx-auto grid w-full max-w-4xl grid-cols-1 items-center gap-10 sm:grid-cols-2">
@@ -43,7 +48,7 @@ export default function ConnexionPage() {
           </div>
 
           <div className="mt-6">
-            <ConnexionForm />
+            <ConnexionForm modeDevBypass={modeDevBypass} />
           </div>
         </div>
       </div>

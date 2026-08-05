@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { connexionDirecteDev } from '@/lib/actions/connexionDev';
 
 /** Code à 6 chiffres saisi manuellement plutôt qu'un lien cliquable — le
  *  lien avait deux défauts en pratique (v. CONTEXTE_PROJET.md) : (1) les
@@ -20,7 +21,7 @@ import { createClient } from '@/lib/supabase/client';
  *  rejet se fait côté serveur, via l'Auth Hook "Before user created"
  *  (supabase/migrations/0002_acces.sql) — dans ce cas, verifyOtp() échoue
  *  simplement avec "code invalide", indiscernable d'un mauvais code. */
-export function ConnexionForm() {
+export function ConnexionForm({ modeDevBypass = false }: { modeDevBypass?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
 
@@ -29,6 +30,35 @@ export function ConnexionForm() {
   const [envoye, setEnvoye] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+
+  /** Bypass dev (05/08/2026) : le flux email par code/lien est instable en
+   *  ce moment (v. connexionDev.ts). Uniquement rendu quand modeDevBypass
+   *  est vrai (calculé côté serveur via VERCEL_ENV, jamais en prod). */
+  async function connexionDirecte() {
+    setErreur(null);
+    const adresse = email.trim().toLowerCase();
+    if (!adresse.includes('@')) {
+      setErreur('Adresse email invalide.');
+      return;
+    }
+    setEnCours(true);
+    try {
+      const { erreur: erreurConnexion } = await connexionDirecteDev(adresse);
+      if (erreurConnexion) {
+        setErreur(erreurConnexion);
+        return;
+      }
+      router.replace('/moncaro');
+    } catch {
+      // Le Server Action peut rejeter (ex. variable d'env serveur absente
+      // sur cet environnement) plutôt que renvoyer proprement { erreur }.
+      // Sans ce catch, enCours restait bloqué à true indéfiniment — bug
+      // remonté par Jérôme le 05/08/2026 ("ça tourne dans le vide").
+      setErreur('Connexion directe indisponible sur cet environnement (configuration manquante).');
+    } finally {
+      setEnCours(false);
+    }
+  }
 
   async function envoyerCode(e: FormEvent) {
     e.preventDefault();
@@ -154,6 +184,16 @@ export function ConnexionForm() {
           >
             {enCours ? 'Envoi…' : 'Recevoir un code de connexion'}
           </button>
+          {modeDevBypass && (
+            <button
+              type="button"
+              disabled={enCours}
+              onClick={connexionDirecte}
+              className="rounded-lg border border-dashed border-marine/40 bg-marine/5 px-4 py-2.5 text-[13px] text-marine transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {enCours ? 'Connexion…' : '🔧 Connexion directe (dev — sans code)'}
+            </button>
+          )}
         </form>
       )}
     </div>
