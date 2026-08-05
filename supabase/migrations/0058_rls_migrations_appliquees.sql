@@ -1,0 +1,13 @@
+-- Corrige une alerte Supabase Security Advisor (05/08/2026, "Table
+-- publicly accessible") : `_migrations_appliquees` est une table
+-- purement technique (créée par scripts/appliquer-migrations.js pour
+-- suivre quelles migrations SQL ont déjà été jouées), oubliée lors de
+-- l'ajout de RLS sur les autres tables. Aucune donnée sensible (noms de
+-- fichiers de migration + date), mais elle était lisible/modifiable par
+-- n'importe qui via l'API publique faute de RLS.
+--
+-- RLS activé SANS policy : bloque tout accès via l'API PostgREST
+-- (anon/authenticated), tout en laissant le script de migration
+-- fonctionner normalement (connexion Postgres directe via DATABASE_URL,
+-- propriétaire de la table — RLS ne s'applique jamais au propriétaire).
+alter table if exists public._migrations_appliquees enable row level security;
