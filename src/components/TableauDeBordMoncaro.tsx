@@ -49,40 +49,42 @@ export function TableauDeBordMoncaro({
     <div className="grid gap-4 sm:grid-cols-2">
       <CarteCotisationMoncaro saison={saison} monNom={monNom} adhesion={adhesion} parametres={parametres} />
 
-      <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-        <div className="mb-3 flex items-center gap-2">
-          <HeartHandshake size={16} className="text-pin" />
-          <h2 className="font-display text-[15px]">Bénévolat</h2>
+      {statsVisibles && (
+        <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+          <div className="mb-3 flex items-center gap-2">
+            <Trophy size={16} className="text-pin" />
+            <h2 className="font-display text-[15px]">Compétition</h2>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {mesStatsD2 ? (
+              <Link
+                href="/national-d2"
+                className="flex items-center justify-between text-[13px] text-encre hover:text-terracotta"
+              >
+                <span>National D2 — {mesStatsD2.joues} partie(s)</span>
+                <span className="font-score text-base text-terracotta">
+                  {Math.round(mesStatsD2.tauxVictoire * 100)}%
+                </span>
+              </Link>
+            ) : (
+              <p className="text-[12.5px] text-encre-douce">National D2 — aucune partie cette saison.</p>
+            )}
+            {monEntreePromotion ? (
+              <Link
+                href="/promotion"
+                className="flex items-center justify-between text-[13px] text-encre hover:text-terracotta"
+              >
+                <span>Promotion — {monEntreePromotion.participations} journée(s)</span>
+                <span className="font-score text-base text-terracotta">
+                  {Math.round(monEntreePromotion.tauxVictoire * 100)}%
+                </span>
+              </Link>
+            ) : (
+              <p className="text-[12.5px] text-encre-douce">Promotion — aucune journée cette saison.</p>
+            )}
+          </div>
         </div>
-        {benevolat && benevolat.total > 0 ? (
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <div className="font-score text-xl">{benevolat.total}</div>
-                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">total</div>
-              </div>
-              <div>
-                <div className="font-score text-xl">{benevolat.totalAVenir}</div>
-                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">à venir</div>
-              </div>
-              <div>
-                <div className="font-score text-xl">{benevolat.heuresTotal}h</div>
-                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">cumulées</div>
-              </div>
-            </div>
-            <Link href="/benevole/moi" className="mt-1 text-[12.5px] text-terracotta hover:underline">
-              Voir le détail →
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-encre-douce">Aucune participation enregistrée pour l&apos;instant.</p>
-            <Link href="/benevole" className="text-[12.5px] text-terracotta hover:underline">
-              Voir les postes à pourvoir →
-            </Link>
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
         <div className="mb-3 flex items-center gap-2">
@@ -126,42 +128,40 @@ export function TableauDeBordMoncaro({
         )}
       </div>
 
-      {statsVisibles && (
-        <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-          <div className="mb-3 flex items-center gap-2">
-            <Trophy size={16} className="text-pin" />
-            <h2 className="font-display text-[15px]">Compétition</h2>
-          </div>
-          <div className="flex flex-col gap-2.5">
-            {mesStatsD2 ? (
-              <Link
-                href="/national-d2"
-                className="flex items-center justify-between text-[13px] text-encre hover:text-terracotta"
-              >
-                <span>National D2 — {mesStatsD2.joues} partie(s)</span>
-                <span className="font-score text-base text-terracotta">
-                  {Math.round(mesStatsD2.tauxVictoire * 100)}%
-                </span>
-              </Link>
-            ) : (
-              <p className="text-[12.5px] text-encre-douce">National D2 — aucune partie cette saison.</p>
-            )}
-            {monEntreePromotion ? (
-              <Link
-                href="/promotion"
-                className="flex items-center justify-between text-[13px] text-encre hover:text-terracotta"
-              >
-                <span>Promotion — {monEntreePromotion.participations} journée(s)</span>
-                <span className="font-score text-base text-terracotta">
-                  {Math.round(monEntreePromotion.tauxVictoire * 100)}%
-                </span>
-              </Link>
-            ) : (
-              <p className="text-[12.5px] text-encre-douce">Promotion — aucune journée cette saison.</p>
-            )}
-          </div>
+      <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] sm:col-span-2">
+        <div className="mb-3 flex items-center gap-2">
+          <HeartHandshake size={16} className="text-pin" />
+          <h2 className="font-display text-[15px]">Bénévolat</h2>
         </div>
-      )}
+        {benevolat && benevolat.total > 0 ? (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="font-score text-xl">{benevolat.total}</div>
+                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">total</div>
+              </div>
+              <div>
+                <div className="font-score text-xl">{benevolat.totalAVenir}</div>
+                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">à venir</div>
+              </div>
+              <div>
+                <div className="font-score text-xl">{benevolat.heuresTotal}h</div>
+                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">cumulées</div>
+              </div>
+            </div>
+            <Link href="/benevole/moi" className="mt-1 text-[12.5px] text-terracotta hover:underline">
+              Voir le détail →
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <p className="text-[13px] text-encre-douce">Aucune participation enregistrée pour l&apos;instant.</p>
+            <Link href="/benevole" className="text-[12.5px] text-terracotta hover:underline">
+              Voir les postes à pourvoir →
+            </Link>
+          </div>
+        )}
+      </div>
 
       <Link
         href="/manifestations/protocole"
