@@ -40,8 +40,10 @@ export async function POST(requete: Request) {
 
   const supabase = createServiceClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
-  let saisonActive = saison;
-  if (!saisonActive) {
+  let saisonActive: string;
+  if (saison) {
+    saisonActive = saison;
+  } else {
     const { data, error } = await supabase.from('saisons').select('libelle').eq('active', true).single();
     if (error || !data) {
       return Response.json({ ok: false, error: 'Aucune saison active.' }, { status: 500 });
