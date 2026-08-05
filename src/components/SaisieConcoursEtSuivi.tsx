@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { Mic } from 'lucide-react';
+import { Mic, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { creerParticipationManuelle } from '@/lib/actions/remboursements';
 import { sansAccentsMinuscules } from '@/lib/normalisationTexte';
@@ -103,19 +103,44 @@ export function SaisieConcoursEtSuivi({ saison }: { saison: string }) {
       {/* Entrée principale de la page : sur le terrain, c'est le geste
           attendu. Le formulaire détaillé reste dessous pour les cas que le
           vocal ne couvre pas (retour Jérôme, 03/08/2026 : "j'aimerais
-          plutôt voir un gros bouton d'enregistrement"). */}
-      <Link
-        href="/concours/declarer-vocal"
-        className="flex flex-col items-center gap-3 rounded-2xl bg-terracotta px-6 py-8 text-center text-white transition-opacity hover:opacity-90"
-      >
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15">
-          <Mic className="h-8 w-8" strokeWidth={1.5} />
-        </span>
-        <span className="font-display text-2xl italic">Déclarer au vocal</span>
-        <span className="max-w-xs text-[13px] text-white/80">
-          Enregistre-toi au bord du terrain et prends une photo de l&apos;équipe — l&apos;app remplit le reste.
-        </span>
-      </Link>
+          plutôt voir un gros bouton d'enregistrement"). Scindé en deux
+          blocs (pense-bête #125, 05/08/2026) : la déclaration vocale
+          existante à gauche, un second mode assisté par IA à droite
+          (couleur marine pour rester dans la charte tout en se distinguant
+          du terracotta) — étoile Sparkles pour signaler l'aspect "assisté".
+          Le bloc IA n'est pour l'instant qu'une page d'attente : le vrai
+          assistant conversationnel (ville du concours vérifiée par
+          recherche, type de partie, partenaires vérifiés contre la liste
+          des licenciés) est une fonctionnalité conséquente qui mérite une
+          discussion d'architecture (fournisseur voix temps réel, coût)
+          avant d'être construite — non fait ici, cf. résumé de session. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/concours/declarer-vocal"
+          className="flex flex-col items-center gap-3 rounded-2xl bg-terracotta px-6 py-8 text-center text-white transition-opacity hover:opacity-90"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15">
+            <Mic className="h-8 w-8" strokeWidth={1.5} />
+          </span>
+          <span className="font-display text-2xl italic">Déclarer au vocal</span>
+          <span className="max-w-xs text-[13px] text-white/80">
+            Enregistre-toi au bord du terrain et prends une photo de l&apos;équipe — l&apos;app remplit le reste.
+          </span>
+        </Link>
+
+        <Link
+          href="/concours/declarer-ia"
+          className="flex flex-col items-center gap-3 rounded-2xl bg-marine px-6 py-8 text-center text-white transition-opacity hover:opacity-90"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15">
+            <Sparkles className="h-8 w-8" strokeWidth={1.5} />
+          </span>
+          <span className="font-display text-2xl italic">Déclarer à l&apos;aide de l&apos;IA</span>
+          <span className="max-w-xs text-[13px] text-white/80">
+            Un assistant te pose les questions à voix haute et remplit ta déclaration pour toi.
+          </span>
+        </Link>
+      </div>
 
       <FormulaireDeclaration saison={saison} monId={monId} licencies={licencies} onEnregistre={recharger} />
 
