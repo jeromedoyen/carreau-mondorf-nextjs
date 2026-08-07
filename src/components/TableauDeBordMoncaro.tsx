@@ -27,6 +27,7 @@ export function TableauDeBordMoncaro({
   parametres,
   benevolat,
   statsVisibles,
+  concoursVisible,
   monNom,
   mesStatsD2,
   statsPromotion,
@@ -37,6 +38,11 @@ export function TableauDeBordMoncaro({
   parametres: ParametresClub | null;
   benevolat: TableauDeBordBenevole | null;
   statsVisibles: boolean;
+  /** Carte "Concours & remboursements" — n'a de sens que pour un licencié
+   *  (participe aux concours) ou le CA (gère les remboursements). Un simple
+   *  membre non-licencié n'a rien à y voir (retour Jérôme, note vocale #128
+   *  du 07/08/2026). */
+  concoursVisible: boolean;
   monNom: string | null;
   mesStatsD2: StatJoueurD2 | null;
   statsPromotion: StatistiquesPromotion | null;
@@ -86,6 +92,7 @@ export function TableauDeBordMoncaro({
         </div>
       )}
 
+      {concoursVisible && (
       <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
         <div className="mb-3 flex items-center gap-2">
           <ReceiptText size={16} className="text-pin" />
@@ -127,6 +134,7 @@ export function TableauDeBordMoncaro({
           </div>
         )}
       </div>
+      )}
 
       <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] sm:col-span-2">
         <div className="mb-3 flex items-center gap-2">

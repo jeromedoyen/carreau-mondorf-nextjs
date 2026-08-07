@@ -55,19 +55,27 @@ export default async function RenouvellementPage() {
           Aucun membre en attente de renouvellement pour {anneeCible}.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {membres.map((m) => (
-            <li
-              key={m.personneId}
-              className="rounded-xl border border-ligne bg-sable-carte px-4 py-2.5 text-[13.5px]"
-            >
-              <span className="text-encre">
-                {m.prenom} {m.nom}
-              </span>
-              <span className="ml-2 text-encre-douce">{m.email}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="flex flex-col gap-2">
+            {membres.map((m) => (
+              <li
+                key={m.personneId}
+                className="rounded-xl border border-ligne bg-sable-carte px-4 py-2.5 text-[13.5px]"
+              >
+                <span className="text-encre">
+                  {m.prenom} {m.nom}
+                </span>
+                <span className="ml-2 text-encre-douce">{m.email}</span>
+              </li>
+            ))}
+          </ul>
+          {/* Total exact en bas de liste — retour Jérôme (note vocale #129,
+              07/08/2026) : le compte n'était visible qu'implicitement en
+              recomptant la liste à l'œil. */}
+          <p className="mt-4 text-[13px] font-medium text-encre-douce">
+            {membres.length} membre{membres.length > 1 ? 's' : ''} à renouveler au total.
+          </p>
+        </>
       )}
     </main>
   );

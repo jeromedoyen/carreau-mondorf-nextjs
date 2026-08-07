@@ -70,6 +70,7 @@ export default async function MoncaroPage() {
         parametres={parametres}
         benevolat={benevolat}
         statsVisibles={statsVisibles}
+        concoursVisible={statsVisibles}
         monNom={monNom}
         mesStatsD2={mesStatsD2}
         statsPromotion={statsPromotion}
