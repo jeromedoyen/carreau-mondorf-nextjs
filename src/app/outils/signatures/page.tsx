@@ -4,6 +4,7 @@ import { estMembreCA } from '@/lib/membres';
 import { getDemandesSignature, getSignatairesCA } from '@/lib/signatures';
 import { NouvelleDemandeSignatureForm } from '@/components/NouvelleDemandeSignatureForm';
 import { ListeDemandesSignature } from '@/components/ListeDemandesSignature';
+import { ReveilDocumensoAuChargement } from '@/components/ReveilDocumensoAuChargement';
 
 export const metadata: Metadata = { title: 'Signatures électroniques' };
 
@@ -29,6 +30,7 @@ export default async function SignaturesPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-12">
+      <ReveilDocumensoAuChargement />
       <header className="entree mb-9">
         <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">OUTILS</p>
         <h1 className="font-display mt-1 text-4xl italic">Signatures électroniques</h1>
