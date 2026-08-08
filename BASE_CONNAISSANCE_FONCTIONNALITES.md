@@ -1,6 +1,6 @@
 # Base de connaissance — Application Carreau Mondorf v2
 
-> Document de référence détaillé, page par page et fonctionnalité par fonctionnalité. Deux usages prévus : (1) socle pour rédiger un guide utilisateur complet, (2) contexte à donner à l'assistant Caro pour qu'elle réponde précisément à "à quoi sert cette page / cette fonctionnalité". Chaque entrée suit la même structure : **Route**, **Accès**, **Objectif**, **Description détaillée**, **Actions possibles**. Généré le 28/07/2026 à partir du code source réel — à régénérer si l'application évolue significativement.
+> Document de référence détaillé, page par page et fonctionnalité par fonctionnalité. Deux usages prévus : (1) socle pour rédiger un guide utilisateur complet, (2) contexte à donner à l'assistant Caro pour qu'elle réponde précisément à "à quoi sert cette page / cette fonctionnalité". Chaque entrée suit la même structure : **Route**, **Accès**, **Objectif**, **Description détaillée**, **Actions possibles**. Généré le 28/07/2026 à partir du code source réel, mis à jour le 08/08/2026 (module concours/remboursements, absent depuis sa livraison le 05-06/08/2026) — à régénérer/compléter à chaque évolution significative de l'application.
 
 ---
 
@@ -17,6 +17,8 @@
 **Catégories de créneaux bénévoles** — Cuisine, Bar, Table de marque, Service, Vaisselle, Barbecue, Préparation, Temps fort, Autre — chacune a une couleur dédiée, utilisée sur le planning visuel et le calendrier.
 
 **Suppression douce** — Rien n'est jamais vraiment supprimé dans l'application (demandes de signature, questions à Caro...). Une colonne "supprime" masque l'élément des listes tout en gardant la trace dans le journal d'audit.
+
+**Rôle trésorerie** — Sous-ensemble du CA, pas tout le comité : certains membres du CA n'ont pas accès aux informations financières. Les pages `/outils/remboursements*` sont réservées à ce rôle précis (message "réservé à la trésorerie du comité"), distinct du message générique "Réservé au comité" des autres pages CA.
 
 ---
 
@@ -106,6 +108,30 @@
 **Objectif** : consulter les résultats du championnat Promotion.
 **Description** : saison 2025 uniquement — championnat clos, données historiques figées, pas de nouvelle saison possible sur ce module.
 
+### `/concours` — mes concours & remboursements
+**Accès** : licencié connecté (tout compétiteur, pas seulement le CA).
+**Objectif** : déclarer sa participation à un concours hors championnat/Promotion en tant que chef d'équipe, et suivre le statut de ses remboursements.
+**Description détaillée** : formulaire de déclaration (club adverse, date, coéquipiers) alimentant la "liste 2" du module remboursements (les concours hors championnat, saisis manuellement — la "liste 1", elle, se remplit automatiquement depuis les résultats de championnat). Affiche aussi l'historique des participations déclarées et le statut de remboursement de chacune. Deux chemins alternatifs proposés en complément du formulaire : déclarer au vocal (`/concours/declarer-vocal`) ou à l'aide de l'IA (`/concours/declarer-ia`).
+**Actions possibles** : déclarer une participation, consulter ses déclarations passées et leur statut de remboursement.
+
+### `/concours/declarer-vocal` — déclarer au vocal
+**Accès** : licencié connecté.
+**Objectif** : déclarer une participation en parlant plutôt qu'en remplissant un formulaire, pensé pour un usage au bord du terrain sur téléphone.
+**Description détaillée** : enregistrement vocal + photo (selfie d'équipe) transcrits et analysés automatiquement (transcription + extraction des informations par IA). Si des informations manquent ou restent ambiguës (ex. nom du club mal compris), un lien de complément est envoyé pour finir la déclaration sur `/concours/clarifier/[jeton]`. Les photos d'équipe associées sont visibles par la trésorerie sur `/outils/remboursements/photos`.
+**Actions possibles** : enregistrer sa déclaration à la voix, joindre une photo d'équipe.
+
+### `/concours/declarer-ia` — déclarer à l'aide de l'IA
+**Accès** : licencié connecté.
+**Objectif** : déclarer une participation par conversation guidée avec un assistant IA, plutôt qu'un formulaire classique.
+**Description détaillée** : chat conversationnel (même technique que l'assistant Caro — Gemini + appel d'outils) qui pose les questions nécessaires (ville du concours, coéquipiers...), vérifie la ville par rapprochement flou avec les lieux connus de la fédération, retrouve les licenciés par nom même approximatif, puis enregistre la déclaration. Alternative à `/concours` (formulaire) et `/concours/declarer-vocal` (vocal) pour le même besoin.
+**Actions possibles** : déclarer sa participation en conversant avec l'assistant.
+
+### `/concours/clarifier/[jeton]` — compléter une déclaration
+**Accès** : licencié connecté, uniquement l'auteur de la déclaration concernée (vérifié côté serveur, pas seulement par le jeton).
+**Objectif** : finir une déclaration vocale restée incomplète faute d'avoir bien compris certaines informations.
+**Description** : affiche la transcription telle que comprise par le système et un court formulaire ciblé sur les seuls points ambigus à préciser (ex. club, coéquipier).
+**Actions possibles** : répondre aux précisions demandées pour finaliser la déclaration.
+
 ---
 
 ## Pages réservées au comité (CA)
@@ -142,6 +168,14 @@ Toutes les pages ci-dessous affichent "Réservé au comité" avec un bouton "Se 
 **Objectif** : gérer les créneaux et bénévoles d'une manifestation précise.
 **Description détaillée** : affiche nom, saison, statut, lieu, notes, puis la liste des créneaux (tâche, catégorie en badge, date, horaire) avec les bénévoles déjà affectés à chacun. Bouton vers la vue planning. Un formulaire permet d'ajouter un nouveau créneau.
 
+### `/manifestations/protocole` — organiser une manifestation
+**Objectif** : remplacer la fiche papier "Protocole Manifestation" par un formulaire numérique suivi de signature électronique.
+**Description** : une fois le formulaire validé, le document se génère automatiquement et part directement en signature (via le service de signature électronique, positionné en bas de la dernière page) — pas d'impression ni d'envoi manuel.
+
+### `/outils/parametres` — paramètres cotisation & licence
+**Objectif** : référence unique des montants (cotisation, licence) et coordonnées bancaires du club.
+**Description** : une seule source de vérité utilisée automatiquement dans les appels à cotisation, les emails, le renouvellement et la page publique du club — éviter de la modifier ailleurs.
+
 ### `/saisons` — gestion des saisons
 **Objectif** : créer une nouvelle saison et définir laquelle est active.
 **Description** : explique que la saison active détermine ce qui s'affiche par défaut sur tout le site (compétition, manifestations, congés, membres). Formulaire de création + liste des saisons existantes.
@@ -165,6 +199,17 @@ Toutes les pages ci-dessous affichent "Réservé au comité" avec un bouton "Se 
 ### `/outils/paiements-en-attente` — validation des paiements
 **Objectif** : marquer les paiements reçus comme réglés.
 **Description** : liste des appels en attente de règlement, action de validation qui synchronise automatiquement le statut vers la fiche d'adhésion de la personne (visible ensuite sur Mon Caro). Inclut aussi l'historique des paiements déjà validés.
+
+### `/outils/remboursements` — remboursements concours
+**Accès** : réservé au rôle **trésorerie** du comité (pas tout le CA — voir "Rôle trésorerie" dans les concepts transverses).
+**Objectif** : valider et suivre les remboursements dus aux licenciés pour leurs frais de concours.
+**Description** : deux listes — "liste 1" (concours du championnat, remboursement calculé automatiquement) et "liste 2" (autres concours, saisis par les chefs d'équipe via `/concours`, `/concours/declarer-vocal` ou `/concours/declarer-ia`) — avec validation et suivi des virements. Lien vers le pêle-mêle photos (`/outils/remboursements/photos`).
+**Actions possibles** : valider un remboursement, consulter le détail d'une participation.
+
+### `/outils/remboursements/photos` — photos des concours
+**Accès** : réservé au rôle trésorerie.
+**Objectif** : visualiser les photos d'équipe jointes aux déclarations vocales de concours.
+**Description** : pêle-mêle des selfies d'équipe envoyés avec les déclarations sur `/concours/declarer-vocal`.
 
 ### `/outils/renouvellement` — campagne de renouvellement
 **Objectif** : relancer par email les anciens membres pour la saison suivante.
