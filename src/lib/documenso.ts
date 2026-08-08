@@ -78,27 +78,52 @@ export async function creerEnveloppe({
   const dernierePage = document.getPageCount();
   const positions = calculerPositionsSignature(signataires.length);
 
+  // Part de la case réservée au nom auto-rempli, à gauche de la signature
+  // (08/08/2026, retour Jérôme : sur un document multi-signataires, rien ne
+  // garantit qu'un nom écrit à la main dans le PDF corresponde à la case
+  // effectivement signée par cette personne — `NAME` est un type de champ
+  // Documenso natif, rempli automatiquement avec le nom du destinataire au
+  // moment de la signature, donc structurellement lié au bon signataire).
+  const PART_LARGEUR_NOM = 0.42;
+
   const payload = {
     type: 'DOCUMENT',
     title: titre,
-    recipients: signataires.map((s, index) => ({
-      email: s.email,
-      name: s.nom,
-      role: 'SIGNER',
-      fields: [
-        {
-          // `identifier` désigne le fichier de l'enveloppe concerné (on
-          // n'en envoie toujours qu'un seul ici), pas le signataire —
-          // erreur "Document data not found" constatée en pratique avec
-          // 2 signataires quand on y mettait l'index du signataire
-          // (27/07/2026).
-          identifier: 0,
-          type: 'SIGNATURE',
-          page: dernierePage,
-          ...positions[index],
-        },
-      ],
-    })),
+    recipients: signataires.map((s, index) => {
+      const boite = positions[index];
+      const largeurNom = boite.width * PART_LARGEUR_NOM;
+      const largeurSignature = boite.width - largeurNom;
+      return {
+        email: s.email,
+        name: s.nom,
+        role: 'SIGNER',
+        fields: [
+          {
+            // `identifier` désigne le fichier de l'enveloppe concerné (on
+            // n'en envoie toujours qu'un seul ici), pas le signataire —
+            // erreur "Document data not found" constatée en pratique avec
+            // 2 signataires quand on y mettait l'index du signataire
+            // (27/07/2026).
+            identifier: 0,
+            type: 'NAME',
+            page: dernierePage,
+            positionX: boite.positionX,
+            positionY: boite.positionY,
+            width: largeurNom,
+            height: boite.height,
+          },
+          {
+            identifier: 0,
+            type: 'SIGNATURE',
+            page: dernierePage,
+            positionX: boite.positionX + largeurNom,
+            positionY: boite.positionY,
+            width: largeurSignature,
+            height: boite.height,
+          },
+        ],
+      };
+    }),
     meta: {
       subject: `Signature demandée — ${titre}`,
       message: `Bonjour, merci de signer le document "${titre}" pour le Carreau Boules et Pétanque Mondorf.`,
