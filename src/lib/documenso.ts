@@ -33,7 +33,13 @@ function calculerPositionsSignature(nombre: number): PositionChamp[] {
   const HAUTEUR = 7;
   const ECART_X = 4;
   const ECART_Y = 3;
-  const Y_BAS = 80; // bas de la zone signable — un peu remonté (retour Jérôme, 28/07/2026 : 88 était trop bas sur la page)
+  // Bas de la zone signable. Était à 88 puis remonté à 80 le 28/07/2026 (trop
+  // bas visuellement) ; redescendu à 90 le 08/08/2026 (retour Jérôme, cette
+  // fois pour l'effet inverse) : Documenso ne détecte pas la fin du texte
+  // d'un document, la case peut donc chevaucher un paragraphe qui va jusqu'en
+  // bas de page — plus elle est proche du bord, moins ce risque est probable.
+  // 90 + HAUTEUR (7) = 97 : reste sur la page avec une marge de sécurité de 3%.
+  const Y_BAS = 90;
 
   if (nombre === 1) {
     return [{ positionX: 50 - LARGEUR_MAX / 2, positionY: Y_BAS, width: LARGEUR_MAX, height: HAUTEUR }];
