@@ -428,3 +428,85 @@ Deux bugs root-causés à cause de cette séparation : (1) Assistant Caro en err
 Retour explicite de Jérôme : le flux dev→prod doit être "le plus propre possible pour éviter des erreurs par la suite". Tant que `dev` contient des outils de test (bypass de connexion, comptes fictifs, expérimentations abandonnées comme Voiceflow), **un `git merge dev` en bloc vers `main` est à proscrire** — ça ferait fuiter ce code (même désactivé par condition d'environnement) dans l'historique de production. À la place : `git checkout main && git checkout -b release/xxx && git cherry-pick <commits utiles un par un>`, vérifier le diff final ne contient aucun fichier de tooling dev (`git diff --stat main release/xxx`), `npm run build` pour valider, puis fast-forward `main` sur cette branche. Appliqué le 06/08/2026 : 4 commits cherry-pickés (réorg `/moncaro` + concours-IA), bypass de connexion et code Voiceflow laissés hors de `main`.
 
 **État actuel** : note #125 en production (`main`, poussé), branche `dev` toujours en avance sur `main` (contient le bypass de connexion, à garder uniquement là). Quota Gemini vérifié le 06/08/2026 : clé API fonctionnelle (test direct `200 OK`), garde-fou interne (`assistant_utilisation`, 40 appels/jour/personne) jamais atteint (max observé : 27) — pas de dépassement réel constaté malgré l'inquiétude initiale de Jérôme.
+
+## Session du 24/08/2026 — module Tournoi, socle posé (moteur + schéma + actions)
+
+**Origine.** Le 23/08 j'ai construit pour Jérôme une application autonome (fichier HTML unique, `localStorage`) pour arbitrer le tournoi interne du club le jour même : 12 équipes, 4 parties, système suisse, feuilles A4 imprimables. Elle a servi. Jérôme a ensuite demandé de la généraliser et de l'intégrer ici comme outil CA supplémentaire, avec paramétrage et import de la composition des équipes.
+
+**Décisions prises avec lui (24/08)** :
+- **Emplacement** : la V2 (ici), pas `carreau-mondorf-app` — archivée depuis le 01/08. Route `/outils/tournoi`.
+- **Deux formats** : `equipes_fixes` (système suisse, équipes composées au départ, classement par équipe — le tournoi du 23/08) ET `melee` (équipes retirées au sort à chaque partie parmi les joueurs, classement individuel — le format du cochon à la broche du 27/09). Taille d'équipe paramétrable : tête-à-tête, doublettes, triplettes.
+- **Import** : choix dans le registre des membres, fichier Excel/CSV, photo/PDF lu par l'IA (Gemini, même motif que `/api/concours-ia`). Le mode « coller du texte » a été écarté.
+- **Accès** : CA uniquement, lecture comme écriture. Si un jour on veut exposer le classement aux joueurs, une policy de lecture suffira — le modèle n'a pas besoin de bouger.
+
+### Ce qui est fait
+
+- `supabase/migrations/0059_tournois.sql` — **appliquée en production le 24/08**. Six tables, RLS CA-only, triggers d'audit sur `tournois` et `tournoi_rencontres`.
+- `src/lib/tournoi/moteur.ts` — appariements, terrains, classement. Sans Supabase, sans React, sans effet de bord : c'est ce qui permet de le simuler avant de le brancher.
+- `src/lib/tournoi/donnees.ts` — lecture (chargement complet d'un tournoi en quatre requêtes, classement calculé selon le format).
+- `src/lib/actions/tournoi.ts` — écriture (création/modification, participants, équipes de départ, composition d'une partie, saisie de score, clôture).
+- `scripts/verifier-moteur.ts` — 2 200 tournois simulés, générateur déterministe. Tout vert.
+- `scripts/verifier-schema-tournoi.js` — scénario complet contre la vraie base **dans une transaction annulée** (rien n'est laissé) : tables, RLS, contraintes, cascades, journalisation. Tout vert.
+
+### Le choix de modèle qui porte tout
+
+`tournoi_equipes.partie_id` à `NULL` = équipe permanente (équipes fixes, réutilisée à chaque partie) ; non-`NULL` = équipe tirée pour cette partie-là (mêlée). **Une seule structure sert les deux formats** — rencontres, scores et classement ne sont pas dupliqués par format. Ne pas « simplifier » ça en séparant les deux formats : c'est ce qui garderait le classement et les feuilles imprimables communs.
+
+### Trois défauts trouvés par le banc d'essai, et corrigés
+
+1. **Le système suisse échouait vraiment à la limite N−1** (39 tournois sur 200 avec revanches à 6 équipes / 5 parties) : l'appariement n'optimise que le tour courant et se peint dans un coin. Corrigé par une bascule automatique sur un **calendrier toutes rondes** (méthode du cercle, `calendrierToutesRondes()`) dès que `nbParties >= nbEquipes - 1` : zéro revanche par construction. 0/200 depuis.
+2. **La contrainte « jamais deux fois le même adversaire » en mêlée était une erreur de conception de ma part.** En groupant les joueurs par niveau, les vainqueurs se retrouvent nécessairement entre eux : l'app aurait alerté à presque chaque tour sur une contrainte intenable. La bonne contrainte dure en mêlée c'est **le coéquipier** (0,00 répétition mesurée sur toutes les campagnes) ; les adversaires revus sont désormais *minimisés et comptés* (`repetitionsAdversaires`), pas interdits. **Ne pas re-durcir cette contrainte** sans relancer le banc d'essai.
+3. **Régression sur l'attribution des terrains** (4,61 répétitions contre ~1 dans la version autonome) : mon glouton était plus faible que le tirage exhaustif d'origine. Remplacé par une recherche exacte avec élagage quand une rencontre tient par terrain.
+
+**Limite assumée, à ne pas prendre pour un bug** : sur les configurations serrées (8 équipes pour 4 terrains, 20 équipes pour 4 terrains) il reste ~13 à 30 répétitions de terrain par tournoi. La composition se fait tour par tour, l'algorithme ne peut pas revenir sur les tours passés. C'est structurel.
+
+### Pages livrées (même session)
+
+- `src/app/outils/tournoi/page.tsx` — liste + création (`NouveauTournoiForm.tsx`), charte Riviera.
+- `src/app/outils/tournoi/[id]/page.tsx` + `src/components/TournoiEcran.tsx` — écran de conduite en onglets : Participants (sélection dans le registre + invités manuels + composition des équipes de départ), Partie 1..N (tirage, terrains, saisie des scores), Classement (départage, clôture).
+- Tuile ajoutée dans `/outils/page.tsx` (icône `Dices`) et entrée rédigée dans `BASE_CONNAISSANCE_FONCTIONNALITES.md`.
+
+**Vérifié** : `npm run build`, `npx tsc --noEmit` et ESLint passent ; la route répond 200 en local sans erreur serveur ni console. **Non vérifié visuellement en session** : les écrans derrière le garde CA — pas de session authentifiée disponible côté Claude (OTP par email, et le bypass de connexion vit sur `dev`, pas sur `main`). À regarder connecté avant de considérer l'UI validée.
+
+### Feuilles imprimables livrées (même session)
+
+`src/components/TournoiPdf.tsx` — trois documents `@react-pdf/renderer`, générés **dans le navigateur** (même motif que `FichesMembresPdf.tsx`, palette de la charte v2 en littéral puisque react-pdf n'a pas accès aux variables CSS) :
+
+- **Liste** — les équipes sur trois colonnes en équipes fixes ; en mêlée, la liste alphabétique des joueurs (les équipes y changent à chaque partie, imprimer « les équipes » n'aurait pas de sens).
+- **Partie** — tableau terrain / équipe / score / équipe. Quand les scores ne sont pas saisis, les cases sortent **vides** et le sous-titre indique « feuille de match à remplir » : c'est la feuille qu'on distribue au lancement du tour. Une fois saisis, les scores sont imprimés. Bouton « Toutes les parties » = une page par partie.
+- **Classement** — départage rappelé, ex æquo marqués « = ».
+
+**Vérifié visuellement** : PDF A4 (210 × 297 mm) rendus page par page et inspectés. Un défaut trouvé et corrigé au passage — le sous-titre du classement débordait à droite, la colonne de texte de l'en-tête n'avait pas de `flex: 1` et ne passait donc pas à la ligne.
+
+### Import Excel/CSV et photo IA livrés (même session)
+
+`src/lib/tournoi/import.ts` — analyse pure et testable d'un tableau de cellules brutes (deux dispositions : « large », une ligne par équipe, ou « longue », une ligne par joueur ; plus un lecteur CSV maison qui gère guillemets et virgules protégées). `scripts/verifier-import-tournoi.ts` couvre ces cas avec des exemples concrets — dont la vraie liste manuscrite du tournoi du 23/08 (« 9) Hebisch Jemp », « 12) Jérôme, Marc, Jean »).
+
+Deux vrais défauts trouvés par ce banc d'essai et corrigés :
+1. **Numéro collé au premier joueur** (« 9) Hebisch Jemp ») non reconnu — `extraireNumeroEquipe()` sépare maintenant le préfixe numérique du reste de la cellule.
+2. **Détection d'en-tête trop permissive** : une ligne de données contenant le mot « équipe » (« Équipe 3, Mahnen Jeanny, … ») était prise pour un en-tête de colonnes et **supprimée en silence**. Un en-tête exige maintenant que TOUTES les cellules non vides soient des intitulés reconnus.
+
+`src/lib/actions/tournoiImport.ts` — deux actions CA-only :
+- `rapprocherParticipants()` réutilise `rapprocherNom()` (fuzzyMatch, déjà en prod pour les remboursements concours) pour proposer un licencié du registre en face de chaque nom lu ; refuse de trancher entre homonymes plausibles (`statut: 'ambigu'`) plutôt que de deviner.
+- `analyserFichierParticipants()` fait lire une photo/PDF par Gemini (`generateObject`, même motif que `/api/concours-ia`), repasse le résultat par le même analyseur de texte pour ne pas dupliquer la logique de nettoyage.
+
+`src/components/TournoiImport.tsx` — panneau à deux entrées (fichier vs photo) débouchant TOUJOURS sur un tableau de correction avant tout enregistrement ; lignes non confirmées surlignées, sélecteur de licencié par ligne, numéro d'équipe éditable.
+
+**Bug réel trouvé en testant le chemin IA en conditions réelles (pas en mock)** : `generateObject` n'avait aucun délai maximum — un `503` de l'API Gemini (constaté en vrai pendant ce test : surcharge momentanée côté Google) laissait l'écran bloqué indéfiniment sur « Lecture en cours… », sans queaucun message. Corrigé par `AbortSignal.timeout(25_000)` + un message dédié (« service surchargé, réessayez ou utilisez l'Excel/CSV »). Piège au passage : `AbortSignal.timeout()` lève un `TimeoutError`, pas un `AbortError` — la détection doit tester les deux noms.
+
+### Écran de modification d'un tournoi livré (même session)
+
+`src/components/TournoiParametresChamps.tsx` — le jeu de champs (nom/date/format/taille/parties/terrains/points) extrait de `NouveauTournoiForm.tsx` pour être partagé avec l'édition, plutôt que dupliqué.
+
+`src/components/TournoiReglages.tsx` — panneau « Paramètres » dans l'en-tête de l'écran de conduite : modifier (`modifierTournoi()`) et supprimer (`supprimerTournoi()`, confirmation + redirection vers `/outils/tournoi`). Format et taille d'équipe se grisent dès qu'une partie est composée, avec le message qui explique pourquoi.
+
+**Exigence produit du 23/07 comblée au passage** : elle dit explicitement « ajout, modification, ou **suppression** », mais `0059` n'avait câblé que les deux premiers. `supabase/migrations/0060_tournois_journal_suppression.sql` (appliquée en prod) ajoute la branche `DELETE` à `journaliser_modification()` (fonction partagée, sans impact sur les tables qui l'utilisaient déjà) et des triggers `AFTER DELETE` sur `tournois` et `tournoi_parties`. Vérifié en transaction annulée contre la vraie base : création + suppression manuelle d'une partie + suppression en cascade du tournoi entier sont bien tracées séparément (la cascade génère une ligne par partie emportée — voulu, pas un doublon).
+
+**Bug réel trouvé en testant contre la vraie base (pas un test qui aurait « dû passer »)** : les champs `disabled` (format et taille d'équipe verrouillés) sont **exclus de `FormData`** au submit — HTML natif, pas un bug React. Le serveur recevait donc `tailleEquipe: NaN` au lieu du refus attendu sur `nbParties`, et affichait le mauvais message d'erreur. Corrigé par des `<input type="hidden">` portant la valeur verrouillée à côté du contrôle visuellement désactivé. Reproductible avec n'importe quel champ `disabled` dans un `<form>` non contrôlé — à garder en tête si un futur formulaire de l'app verrouille un champ de la même façon.
+
+### Reste à faire
+
+- L'import photo n'a pu être vérifié que jusqu'à l'écran d'erreur (l'API Gemini était réellement surchargée pendant la session, 503 confirmé en curl direct hors app) — le chemin heureux (photo → JSON → tableau de correction rempli) n'a pas été vu de mes propres yeux, seulement raisonné à partir du code. À revérifier quand l'API répond normalement.
+- Module Tournoi désormais complet côté fonctionnalités prévues (création, participants + 3 imports, équipes, parties, scores, classement, PDF, modification/suppression). Reste, si besoin plus tard : exposer le classement en lecture aux joueurs (une policy de lecture suffirait, le modèle n'a pas à bouger).
+- Feuilles imprimables (liste des équipes, rencontres partie par partie, classement) — la version autonome les a déjà, à porter avec `@react-pdf/renderer`.
+- Écran de modification des paramètres d'un tournoi existant (`modifierTournoi` et `supprimerTournoi` existent côté action, pas encore d'UI).
