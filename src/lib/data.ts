@@ -8,10 +8,20 @@ import type { ClassementDivisionD2, EvolutionPoint } from './types';
  *  RPC dédiée (montants_club(), migration 0042) : parametres_club n'est
  *  lisible par un anonyme via aucune policy directe. */
 export async function getMontantCotisation(): Promise<number | null> {
-  const { data, error } = await supabase.rpc('montants_club');
-  if (error) throw error;
-  const ligne = (data as { montant_carte_membre: number | null }[] | null)?.[0];
-  return ligne?.montant_carte_membre ?? null;
+  // Ne jamais relancer l'erreur : /club est prérendue au build, et un throw ici
+  // faisait échouer la compilation ENTIÈRE dès que Supabase était injoignable
+  // (constaté en continu sur les previews Vercel, dont la base de test a été
+  // supprimée le 25/08/2026). La page gère déjà `null` — elle affiche alors
+  // « Montant fixé annuellement par le comité — nous contacter ». Un montant
+  // d'affichage optionnel ne doit pas pouvoir casser un déploiement.
+  try {
+    const { data, error } = await supabase.rpc('montants_club');
+    if (error) throw error;
+    const ligne = (data as { montant_carte_membre: number | null }[] | null)?.[0];
+    return ligne?.montant_carte_membre ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Reproduit exactement getClassementDivisionD2() de DivisionD2Backend.gs :
