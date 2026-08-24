@@ -513,6 +513,18 @@ Deux vrais défauts trouvés par ce banc d'essai et corrigés :
 
 L'API Gemini a été épinglée sur `gemini-3.6-flash` (voir plus haut) ; retest avec une image reconstituant fidèlement la vraie liste manuscrite du 23/08 (imprimé équipes 1-11 + ajout manuscrit « 12) Jérôme, Marc, Jean ») envoyée par le vrai flux client → base64 → serveur → Gemini → rapprochement registre. **28 secondes, 34 participants, 12 équipes correctement reconstituées**, y compris l'équipe 9 incomplète et l'équipe 12 manuscrite. Le rapprochement au registre a même récupéré des accents manquants (« Walte » → « WALTE »). Le point d'import photo qui restait ouvert est clos.
 
+### Base Supabase de test abandonnée, et le build rendu résistant (25/08/2026)
+
+Décision de Jérôme : la base Supabase de test (`vcwbbndgvbxbluqprsdy`) est abandonnée, le slot du plan gratuit servira au projet de signature (le parapheur). Elle avait déjà été supprimée, ce qui faisait **échouer toutes les previews Vercel** — `/club` est prérendue au build, appelait `getMontantCotisation()`, qui faisait un `throw` si Supabase ne répondait pas, et faisait tomber la compilation entière.
+
+Le vrai risque n'était pas le bruit : **un check toujours rouge cesse d'être un signal**, et une vraie régression de build serait passée inaperçue.
+
+Corrigé à la racine plutôt qu'en recréant une base : `getMontantCotisation()` (`src/lib/data.ts`) renvoie désormais `null` au lieu de relancer l'erreur. La page gérait déjà ce cas (« Montant fixé annuellement par le comité — nous contacter »). Un montant d'affichage optionnel ne doit pas pouvoir casser un déploiement.
+
+Vérifié dans les deux sens : build lancé en pointant volontairement sur la base morte → **47/47 pages générées, compilation réussie** ; puis config de production restaurée → le vrai montant (20,00 EUR) s'affiche toujours, le repli ne se déclenche pas à tort.
+
+**Conséquence pour la suite** : plus besoin de seconde base pour que les previews compilent. Si d'autres pages publiques prérendues venaient à échouer pour la même raison, appliquer le même principe — ne jamais laisser une donnée d'affichage optionnelle faire tomber le build.
+
 ### Connaissances de Caro remises à jour (25/08/2026)
 
 Caro a **deux** sources, et seule la première se met à jour toute seule :
