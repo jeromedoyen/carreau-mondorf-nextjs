@@ -89,7 +89,7 @@ Le montant d'inscription est celui payé par l'équipe entière, en euros.`;
 
 export async function extraireDeclaration(transcript: string): Promise<DeclarationVocaleExtraite> {
   const { object } = await generateObject({
-    model: google('gemini-flash-latest'),
+    model: google('gemini-3.6-flash'),
     schema: schemaDeclarationVocale,
     system: CONSIGNE_EXTRACTION,
     prompt: transcript,

@@ -84,7 +84,7 @@ Voici une base de connaissance détaillée, page par page, de l'application — 
 ${chargerBaseConnaissance()}`;
 
   const result = streamText({
-    model: google('gemini-flash-latest'),
+    model: google('gemini-3.6-flash'),
     system: systeme,
     messages: await convertToModelMessages(messages),
     stopWhen: isStepCount(3),

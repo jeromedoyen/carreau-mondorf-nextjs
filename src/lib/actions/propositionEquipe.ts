@@ -216,7 +216,7 @@ Pour chacune des deux stratégies, donne une estimation chiffrée (0-100) de la 
   let objet: CompositionEquipe;
   try {
     const resultat = await generateObject({
-      model: google('gemini-flash-latest'),
+      model: google('gemini-3.6-flash'),
       schema: SchemaComposition,
       prompt,
     });

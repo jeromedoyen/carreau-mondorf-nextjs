@@ -159,7 +159,7 @@ export async function analyserFichierParticipants(
     // « Lecture en cours… » indéfiniment. 25 s laisse le temps d'une photo
     // normale tout en donnant, sinon, un message exploitable.
     const { object } = await generateObject({
-      model: google('gemini-flash-latest'),
+      model: google('gemini-3.6-flash'),
       schema: SCHEMA,
       abortSignal: AbortSignal.timeout(25_000),
       messages: [

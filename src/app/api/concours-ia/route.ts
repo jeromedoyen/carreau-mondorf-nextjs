@@ -97,7 +97,7 @@ Règles :
 - Saison en cours : ${saison}.`;
 
   const result = streamText({
-    model: google('gemini-flash-latest'),
+    model: google('gemini-3.6-flash'),
     system: systeme,
     messages: await convertToModelMessages(messages),
     stopWhen: isStepCount(4),
