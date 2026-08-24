@@ -211,6 +211,32 @@ Toutes les pages ci-dessous affichent "Réservé au comité" avec un bouton "Se 
 **Objectif** : visualiser les photos d'équipe jointes aux déclarations vocales de concours.
 **Description** : pêle-mêle des selfies d'équipe envoyés avec les déclarations sur `/concours/declarer-vocal`.
 
+### `/outils/tournoi` — tournois du club
+**Objectif** : conduire un concours interne de bout en bout, de la composition des équipes au classement final.
+**Description** : liste des tournois puis un écran de conduite par tournoi (onglets Participants / Partie 1..N / Classement).
+
+Deux **formats**, choisis à la création et figés dès la première partie composée :
+- **Équipes fixes** — les équipes sont composées au départ et ne changent plus. Les rencontres sont appariées par nombre de victoires (système suisse) : les 2 victoires se rencontrent entre elles, les 1 victoire entre elles, etc. Classement **par équipe**. Quand on demande autant de parties que l'effectif le permet (N−1 pour N équipes), l'outil bascule automatiquement sur un calendrier **toutes rondes** — chacun rencontre chacun une fois, aucune revanche possible.
+- **À la mêlée** — les équipes sont retirées au sort **à chaque partie** parmi les joueurs, en regroupant les joueurs de même niveau. Classement **individuel** : chaque joueur hérite du résultat de l'équipe dans laquelle il jouait ce tour-là. L'outil garantit qu'on ne rejoue jamais avec le même coéquipier ; réaffronter un adversaire est en revanche possible (c'est inévitable quand on groupe par niveau) et simplement minimisé.
+
+**Paramètres** : taille d'équipe (tête-à-tête, doublettes, triplettes), nombre de parties, nombre de terrains, points de la partie (13 par défaut). S'il y a plus de rencontres que de terrains, plusieurs rencontres partagent un terrain et se jouent en deux vagues.
+
+**Participants** : trois façons de constituer la liste, cumulables.
+- Sélection dans le registre du club, plus ajout manuel d'invités non licenciés.
+- Import d'un fichier Excel ou CSV — une ligne par équipe (numéro puis joueurs) ou une colonne de noms. Lu entièrement dans le navigateur.
+- Import d'une photo ou d'un PDF, lu par l'IA (Gemini) — fiable sur un document imprimé, approximatif sur du manuscrit.
+
+Les deux imports débouchent systématiquement sur un écran de correction : chaque nom lu est rapproché du registre (licencié proposé, ambiguïté signalée si plusieurs homonymes, sinon marqué invité), rien n'est enregistré avant validation. La liste se verrouille dès la première partie composée.
+
+**Règles de saisie** : un score n'est compté que s'il y a un vainqueur au but ; un score vide efface une saisie erronée. Une équipe exempte (effectif impair) est créditée d'une victoire, sans point marqué ni encaissé. Seule la **dernière** partie peut être annulée — retirer une partie du milieu invaliderait les appariements des suivantes. La clôture est refusée tant qu'un résultat manque.
+
+**Départage du classement** : victoires, puis goal-average (points marqués − encaissés), puis points marqués. Les strictement ex æquo sont marqués « = » et se départagent sur place.
+
+**Feuilles imprimables (PDF A4)** : trois exports depuis l'écran du tournoi.
+- *Liste* — les équipes sur trois colonnes (équipes fixes), ou la liste alphabétique des joueurs (mêlée).
+- *Rencontres d'une partie* — tableau terrain / équipe / score / équipe. Tant que les scores ne sont pas saisis, les cases sortent **vides** : c'est la feuille de match à distribuer au lancement du tour. Un bouton « Toutes les parties » sort une page par partie.
+- *Classement* — avec le rappel de la règle de départage.
+
 ### `/outils/renouvellement` — campagne de renouvellement
 **Objectif** : relancer par email les anciens membres pour la saison suivante.
 **Description** : cible toujours la saison active → la saison suivante (jamais l'inverse). Liste les personnes de la saison active n'ayant pas encore d'adhésion pour la saison suivante et disposant déjà d'un accès de connexion, avec un bouton d'envoi groupé.
