@@ -508,5 +508,32 @@ Deux vrais défauts trouvés par ce banc d'essai et corrigés :
 
 - L'import photo n'a pu être vérifié que jusqu'à l'écran d'erreur (l'API Gemini était réellement surchargée pendant la session, 503 confirmé en curl direct hors app) — le chemin heureux (photo → JSON → tableau de correction rempli) n'a pas été vu de mes propres yeux, seulement raisonné à partir du code. À revérifier quand l'API répond normalement.
 - Module Tournoi désormais complet côté fonctionnalités prévues (création, participants + 3 imports, équipes, parties, scores, classement, PDF, modification/suppression). Reste, si besoin plus tard : exposer le classement en lecture aux joueurs (une policy de lecture suffirait, le modèle n'a pas à bouger).
+
+### Import photo revérifié avec une vraie photo (25/08/2026) — succès complet
+
+L'API Gemini a été épinglée sur `gemini-3.6-flash` (voir plus haut) ; retest avec une image reconstituant fidèlement la vraie liste manuscrite du 23/08 (imprimé équipes 1-11 + ajout manuscrit « 12) Jérôme, Marc, Jean ») envoyée par le vrai flux client → base64 → serveur → Gemini → rapprochement registre. **28 secondes, 34 participants, 12 équipes correctement reconstituées**, y compris l'équipe 9 incomplète et l'équipe 12 manuscrite. Le rapprochement au registre a même récupéré des accents manquants (« Walte » → « WALTE »). Le point d'import photo qui restait ouvert est clos.
+
+### Connaissances de Caro remises à jour (25/08/2026)
+
+Caro a **deux** sources, et seule la première se met à jour toute seule :
+1. `BASE_CONNAISSANCE_FONCTIONNALITES.md`, lu au démarrage du serveur par `chargerBaseConnaissance()` — déjà à jour, le module Tournoi y était décrit.
+2. La **liste de pages codée en dur** dans `PROMPT_SYSTEME_ASSISTANT` (`src/lib/assistantPrompt.ts`) — celle-ci avait pris du retard.
+
+Le piège : le prompt ordonne à Caro de n'utiliser que les chemins « exactement comme listés ci-dessous ». Une page absente de cette liste ne sera donc **jamais proposée en lien**, même si la base de connaissance la décrit parfaitement. Décrire une page dans la base ne suffit pas — il faut aussi l'ajouter à la liste du prompt.
+
+Comparaison systématique routes réelles / prompt : ce n'était pas que le tournoi, **tout le module Concours manquait** (`/concours`, `/concours/declarer-vocal`, `/concours/declarer-ia`) alors qu'il s'adresse directement aux licenciés, ainsi que `/club`, `/moncaro/renouveler`, `/manifestations/protocole`, `/outils/parametres`, `/outils/remboursements` et `/outils`. Tout a été ajouté. Restent volontairement absentes : `/connexion` (le lien magique est déjà expliqué en prose), `/outils/assistant-questions` (diagnostic sur Caro elle-même) et `/outils/remboursements/photos` (sous-page).
+
+**Réflexe à garder** : à chaque nouvelle page, mettre à jour les DEUX — la base de connaissance ET la liste du prompt.
+
+Vérifié en interrogeant réellement `/api/assistant` : « Comment j'organise un tournoi du club ? », « Comment je déclare ma participation à un concours ? » et « Où imprimer la feuille de match ? » donnent des réponses exactes avec les bons liens cliquables.
+
+### Édition manuelle des équipes de départ (25/08/2026)
+
+Ajouté à la demande de Jérôme : dans l'onglet Participants (format équipes fixes), la carte « Équipes de départ » propose maintenant, une fois les équipes composées, un bouton **Modifier à la main** à côté de **Recomposer automatiquement**. Il ouvre un mode édition — un champ numéro d'équipe par joueur, pré-rempli avec son équipe actuelle, sur le même motif que le champ équipe déjà utilisé à l'import — pour déplacer un joueur d'une équipe à l'autre sans tout retirer au sort.
+
+- `enregistrerEquipesDepart()` (`src/lib/actions/tournoi.ts`) : persiste tel quel ce que l'organisateur a saisi, sans recalcul algorithmique (contrairement à `composerEquipesDepart()`, qui repart de zéro). Refuse sous les deux équipes ; une équipe totalement vidée disparaît simplement, les numéros restants sont renumérotés séquentiellement.
+- `lancer()` dans `TournoiEcran.tsx` a gagné un troisième paramètre optionnel `onSucces` (callback après succès, avant `router.refresh()`) — nécessaire ici pour refermer le panneau d'édition sur les vraies valeurs renumérotées par le serveur plutôt que de laisser un état local périmé affiché.
+
+**Vérifié en cliquant réellement dans l'app** (pas seulement typecheck/build) : composition automatique → passage en édition avec les bons numéros pré-remplis → déplacement d'un joueur (Charlie C, équipe 1 → 3) → sauvegarde → panneau refermé, composition correcte. Cas limite vérifié aussi : vider une équipe entière la fait disparaître et renumérote les suivantes (équipe 2 → 1, équipe 3 → 2) ; passer sous deux équipes désactive le bouton Enregistrer côté client avec le message qui l'explique ; Annuler restaure l'état sauvegardé sans rien persister.
 - Feuilles imprimables (liste des équipes, rencontres partie par partie, classement) — la version autonome les a déjà, à porter avec `@react-pdf/renderer`.
 - Écran de modification des paramètres d'un tournoi existant (`modifierTournoi` et `supprimerTournoi` existent côté action, pas encore d'UI).

@@ -3,13 +3,14 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, FileDown, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, FileDown, Pencil, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
 import { pdf, type DocumentProps } from '@react-pdf/renderer';
 import {
   annulerDernierePartie,
   cloturerTournoi,
   composerEquipesDepart,
   composerProchainePartie,
+  enregistrerEquipesDepart,
   enregistrerScore,
   remplacerParticipants,
   rouvrirTournoi,
@@ -90,13 +91,20 @@ export function TournoiEcran(p: Props) {
       .join(' · ');
   const numeroDe = (equipeId: number) => p.equipesParId[equipeId]?.numero ?? equipeId;
 
-  function lancer(action: () => Promise<{ ok: boolean; error?: string }>, message?: string) {
+  function lancer(
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    message?: string,
+    onSucces?: () => void,
+  ) {
     setErreur(null);
     setInfo(null);
     demarrer(async () => {
       const r = await action();
       if (!r.ok) setErreur(r.error ?? 'Action impossible.');
-      else if (message) setInfo(message);
+      else {
+        if (message) setInfo(message);
+        onSucces?.();
+      }
       router.refresh();
     });
   }
@@ -287,7 +295,7 @@ function VueParticipants({
   donneesPdf,
 }: Props & {
   enCours: boolean;
-  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string) => void;
+  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string, onSucces?: () => void) => void;
   membresDe: (id: number) => string;
   donneesPdf: DonneesPdf;
 }) {
@@ -493,33 +501,14 @@ function VueParticipants({
       </Carte>
 
       {tournoi.format === 'equipes_fixes' && participants.length >= 2 && !modifie && (
-        <Carte titre="Équipes de départ">
-          {equipesPermanentes.length === 0 ? (
-            <p className="mb-3 text-[12.5px] text-encre-douce">
-              Les équipes ne sont pas encore composées. Elles resteront les mêmes toute la journée.
-            </p>
-          ) : (
-            <ul className="mb-3 flex flex-col gap-1.5">
-              {equipesPermanentes.map((e) => (
-                <li key={e.id} className="text-[13.5px]">
-                  <span className="font-score mr-2 text-[15px] text-terracotta">{e.numero}</span>
-                  {membresDe(e.id)}
-                </li>
-              ))}
-            </ul>
-          )}
-          <button
-            type="button"
-            disabled={enCours}
-            onClick={() =>
-              lancer(() => composerEquipesDepart(tournoi.id), 'Équipes composées.')
-            }
-            className={`${BTN} bg-terracotta text-white`}
-          >
-            <Shuffle size={14} />
-            {equipesPermanentes.length === 0 ? 'Composer les équipes' : 'Recomposer les équipes'}
-          </button>
-        </Carte>
+        <EquipesDepart
+          tournoi={tournoi}
+          participants={participants}
+          equipesPermanentes={equipesPermanentes}
+          membresDe={membresDe}
+          enCours={enCours}
+          lancer={lancer}
+        />
       )}
 
       {participants.length > 0 && (
@@ -532,6 +521,156 @@ function VueParticipants({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Carte « Équipes de départ ». En lecture, elle affiche la composition
+ * actuelle avec deux leviers distincts :
+ *   - Recomposer : relance l'algorithme automatique depuis zéro (efface toute
+ *     retouche manuelle) ;
+ *   - Modifier à la main : ouvre un mode édition où chaque joueur reçoit un
+ *     champ « équipe » pré-rempli avec son affectation actuelle, sur le même
+ *     motif que le numéro d'équipe saisi à l'import — rien de nouveau à
+ *     apprendre pour l'organisateur qui a déjà utilisé l'un ou l'autre.
+ */
+function EquipesDepart({
+  tournoi,
+  participants,
+  equipesPermanentes,
+  membresDe,
+  enCours,
+  lancer,
+}: {
+  tournoi: Tournoi;
+  participants: Participant[];
+  equipesPermanentes: { id: number; numero: number; membres: number[] }[];
+  membresDe: (id: number) => string;
+  enCours: boolean;
+  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string, onSucces?: () => void) => void;
+}) {
+  type Affectation = { participantId: number; nom: string; numero: number };
+  const [edition, setEdition] = useState<Affectation[] | null>(null);
+
+  function demarrerEdition() {
+    const numeroDeParticipant = new Map<number, number>();
+    equipesPermanentes.forEach((e) => e.membres.forEach((pid) => numeroDeParticipant.set(pid, e.numero)));
+    const nomDe = new Map(participants.map((p) => [p.id, p.nom]));
+    const lignes = [...numeroDeParticipant.entries()]
+      .map(([participantId, numero]) => ({ participantId, nom: nomDe.get(participantId) ?? '?', numero }))
+      .sort((a, b) => a.numero - b.numero || a.nom.localeCompare(b.nom, 'fr'));
+    setEdition(lignes);
+  }
+
+  if (equipesPermanentes.length === 0) {
+    return (
+      <Carte titre="Équipes de départ">
+        <p className="mb-3 text-[12.5px] text-encre-douce">
+          Les équipes ne sont pas encore composées. Elles resteront les mêmes toute la journée.
+        </p>
+        <button
+          type="button"
+          disabled={enCours}
+          onClick={() => lancer(() => composerEquipesDepart(tournoi.id), 'Équipes composées.')}
+          className={`${BTN} bg-terracotta text-white`}
+        >
+          <Shuffle size={14} /> Composer les équipes
+        </button>
+      </Carte>
+    );
+  }
+
+  if (!edition) {
+    return (
+      <Carte titre="Équipes de départ">
+        <ul className="mb-3 flex flex-col gap-1.5">
+          {equipesPermanentes.map((e) => (
+            <li key={e.id} className="text-[13.5px]">
+              <span className="font-score mr-2 text-[15px] text-terracotta">{e.numero}</span>
+              {membresDe(e.id)}
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={enCours}
+            onClick={demarrerEdition}
+            className={`${BTN} bg-terracotta text-white`}
+          >
+            <Pencil size={14} /> Modifier à la main
+          </button>
+          <button
+            type="button"
+            disabled={enCours}
+            onClick={() => lancer(() => composerEquipesDepart(tournoi.id), 'Équipes composées.')}
+            className={`${BTN} border border-ligne bg-sable`}
+          >
+            <Shuffle size={14} /> Recomposer automatiquement
+          </button>
+        </div>
+      </Carte>
+    );
+  }
+
+  const numeros = [...new Set(edition.map((l) => l.numero))].sort((a, b) => a - b);
+
+  return (
+    <Carte titre="Modifier les équipes de départ">
+      <p className="mb-3 text-[12.5px] text-encre-douce">
+        Changez le numéro d&apos;équipe d&apos;un joueur pour le déplacer. Une équipe vidée de tous
+        ses joueurs disparaît simplement ; les numéros restants sont renumérotés à
+        l&apos;enregistrement.
+      </p>
+      <ul className="flex flex-col divide-y divide-ligne">
+        {edition.map((l, i) => (
+          <li key={l.participantId} className="flex items-center gap-3 py-2">
+            <span className="flex-1 text-[13.5px]">{l.nom}</span>
+            <input
+              type="number"
+              min={1}
+              value={l.numero}
+              onChange={(e) => {
+                const v = e.target.value ? Number(e.target.value) : l.numero;
+                setEdition((prev) => prev!.map((x, j) => (j === i ? { ...x, numero: v } : x)));
+              }}
+              className={`${CHAMP} w-16 text-center`}
+            />
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-[11.5px] text-encre-douce">
+        {numeros.length} équipe{numeros.length > 1 ? 's' : ''} après enregistrement.
+        {numeros.length < 2 && ' Il en faut au moins deux.'}
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={enCours || numeros.length < 2}
+          onClick={() =>
+            lancer(
+              () =>
+                enregistrerEquipesDepart(
+                  tournoi.id,
+                  edition.map((l) => ({ participantId: l.participantId, numero: l.numero })),
+                ),
+              'Équipes enregistrées.',
+              () => setEdition(null),
+            )
+          }
+          className={`${BTN} bg-terracotta text-white`}
+        >
+          <Check size={14} /> {enCours ? 'Enregistrement…' : 'Enregistrer les équipes'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEdition(null)}
+          className={`${BTN} border border-ligne bg-sable`}
+        >
+          <X size={14} /> Annuler
+        </button>
+      </div>
+    </Carte>
   );
 }
 
@@ -555,7 +694,7 @@ function VuePartie({
   numeroDe: (id: number) => number;
   partieComplete: (d: PartieDetail) => boolean;
   enCours: boolean;
-  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string) => void;
+  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string, onSucces?: () => void) => void;
   donneesPdf: DonneesPdf;
 }) {
   const detail = partiesDetail.find((d) => d.numero === numero);
@@ -660,7 +799,7 @@ function LigneRencontre({
   but: number;
   membresDe: (id: number) => string;
   numeroDe: (id: number) => number;
-  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string) => void;
+  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string, onSucces?: () => void) => void;
 }) {
   const [a, setA] = useState<string>(rencontre.scoreA?.toString() ?? '');
   const [b, setB] = useState<string>(rencontre.scoreB?.toString() ?? '');
@@ -749,7 +888,7 @@ function VueClassement({
   libelles: Record<number, string>;
   toutesJouees: boolean;
   enCours: boolean;
-  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string) => void;
+  lancer: (a: () => Promise<{ ok: boolean; error?: string }>, m?: string, onSucces?: () => void) => void;
   donneesPdf: DonneesPdf;
 }) {
   return (

@@ -228,6 +228,8 @@ Deux **formats**, choisis à la création et figés dès la première partie com
 
 Les deux imports débouchent systématiquement sur un écran de correction : chaque nom lu est rapproché du registre (licencié proposé, ambiguïté signalée si plusieurs homonymes, sinon marqué invité), rien n'est enregistré avant validation. La liste se verrouille dès la première partie composée.
 
+**Équipes de départ (format équipes fixes)** : une fois composées automatiquement (par numéro saisi, ou découpage automatique en triplettes/doublettes si aucun numéro), un bouton **Modifier à la main** permet de déplacer un joueur d'une équipe à l'autre sans tout retirer au sort — un champ numéro par joueur, comme à l'import. Vider une équipe la fait disparaître ; les numéros restants sont renumérotés. Toujours au moins deux équipes.
+
 **Règles de saisie** : un score n'est compté que s'il y a un vainqueur au but ; un score vide efface une saisie erronée. Une équipe exempte (effectif impair) est créditée d'une victoire, sans point marqué ni encaissé. Seule la **dernière** partie peut être annulée — retirer une partie du milieu invaliderait les appariements des suivantes. La clôture est refusée tant qu'un résultat manque.
 
 **Départage du classement** : victoires, puis goal-average (points marqués − encaissés), puis points marqués. Les strictement ex æquo sont marqués « = » et se départagent sur place.
