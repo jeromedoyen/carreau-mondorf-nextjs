@@ -273,6 +273,75 @@ export async function composerEquipesDepart(tournoiId: number): Promise<Resultat
   return { ok: true };
 }
 
+/**
+ * Enregistre une composition d'équipes de départ décidée à la main —
+ * l'organisateur déplace un joueur d'une équipe à l'autre après le tirage
+ * automatique de `composerEquipesDepart()`. Contrairement à celui-ci, aucun
+ * algorithme ne recalcule rien : la composition fournie fait foi telle
+ * quelle, on se contente de la valider et de la persister.
+ */
+export async function enregistrerEquipesDepart(
+  tournoiId: number,
+  affectations: { participantId: number; numero: number }[],
+): Promise<Resultat> {
+  const { supabase, erreur } = await contexteCA();
+  if (erreur) return { ok: false, error: erreur };
+
+  const complet = await getTournoiComplet(tournoiId);
+  if (!complet) return { ok: false, error: 'Tournoi introuvable.' };
+  if (complet.tournoi.format !== 'equipes_fixes') {
+    return { ok: false, error: 'Les équipes de départ ne concernent que le format à équipes fixes.' };
+  }
+  if (complet.parties.length > 0) {
+    return { ok: false, error: 'Le tournoi a commencé : les équipes sont figées.' };
+  }
+
+  const idsParticipants = new Set(complet.participants.map((p) => p.id));
+  const vus = new Set<number>();
+  for (const a of affectations) {
+    if (!idsParticipants.has(a.participantId)) return { ok: false, error: 'Participant inconnu dans cette composition.' };
+    if (vus.has(a.participantId)) return { ok: false, error: 'Un participant ne peut appartenir qu\'à une seule équipe.' };
+    vus.add(a.participantId);
+    if (!Number.isInteger(a.numero) || a.numero < 1) return { ok: false, error: 'Numéro d\'équipe invalide.' };
+  }
+  if (vus.size !== complet.participants.length) {
+    return { ok: false, error: 'Chaque participant doit être affecté à une équipe.' };
+  }
+
+  const parNumero = new Map<number, number[]>();
+  for (const a of affectations) {
+    const l = parNumero.get(a.numero) ?? [];
+    l.push(a.participantId);
+    parNumero.set(a.numero, l);
+  }
+  // Une équipe vide ne veut rien dire : si l'organisateur a vidé une équipe en
+  // déplaçant tout le monde ailleurs, elle disparaît simplement.
+  const numeros = [...parNumero.keys()].sort((a, b) => a - b);
+  if (numeros.length < 2) return { ok: false, error: 'Il faut au moins deux équipes.' };
+
+  await supabase.from('tournoi_equipes').delete().eq('tournoi_id', tournoiId).is('partie_id', null);
+
+  const { data: creees, error } = await supabase
+    .from('tournoi_equipes')
+    .insert(numeros.map((n, i) => ({ tournoi_id: tournoiId, partie_id: null, numero: i + 1 })))
+    .select('id, numero');
+  if (error || !creees) return { ok: false, error: error?.message ?? 'Création des équipes impossible.' };
+
+  const membresLignes: { equipe_id: number; participant_id: number }[] = [];
+  creees
+    .sort((a, b) => a.numero - b.numero)
+    .forEach((eq, i) => {
+      for (const pid of parNumero.get(numeros[i]) ?? []) {
+        membresLignes.push({ equipe_id: eq.id, participant_id: pid });
+      }
+    });
+  const { error: eM } = await supabase.from('tournoi_equipe_membres').insert(membresLignes);
+  if (eM) return { ok: false, error: eM.message };
+
+  revalidatePath(`/outils/tournoi/${tournoiId}`);
+  return { ok: true };
+}
+
 // ------------------------------------------------------------- les parties
 
 export type ResultatComposition =
