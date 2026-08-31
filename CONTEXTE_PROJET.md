@@ -549,3 +549,44 @@ Ajouté à la demande de Jérôme : dans l'onglet Participants (format équipes 
 **Vérifié en cliquant réellement dans l'app** (pas seulement typecheck/build) : composition automatique → passage en édition avec les bons numéros pré-remplis → déplacement d'un joueur (Charlie C, équipe 1 → 3) → sauvegarde → panneau refermé, composition correcte. Cas limite vérifié aussi : vider une équipe entière la fait disparaître et renumérote les suivantes (équipe 2 → 1, équipe 3 → 2) ; passer sous deux équipes désactive le bouton Enregistrer côté client avec le message qui l'explique ; Annuler restaure l'état sauvegardé sans rien persister.
 - Feuilles imprimables (liste des équipes, rencontres partie par partie, classement) — la version autonome les a déjà, à porter avec `@react-pdf/renderer`.
 - Écran de modification des paramètres d'un tournoi existant (`modifierTournoi` et `supprimerTournoi` existent côté action, pas encore d'UI).
+
+## Session du 31/08/2026 — saisie de la journée 12 D2, et une fausse manœuvre sur la journée 11
+
+### Journée 12 enregistrée (Carreau Mondorf 44 – Schierener Bullemettïen 19)
+
+Saisie depuis la feuille de match du 29/08/2026 fournie en PDF. La rencontre existait déjà en `Prévue` (id 10, saison 2026) : passée en `Jouée`, 44-19, Victoire, avec 20 parties insérées.
+
+Le texte du PDF sort dans le désordre — il a fallu le reconstruire **par position** (`fitz`, regroupement des mots par ordonnée) plutôt que par `get_text()` brut, qui mélange les quatre parties.
+
+**Garde-fou posé avant l'écriture** : le script recalcule les quatre sous-totaux depuis les parties et refuse d'écrire si le total ne redonne pas le score de la feuille. Les quatre tombent juste — 10-8 en tête-à-tête, 15-0 en triplettes, 9-6 en doublettes, 10-5 en dernières triplettes.
+
+**Correspondance des prénoms.** La feuille ne donne que des prénoms côté Mondorf, alors que `parties_d2.joueurs_cm` stocke la forme du registre (`NOM Prénom`). Sept se résolvent seuls (un seul porteur au registre, ou le suffixe qui tranche : `yann B` → BEGUE, `yann LB` → LE BERRE). Deux avaient deux candidats et ont été tranchés sur **qui a effectivement été aligné cette saison** :
+- `christophe` → **COLPIN Christophe** (MOREL Christophe existe mais n'a jamais joué en D2 ; Colpin sept fois) ;
+- `eric` → **OCHEM Eric** (FILET Eric jamais aligné ; Ochem six fois).
+
+⚠️ **À confirmer par Jérôme sur la feuille papier.** Stéphane MARION et Michel PRYBYLA font par ailleurs leur première apparition en D2 cette saison — cohérent avec une rotation, mais à vérifier aussi.
+
+Côté adverse, le prénom seul est stocké (convention des journées précédentes) ; les noms de famille de Schieren sont conservés dans `rencontres_d2.notes`.
+
+### ⚠️ Le piège de la colonne `supprime` — erreur commise puis réparée
+
+En vérifiant, la J11 apparaissait avec **60 parties au lieu de 20**, chaque partie en triple sous trois orthographes de joueurs (une passe en forme courte « Yann B », deux en forme complète). Diagnostic posé : doublons corrompant les statistiques par joueur. **Ce diagnostic était faux.**
+
+`parties_d2` a une colonne de **suppression logique** `supprime`, et `getStatistiquesJoueursD2()` (`src/lib/stats.ts`) filtre dessus (`.eq('supprime', false)`). Sur les 60 lignes, **20 seulement étaient actives** ; les 40 autres étaient l'historique neutralisé de deux saisies antérieures. Les statistiques n'ont donc **jamais** compté la J11 en triple — elles étaient justes.
+
+Le nettoyage appliqué (« garder la forme canonique de plus petit identifiant ») a retenu une copie neutralisée et supprimé physiquement les lignes actives : la J11 a temporairement cessé de compter dans les statistiques. Réparé en constatant que les 20 lignes conservées étaient **identiques** aux 20 supprimées sur toutes les colonnes de contenu (seuls `id` et `supprime` différaient), puis en repassant `supprime` à `false`. Les données actives sont exactement celles d'avant l'intervention. Les 40 lignes d'historique sont perdues — Jérôme a explicitement choisi de ne pas les restaurer.
+
+**Réflexe à garder** : avant de traiter des lignes comme des doublons dans ce schéma, **regarder s'il existe une colonne de suppression logique** et raisonner sur les lignes actives seulement. Vérifier aussi ce que filtre la requête de lecture concernée, pas seulement le contenu de la table.
+
+### Vérification des statistiques (en appelant la fonction réelle, pas une réécriture)
+
+Contrôle mené avec `npx tsx` en important directement `getStatistiquesJoueursD2()` — c'est-à-dire le code que l'application exécute, pas une réimplémentation qui aurait pu diverger.
+
+- **17 joueurs, aucune forme courte résiduelle** dans `joueurs_cm` sur toute la saison. C'était le vrai risque : `reduireStatistiquesD2()` regroupe par `cleNomMajuscules(nom)`, donc « Yann B » et « BEGUE Yann » auraient produit deux joueurs distincts.
+- **360 couples joueur×partie**, soit exactement 10 journées × 9 joueurs × 4 parties.
+- Pour chaque joueur, `parties = journées × 4`, et jamais deux parties dans la même phase d'une même journée.
+- **Le score de chacune des dix rencontres se reconstitue exactement** depuis les points attribués aux joueurs (en divisant par la taille de l'équipe, les points étant crédités à chaque équipier).
+
+### Reste ouvert
+
+`division_d2_resultats` (résultats de toute la poule, tous clubs) s'arrête à la **journée 10** pour la saison 2026 : J11 et J12 manquent. Cette table demande les résultats des sept clubs publiés par la fédération, hors de ce qui figure sur notre feuille de match — rien n'a été inventé.
