@@ -564,7 +564,7 @@ Le texte du PDF sort dans le désordre — il a fallu le reconstruire **par posi
 - `christophe` → **COLPIN Christophe** (MOREL Christophe existe mais n'a jamais joué en D2 ; Colpin sept fois) ;
 - `eric` → **OCHEM Eric** (FILET Eric jamais aligné ; Ochem six fois).
 
-⚠️ **À confirmer par Jérôme sur la feuille papier.** Stéphane MARION et Michel PRYBYLA font par ailleurs leur première apparition en D2 cette saison — cohérent avec une rotation, mais à vérifier aussi.
+✔ **Confirmé par Jérôme le 31/08/2026** : les deux lectures sont les bonnes. Stéphane MARION et Michel PRYBYLA font par ailleurs leur première apparition en D2 cette saison — c'est une rotation, pas une erreur de lecture.
 
 Côté adverse, le prénom seul est stocké (convention des journées précédentes) ; les noms de famille de Schieren sont conservés dans `rencontres_d2.notes`.
 
