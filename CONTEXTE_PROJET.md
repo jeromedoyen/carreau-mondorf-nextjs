@@ -590,3 +590,47 @@ Contrôle mené avec `npx tsx` en important directement `getStatistiquesJoueursD
 ### Reste ouvert
 
 `division_d2_resultats` (résultats de toute la poule, tous clubs) s'arrête à la **journée 10** pour la saison 2026 : J11 et J12 manquent. Cette table demande les résultats des sept clubs publiés par la fédération, hors de ce qui figure sur notre feuille de match — rien n'a été inventé.
+
+## Session du 01/09/2026 — classement D2 : ce n'est pas la même table que les feuilles de match
+
+### Le piège à retenir
+
+Jérôme signale que le « Classement à cette journée » de la D2 est faux après la saisie de la J12. Il l'était — mais **enregistrer une feuille de match n'alimente pas le classement**.
+
+Deux chaînes de données distinctes, à ne pas confondre :
+
+| Écran | Table lue | Contenu |
+|---|---|---|
+| Statistiques joueurs, détail d'une rencontre | `rencontres_d2` + `parties_d2` | **nos** rencontres, partie par partie |
+| **Classement de la division** | `division_d2_resultats` | les résultats de **toute la poule**, tous clubs |
+
+`getClassementDivisionD2()` (`src/lib/data.ts`) ne lit que la seconde. Elle s'arrêtait à la **journée 10** : le classement ignorait J11 et J12, et affichait Carreau Mondorf avec 8 rencontres jouées au lieu de 10.
+
+**Réflexe** : après une feuille de match, penser à la table de poule. Les deux ne se remplissent pas ensemble.
+
+### Source des résultats de poule : le PDF de la FLBP
+
+La fédération publie un tableau « Résultats Championnat National - Division 2 » couvrant toute la saison, en PDF, lié depuis la section *Résultats interclubs* de `flbp.lu` — au 01/09/2026 : `https://flbp.lu/wp-content/uploads/2026/08/Resultats-J-11.pdf`.
+
+**Le PDF est une image, sans couche texte** : `get_text()` renvoie vide. Il faut le rendre (`fitz`, `get_pixmap`) puis le lire visuellement. `pdftoppm` n'est pas installé sur le poste, PyMuPDF suffit.
+
+**Les journées 1 à 10 déjà en base ont été recoupées ligne à ligne avec ce PDF : elles concordent toutes**, scores et clubs exemptés compris.
+
+### Journée 11 insérée (4 lignes : 3 rencontres + 1 exempt)
+
+- CBC Belvaux-Metzerlach 38 – 25 Carreau Mondorf (25/07)
+- A Rifat Steinfort 25 – 38 Stenemer Bulls Steinheim (25/07)
+- KaBoule 32 – 31 Club Bouliste Lasauvage (26/07)
+- exempt : Schierener Bullemettïen
+
+Deux garde-fous dans le script d'insertion : notre propre rencontre devait concorder avec `rencontres_d2` (25‑38 des deux côtés — elle concorde), et la journée devait couvrir **exactement les sept clubs une seule fois**. `source_id` préfixé `DIVD2-FLBP-2026-J11-*` pour tracer la provenance.
+
+⚠️ **Normaliser les noms de clubs sur les orthographes déjà en base** — le classement regroupe par chaîne de caractères. Le PDF écrit « Stenemer Bulls », « KaBoule Käerjeng » et « "A Rifat" Steinfort », là où la base porte « Stenemer Bulls Steinheim », « KaBoule » et « A Rifat Steinfort ».
+
+Classement obtenu à l'issue de la J11 : KaBoule 1er (10 j., 8 v., +68), **Carreau Mondorf 2e (9 j., 7 v., +121)**, puis Schieren, Steinfort, Belvaux, Lasauvage, Steinheim.
+
+### Reste ouvert
+
+**La J12 ne peut pas être complétée** : la fédération n'a publié que jusqu'à la J11, et notre feuille ne donne que notre rencontre. N'insérer que la ligne Mondorf–Schieren fausserait le tableau (deux clubs à 11 rencontres, cinq à 10). À reprendre dès la parution du PDF de la J12.
+
+**Le tri du classement est une approximation** assumée depuis la V1 (`DivisionD2Backend.gs`) et documentée dans le commentaire de `getClassementDivisionD2()` : victoires, puis différence de points, puis points faits — faute du barème officiel FLBP. C'est ce qui place KaBoule devant Mondorf malgré +68 contre +121, avec une rencontre de plus jouée. Si la fédération publie son propre classement, il vaudrait mieux s'aligner dessus plutôt que de continuer à recalculer.
