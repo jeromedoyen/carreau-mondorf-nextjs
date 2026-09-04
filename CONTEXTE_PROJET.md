@@ -634,3 +634,21 @@ Classement obtenu à l'issue de la J11 : KaBoule 1er (10 j., 8 v., +68), **Carre
 **La J12 ne peut pas être complétée** : la fédération n'a publié que jusqu'à la J11, et notre feuille ne donne que notre rencontre. N'insérer que la ligne Mondorf–Schieren fausserait le tableau (deux clubs à 11 rencontres, cinq à 10). À reprendre dès la parution du PDF de la J12.
 
 **Le tri du classement est une approximation** assumée depuis la V1 (`DivisionD2Backend.gs`) et documentée dans le commentaire de `getClassementDivisionD2()` : victoires, puis différence de points, puis points faits — faute du barème officiel FLBP. C'est ce qui place KaBoule devant Mondorf malgré +68 contre +121, avec une rencontre de plus jouée. Si la fédération publie son propre classement, il vaudrait mieux s'aligner dessus plutôt que de continuer à recalculer.
+
+### Journée 12 de la poule, et le barème officiel enfin connu (04/09/2026)
+
+Jérôme fournit deux captures de la fédération : les résultats **et le classement** à l'issue de la J12.
+
+**Résultats J12 insérés** (29/08) : Lasauvage 39‑24 Belvaux · **Carreau Mondorf 44‑19 Schieren** · Steinheim 51‑12 KaBoule · exempt : A Rifat Steinfort. Mêmes garde-fous que pour la J11 — concordance avec notre feuille de match, et couverture exacte des sept clubs.
+
+**Le barème de classement est déductible du document officiel** : 2 points par victoire, 1 par défaite. Vérifié sur les sept clubs, il tombe juste à chaque fois (KaBoule 8 v. + 3 d. = 19 ; Mondorf 8 v. + 2 d. = 18 ; Steinheim 4 v. + 7 d. = 15…). Départage ensuite à la différence de points.
+
+`getClassementDivisionD2()` triait jusqu'ici sur le seul nombre de victoires — l'approximation était assumée dans son commentaire, héritée de `DivisionD2Backend.gs`. **Elle donnait un ordre différent de l'officiel** : à 8 victoires chacun, l'ancien tri plaçait Mondorf premier grâce à sa meilleure différence, alors que la fédération place KaBoule devant, ses 11 journées lui ayant rapporté un point de défaite de plus.
+
+C'est le piège du barème : **une défaite rapporte un point**, donc jouer plus rapporte plus, à égalité de victoires.
+
+Le nombre de points devient une **donnée affichée** dans `ClassementBars`, pas seulement un critère de tri — sans lui, un club devançant un autre avec une moins bonne différence reste illisible. Cohérent avec le principe déjà inscrit dans ce composant : un tooltip ne doit jamais être le seul moyen de lire une valeur.
+
+**Vérifié** : le classement calculé est désormais identique à l'officiel, rang par rang, sur toutes les colonnes — rencontres jouées, gagnées, points faits, rendus, points de classement. Et recoupement croisé qui vaut confirmation : la somme de nos scores de rencontre fait **388**, exactement le « Points + » publié par la fédération pour Carreau Mondorf.
+
+À surveiller : si la fédération départageait un jour deux clubs autrement qu'à la différence de points, il faudrait revoir le tri secondaire. Les quatre clubs à 14 points de la J12 sont bien ordonnés par différence décroissante, ce qui le confirme pour l'instant.
