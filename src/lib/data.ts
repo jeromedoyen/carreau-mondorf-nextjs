@@ -24,11 +24,28 @@ export async function getMontantCotisation(): Promise<number | null> {
   }
 }
 
-/** Reproduit exactement getClassementDivisionD2() de DivisionD2Backend.gs :
- *  cumul journée par journée (parties jouées, victoires/défaites, points
- *  faits/rendus) et rang (victoires desc, puis diff desc, puis points faits
- *  desc) — approximation faute du barème de points de classement officiel
- *  FLBP, comme dans l'app d'origine. */
+/** Classement de la division, cumulé journée par journée.
+ *
+ *  Le **barème officiel FLBP est désormais connu** : 2 points par victoire,
+ *  1 point par défaite — déduit du classement publié par la fédération à
+ *  l'issue de la J12 (04/09/2026) et vérifié sur les sept clubs. Il remplace
+ *  l'approximation héritée de `DivisionD2Backend.gs`, qui triait sur le seul
+ *  nombre de victoires et donnait un ordre différent de l'officiel.
+ *
+ *  Le point de détail qui compte : une défaite rapporte 1 point, donc un club
+ *  ayant joué une rencontre de plus peut devancer un club à égalité de
+ *  victoires. C'est exactement le cas de KaBoule (11 j., 8 v., 19 pts) devant
+ *  Carreau Mondorf (10 j., 8 v., 18 pts) — l'ancien tri plaçait Mondorf
+ *  premier. Départage ensuite à la différence de points, puis aux points
+ *  faits. */
+/** Barème FLBP : 2 points par victoire, 1 par défaite. Les rencontres nulles
+ *  n'existent pas dans ce championnat (le score total ne peut pas être à
+ *  égalité), mais si le cas se présentait elles ne rapporteraient rien de
+ *  plus qu'une défaite — on ne les compte donc pas à part. */
+function pointsClassement(c: { victoires: number; defaites: number }): number {
+  return c.victoires * 2 + c.defaites;
+}
+
 export async function getClassementDivisionD2(saison: string): Promise<ClassementDivisionD2> {
   const { data: matches, error } = await supabase
     .from('division_d2_resultats')
@@ -70,8 +87,13 @@ export async function getClassementDivisionD2(saison: string): Promise<Classemen
       });
 
     const classementJournee = clubs
-      .map((c) => ({ club: c, ...cumul[c], diff: cumul[c].ptsFaits - cumul[c].ptsRendus }))
-      .sort((x, y) => y.victoires - x.victoires || y.diff - x.diff || y.ptsFaits - x.ptsFaits);
+      .map((c) => ({
+        club: c,
+        ...cumul[c],
+        diff: cumul[c].ptsFaits - cumul[c].ptsRendus,
+        points: pointsClassement(cumul[c]),
+      }))
+      .sort((x, y) => y.points - x.points || y.diff - x.diff || y.ptsFaits - x.ptsFaits);
 
     classementJournee.forEach((entree, index) => {
       evolution[entree.club].push({
@@ -83,13 +105,19 @@ export async function getClassementDivisionD2(saison: string): Promise<Classemen
         ptsFaits: cumul[entree.club].ptsFaits,
         ptsRendus: cumul[entree.club].ptsRendus,
         diff: entree.diff,
+        points: entree.points,
       });
     });
   });
 
   const classementFinal = clubs
-    .map((c) => ({ club: c, ...cumul[c], diff: cumul[c].ptsFaits - cumul[c].ptsRendus }))
-    .sort((x, y) => y.victoires - x.victoires || y.diff - x.diff || y.ptsFaits - x.ptsFaits)
+    .map((c) => ({
+      club: c,
+      ...cumul[c],
+      diff: cumul[c].ptsFaits - cumul[c].ptsRendus,
+      points: pointsClassement(cumul[c]),
+    }))
+    .sort((x, y) => y.points - x.points || y.diff - x.diff || y.ptsFaits - x.ptsFaits)
     .map((e, i) => ({ ...e, rang: i + 1 }));
 
   return { saison, journees, clubs, evolution, classementFinal };
