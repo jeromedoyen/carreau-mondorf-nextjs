@@ -2,7 +2,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { ClassementDivisionD2 } from '@/lib/types';
 import { CLUB_CARREAU_MONDORF } from '@/lib/types';
 
-/** Classement détaillé (rang, tendance, différence, V/D) pour une journée
+/** Classement détaillé (rang, points, tendance, différence, V/D) pour une journée
  *  donnée — reste toujours affiché (pas seulement au survol du graphique),
  *  conformément au principe "un tooltip ne doit jamais être le seul moyen
  *  de lire une valeur". */
@@ -31,7 +31,7 @@ export function ClassementBars({
         return (
           <div
             key={e.club}
-            className={`grid grid-cols-[26px_1fr_2fr_100px] items-center gap-3 border-t border-ligne py-2 text-[12.5px] first:border-t-0 ${estCM ? 'font-semibold text-encre' : 'text-encre-douce'}`}
+            className={`grid grid-cols-[26px_1fr_2fr_150px] items-center gap-3 border-t border-ligne py-2 text-[12.5px] first:border-t-0 ${estCM ? 'font-semibold text-encre' : 'text-encre-douce'}`}
           >
             <span className="font-score text-base">{e.pt.rang}</span>
             <span className={estCM ? '' : 'text-encre'}>{e.club}</span>
@@ -42,8 +42,15 @@ export function ClassementBars({
               />
             </span>
             <span className="flex items-center gap-1.5 text-[11.5px]">
-              {e.pt.diff > 0 ? '+' : ''}
-              {e.pt.diff} · {e.pt.victoires}V {e.pt.defaites}D
+              {/* Les points d'abord : c'est sur eux que le classement est trié
+                  (2 par victoire, 1 par défaite). Sans eux, un club devançant
+                  un autre avec une moins bonne différence resterait
+                  incompréhensible. */}
+              <span className="font-score text-[13px] text-encre">{e.pt.points} pts</span>
+              <span className="opacity-70">
+                {e.pt.diff > 0 ? '+' : ''}
+                {e.pt.diff} · {e.pt.victoires}V {e.pt.defaites}D
+              </span>
               {monte && <TrendingUp size={13} className="text-pin" />}
               {descend && <TrendingDown size={13} className="text-danger" />}
               {!monte && !descend && ptPrec && <Minus size={13} className="opacity-40" />}

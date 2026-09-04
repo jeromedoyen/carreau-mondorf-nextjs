@@ -10,6 +10,8 @@ export type EvolutionPoint = {
   ptsFaits: number;
   ptsRendus: number;
   diff: number;
+  /** Points de classement au barème FLBP : 2 par victoire, 1 par défaite. */
+  points: number;
 };
 
 export type ClassementFinalEntry = {
@@ -20,6 +22,8 @@ export type ClassementFinalEntry = {
   ptsFaits: number;
   ptsRendus: number;
   diff: number;
+  /** Points de classement au barème FLBP : 2 par victoire, 1 par défaite. */
+  points: number;
   rang: number;
 };
 
