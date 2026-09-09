@@ -652,3 +652,41 @@ Le nombre de points devient une **donnée affichée** dans `ClassementBars`, pas
 **Vérifié** : le classement calculé est désormais identique à l'officiel, rang par rang, sur toutes les colonnes — rencontres jouées, gagnées, points faits, rendus, points de classement. Et recoupement croisé qui vaut confirmation : la somme de nos scores de rencontre fait **388**, exactement le « Points + » publié par la fédération pour Carreau Mondorf.
 
 À surveiller : si la fédération départageait un jour deux clubs autrement qu'à la différence de points, il faudrait revoir le tri secondaire. Les quatre clubs à 14 points de la J12 sont bien ordonnés par différence décroissante, ce qui le confirme pour l'instant.
+
+## Session du 09/09/2026 — journée 13, et Carreau Mondorf prend la tête
+
+### A Rifat Steinfort 16 – Carreau Mondorf 47 (05/09), et la 1re place
+
+Saisie depuis la feuille de match, et poule complétée depuis le tableau officiel FLBP fourni par Jérôme (résultats + classement à l'issue de la J13).
+
+Poule J13 (05/09) : Steinheim 37‑26 Lasauvage · Schieren 36‑27 Belvaux · **Steinfort 16‑47 Carreau Mondorf** · exempt : KaBoule.
+
+**Classement : Carreau Mondorf 1er** (11 j., 9 v., 435/258, 20 pts), devant KaBoule (11 j., 8 v., 19 pts) qui était exempté. Le barème déduit à la J12 — 2 points par victoire, 1 par défaite — se vérifie une nouvelle fois sur les sept clubs.
+
+### ⚠️ La feuille de match ne nomme pas les joueurs de la même façon selon le camp
+
+Piège nouveau, à connaître pour toutes les saisies à venir. Aux journées précédentes, Mondorf était **club A** et la feuille donnait les **prénoms** (`marlyse`, `yann B`, `christophe`…). Ici Mondorf est **club B** (déplacement) et la même feuille donne les **noms de famille** (`schmit m`, `back y`, `bertemes m`…).
+
+**Il faut donc regarder de quel côté on est avant de rapprocher les noms.** Les initiales accolées lèvent les ambiguïtés du registre, et il y en avait quatre :
+
+| Feuille | Registre | Retenu |
+|---|---|---|
+| `schmit m` | Jim, Marie-Louise, Roland | SCHMIT Marie-Louise |
+| `back y` | Yves, Jérémy, Sandrine | **BACK Yves** |
+| `bertemes m` | Marco, Nora | BERTEMES Marco |
+| `le berre Y` | Evan, Yann | LE BERRE Yann |
+
+**BACK Yves fait sa première apparition en D2 cette saison** — l'effectif passe à 18 joueurs.
+
+Détail conservé tel quel plutôt que tranché : la feuille porte « lalli nello » en 2ᵉ position d'une triplette adverse de la partie 4, vraisemblablement une correction manuscrite. Enregistré `lalli/nello`.
+
+### Vérifications
+
+- Les quatre sous-totaux de la feuille se recalculent depuis les parties : 8‑10, 15‑0, 9‑6, 15‑0, total 47‑16. Le script refusait d'écrire sinon.
+- Classement calculé **identique à l'officiel, rang par rang**, sur toutes les colonnes.
+- Statistiques joueurs : 18 joueurs, **396 couples joueur×partie** (11 journées × 9 joueurs × 4), chaque joueur à `journées × 4`, et les onze scores de rencontre se reconstituent exactement depuis les points individuels.
+- Recoupement croisé : la somme de nos scores fait **435**, exactement le « Points + » publié par la fédération.
+
+### Reste ouvert
+
+La **J14** (KaBoule à domicile, 19/09) clôt la saison. Elle décidera du titre : Mondorf mène d'un point avec le même nombre de rencontres jouées, et reçoit précisément son poursuivant.
