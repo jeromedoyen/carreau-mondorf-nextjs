@@ -37,6 +37,10 @@ export async function getMesInformationsPersonnelles(supabase: SupabaseClient): 
 export type MonAdhesion = {
   type: string;
   categorie: string | null;
+  /** Numéro de licence fédérale. Exposé par `mon_adhesion()` depuis la
+   *  migration 0062 — `null` tant qu'elle n'est pas appliquée, ou pour un
+   *  membre non-licencié. */
+  numeroLicence: string | null;
   cotisationPayee: boolean | null;
   cotisationMontant: number | null;
   cotisationDate: string | null;
@@ -59,6 +63,7 @@ export async function getMonAdhesion(supabase: SupabaseClient, saison: string): 
   return {
     type: data.type,
     categorie: data.categorie,
+    numeroLicence: data.numero_licence ?? null,
     cotisationPayee: data.cotisation_payee,
     cotisationMontant: data.cotisation_montant,
     cotisationDate: data.cotisation_date,

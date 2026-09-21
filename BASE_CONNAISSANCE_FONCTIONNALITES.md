@@ -54,10 +54,19 @@
 ## Pages licencié connecté
 
 ### `/moncaro` — tableau de bord personnel
-**Accès** : tout licencié connecté.
-**Objectif** : page d'atterrissage après connexion — voir sa propre situation en un coup d'œil.
-**Description détaillée** : affiche la catégorie du licencié et deux pastilles de statut (carte de membre, licence) — verte si payé, rouge sinon, sans jamais afficher de montant en euros pour rester visuellement sobre. Inclut aussi un résumé de participation bénévole et, selon la saison, les statistiques de compétition (National D2 / Promotion) de la personne si elle est joueuse.
-**Actions possibles** : consulter son statut, accéder au renouvellement d'adhésion (`/moncaro/renouveler`) si applicable.
+**Accès** : tout membre connecté. Les sections sportives ne s'affichent que pour un licencié de la saison consultée ou un membre du comité ; un membre non-licencié ne voit que « Ma vie de club ».
+**Objectif** : page d'atterrissage après connexion — sa saison, ses résultats et son engagement au club en un coup d'œil, avec le détail à un clic.
+**Description détaillée** :
+
+- **Sélecteur de saison** en haut à droite (`?saison=`), sur la saison active par défaut. Une saison inconnue dans l'URL retombe silencieusement sur la saison active.
+- **En-tête** : monogramme des initiales (le registre ne stocke pas de photo), prénom, numéro de licence, catégorie et type d'adhésion. Une phrase de résumé construite à partir des chiffres réels, et jusqu'à trois distinctions — « Toutes les journées », « Série de N », « N % de victoires » — qui n'apparaissent que si le chiffre les justifie. Sans partie jouée, ni phrase ni distinction.
+- **Bandeau d'indicateurs** : parties jouées, gagnées, taux de victoire, points marqués au barème FLBP, présence en équipe (journées jouées sur rencontres disputées par l'équipe), créneaux bénévoles tenus. Un indicateur non calculable disparaît au lieu de s'afficher à zéro.
+- **Onglet « Ma saison »** : anneau victoires/défaites, meilleure série, points par journée (graphique doublé d'un tableau lisible au lecteur d'écran), répartition par format de jeu, bilan domicile/extérieur, partenaires les plus fréquents.
+- **Onglet « Championnat »** : chaque rencontre de National D2 disputée — journée, date, camp, adversaire, score collectif, parties gagnées — et le détail de ses propres parties. Chaque ligne mène à la feuille de match.
+- **Onglet « Promotion »** : bilan chiffré si les résultats de la saison sont enregistrés, sinon un état vide explicite ; et la liste des journées de Promotion déclarées.
+- **Onglet « Ma vie de club »** : bénévolat de la saison (créneaux, heures, à venir, par catégorie), concours et remboursements, puis les deux pastilles de statut de paiement (carte de membre, licence) — verte si payé, rouge sinon, sans jamais afficher de montant en euros.
+
+**Actions possibles** : changer de saison, ouvrir le détail d'une rencontre, accéder au bénévolat, déclarer un concours, accéder au renouvellement d'adhésion (`/moncaro/renouveler`) si applicable.
 
 ### `/moncaro/renouveler`
 **Accès** : licencié connecté.

@@ -2,7 +2,19 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : 06/08/2026 (voir section dédiée en fin de fichier — note #125 déclaration concours assistée par IA livrée et passée en production, règle de process cherry-pick pour dev→main). Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
+Dernière mise à jour : **21/09/2026** — journée 14 saisie, **Carreau Mondorf champion de National D2 2026** (voir la dernière section du fichier).
+
+Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
+
+### Où en est le projet, en une lecture
+
+⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
+
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. Quarante et une routes, dont : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et une quinzaine d'écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+
+Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nextjs.vercel.app`.
+
+**Saison D2 2026 close.** Les 14 journées sont en base, 12 rencontres détaillées partie par partie, 18 joueurs. Un seul reliquat de données, décrit en fin de fichier : trois lignes de poule de la J14 que la FLBP n'avait pas encore publiées au 21/09.
 
 ## Session du 24/07/2026 — Phases 0 à D de la feuille de route
 
@@ -97,6 +109,8 @@ Choix assumé et explicite de **ne pas reproduire la charte graphique de `carrea
 
 ## Feuille de route "développement total" (décidée le 22/07/2026 avec Jérôme)
 
+> 🗄️ **Archive — les cinq phases sont livrées depuis longtemps.** Conservé pour la trace de la décision, pas pour l'état du projet. Ce qui a changé depuis : l'authentification tourne en **OTP à 6 chiffres** (Brevo abandonné, voir session du 23/07), les statistiques individuelles ont été **reverrouillées au CA** le 23/07, et les phases 4 et 5 sont en production. Voir « Où en est le projet » en tête de fichier.
+
 Jérôme a demandé de poursuivre le développement complet du prototype (pas juste le module Compétition en lecture seule). Séquencée en 5 phases :
 
 1. **Statistiques individuelles** (National D2 + Promotion) — **FAIT**, voir session du 22/07.
@@ -108,6 +122,8 @@ Jérôme a demandé de poursuivre le développement complet du prototype (pas ju
 **Décision actée** : les statistiques individuelles sont **publiques pour l'instant** (cohérent avec le périmètre 100% public actuel du prototype), alors qu'elles sont réservées au CA dans l'app d'origine (`requireMembreCA_`) — à reverrouiller une fois la phase 3 (auth) faite.
 
 ## Périmètre non couvert (pistes pour la suite, pas encore commencées)
+
+> 🗄️ **Archive — plus rien de cette liste n'est vrai au 21/09/2026.** Les trois points sont livrés et en production. En particulier, la phrase « ce prototype est 100% public/sans connexion » est **fausse** depuis le 23/07/2026 : l'application est authentifiée et l'essentiel des écrans est réservé aux licenciés ou au CA. Conservé pour la trace ; voir « Où en est le projet » en tête de fichier.
 
 - **Actions CA** : saisie de feuille de match, déclaration de forfait, édition d'une rencontre — tout ça reste dans l'app Apps Script pour l'instant (phase 5 ci-dessus).
 - **Authentification** : ce prototype est 100% public/sans connexion (phase 3 ci-dessus).
@@ -739,6 +755,98 @@ Vérifié en poussant les deux rencontres non publiées à leurs issues extrême
 
 Insérer les **trois lignes de poule manquantes de la J14** dès publication FLBP (Lasauvage–Schieren, Belvaux–Steinfort, exempt Steinheim), sous le préfixe `DIVD2-FLBP-2026-J14-*`, et en profiter pour recouper notre 37‑26 avec le tableau officiel.
 
+## Session du 21/09/2026 — avertissement React « unique key » sur /national-d2
+
+### Le symptôme
+
+En développement, la console de `/national-d2` affichait :
+
+> Each child in a list should have a unique "key" prop. Check the render method of `SectionToggle`. It was passed a child from NationalD2Page.
+
+Particularité qui a orienté le diagnostic : **rien au chargement de la page**, l'avertissement n'apparaissait qu'au **premier changement d'onglet**.
+
+### La cause n'est pas celle qu'on suppose
+
+`SectionToggle` ne construit aucun tableau : il reçoit `calendrier`, `statistiques` et `propositionIA` en props et n'en affiche qu'un à la fois. Le « tableau » incriminé est simplement la liste des enfants de son `<div>`, produite par JSX.
+
+Normalement React valide ces enfants statiques au moment de créer l'élément parent (`validateChildKeys`) et ne réclame donc pas de `key`. Sauf que ces trois sections sont rendues **côté Server Component** et traversent la charge RSC : elles arrivent au client sous forme de `lazy` **pas encore initialisés**. Relevé sur la fibre en direct, dans le navigateur :
+
+| prop | forme reçue côté client | `_store.validated` |
+|---|---|---|
+| `calendrier` | élément React | 1 |
+| `statistiques` | `lazy` (`fulfilled`) | 1 |
+| `propositionIA` | `lazy` (`resolved_model`) | **0** |
+
+`validateChildKeys` ne sait pas regarder à l'intérieur d'un `lazy` non résolu : il marque l'enveloppe, pas l'élément enveloppé. Le réconciliateur, lui, initialise le `lazy`, tombe sur un élément `validated: 0` sans `key`, et avertit. `calendrier` y échappe parce qu'il est déjà un élément simple au montage — d'où le silence au chargement et l'avertissement au premier basculement.
+
+### Le correctif
+
+Une `key` explicite par section, égale à l'identifiant de l'onglet, portée par un `Fragment` (aucun nœud DOM ajouté, rendu inchangé) — `src/components/SectionToggle.tsx`. La condition d'avertissement de React (`!validated && key == null`) ne se vérifie plus.
+
+⚠️ **Ne pas « nettoyer » ces `Fragment`** en les jugeant superflus : ils ne servent qu'à porter la clé, et les retirer ramène l'avertissement. Un commentaire le rappelle dans le fichier.
+
+**Le piège vaut pour tout composant client qui reçoit des sections rendues côté serveur et les place dans une liste d'enfants**, pas seulement pour `SectionToggle`.
+
+### Vérification
+
+Console vide, sur un onglet neuf, après un cycle complet Calendrier → Statistiques → Proposition IA → Calendrier (les deux panneaux réservés se montent bien : ils affichent leur message de restriction, l'essai n'est donc pas à vide). `npx tsc --noEmit` et `npm run build` passent. `npm run lint` rend exactement les mêmes 18 remontées qu'avant le correctif — toutes préexistantes, aucune sur `SectionToggle.tsx`.
+## Session du 21/09/2026 (suite) — tableau de bord individuel du licencié, et un rapprochement de noms qui ne rapprochait rien
+
+### 🔴 Le bug qui conditionnait tout : `mes_parties_d2()` ne renvoyait jamais rien
+
+Avant d'écrire la moindre ligne d'interface, l'analyse a buté sur ceci : la RPC `mes_parties_d2()` (migration 0022) comparait le nom de la session à chaque joueur d'une partie **par égalité exacte**, alors que les deux côtés n'écrivent pas le nom dans le même ordre.
+
+| Source | Format | Exemple |
+|---|---|---|
+| `mon_nom_benevole()` → `prenom \|\| ' ' \|\| nom` | **Prénom NOM** | `Marie-Louise SCHMIT` |
+| `parties_d2.joueurs_cm` | **NOM Prénom** | `SCHMIT Marie-Louise` |
+
+Mesuré sur la base : **0 des 18 joueurs D2 correspondait au format testé, les 18 correspondaient au format inverse.** La carte « Compétition » de `/moncaro` affichait donc « aucune partie cette saison » à tous les licenciés, y compris aux dix joueurs du titre. Le même défaut frappait la carte Promotion, où `promotion_equipes.joueur_*` écrit également le nom de famille en premier.
+
+**Correctif (migration 0061)** : une fonction `cle_nom_joueur()` qui compare l'**ensemble des mots, trié**, sans accents ni ponctuation. Pas de découpage prénom/nom — aucune heuristique ne survit à « José Antonio MARTINS » ni à « Yann LE BERRE ». Jumelle TypeScript exacte : `cleNomJoueur()` dans `normalisationTexte.ts`, **à maintenir en phase avec la fonction SQL**.
+
+Après correctif : **18 joueurs sur 18 retrouvés**, avec des totaux identiques à ceux de la vue collective `/national-d2`.
+
+⚠️ Effet de bord révélateur : la clé a mis au jour **deux fiches pour la même personne** dans `personnes` (Gaia / Gaïa BENNONI, la seconde sans e-mail ni adhésion). Ce n'est pas la clé qui se trompe — c'est le registre. Traité à part.
+
+### Ce que le tableau de bord montre, et ce qu'il refuse de montrer
+
+Principe tenu partout : **aucun indicateur inventé**. Ce qui n'est pas calculable vaut `null` et disparaît de l'écran, au lieu de s'afficher à zéro — « aucune donnée » et « zéro victoire » ne disent pas la même chose au licencié qui se relit.
+
+Quatre onglets (`Tabs`) : *Ma saison*, *Championnat*, *Promotion*, *Ma vie de club*. Un membre non-licencié ne voit que le dernier.
+
+**Trois arbitrages de données, assumés :**
+
+1. **Les convocations n'existent pas** — aucune table, nulle part. Plutôt que de créer une table que personne n'alimenterait, l'indicateur de participation est **« présence en équipe » = journées jouées / rencontres disputées par l'équipe** (RPC `rencontres_jouees_saison`, hors journées d'exemption). C'est exact, c'est honnête, et ça ne promet pas un taux de présence qu'on ne sait pas calculer.
+2. **La Promotion 2026 n'a pas de résultats** — `promotion_equipes` s'arrête à 2025, alors que 84 sorties 2026 sont déclarées dans `participations_concours`. L'onglet montre donc les sorties réelles et dit franchement que les résultats ne sont pas saisis.
+3. **Pas de comparaison N‑1** — il n'existe aucune donnée individuelle 2025 (ni `rencontres_d2`, ni `parties_d2`, ni `adhesions`). Promettre une progression aurait été un mensonge d'interface.
+
+**Distinctions** : trois au maximum, chacune la lecture littérale d'un chiffre, avec des seuils exigeants (série ≥ 4 ; taux ≥ 70 % **et** au moins 8 parties — un 100 % sur deux parties ne dit rien). Elles disparaissent dès que le chiffre ne les porte plus.
+
+### Choix de conception
+
+- **Aucune librairie de graphiques ajoutée.** Les primitives SVG maison de `StatsCharts.tsx` (`BarreProportion`, `GraphiquePointsParJournee`, `IconeTypePartie`) couvraient le besoin ; seul l'anneau victoires/défaites a été écrit, en SVG également.
+- **Jamais de rouge sur un résultat sportif.** Une défaite n'est pas une alerte système. Deux teintes seulement : `pin` pour les victoires, `ligne` pour le reste.
+- **L'information ne repose jamais sur la seule couleur** : chaque partie porte son score, et un libellé « gagnée »/« perdue » lu par les lecteurs d'écran à toutes les largeurs. Le graphique de points est doublé d'un tableau `sr-only`.
+- **`Tabs` défile horizontalement** au lieu de passer à la ligne : à 375 px, quatre onglets font 488 px et les libellés se coupaient en deux. Correction portée sur le composant partagé, donc profitable à `/promotion` aussi.
+- **Ni cache ni pré-calcul** : 240 parties et 149 affectations en base, l'agrégation en mémoire est immédiate. Les sept appels de la page sont en revanche regroupés en un seul `Promise.all`, chacun gardant son `.catch()` pour qu'une RPC absente dégrade une carte et non la page.
+
+### Vérifications
+
+- **Couche données** : les 18 joueurs de 2026 recalculés par SQL en rejouant `cle_nom_joueur`, puis passés dans `construireBilanSportifD2()`. **Aucune anomalie** — V+D = joués, parties = journées × 4, jamais plus de journées que de rencontres, camp connu partout.
+- **Cas limites couverts par des joueurs réels** : 48 parties sur 12 journées (ROUSSET, 100 % de présence), 4 parties sur 1 journée (BACK, DUBLIN, MARION, PRYBYLA, SALVAN), aucune partie (tout non-joueur), aucun résultat Promotion (2026), saison entièrement vide (2025).
+- **Rendu** contrôlé au navigateur sur une page d'aperçu temporaire alimentée en données réelles, **supprimée avant le commit** : en-tête, bandeau, quatre onglets, états vides, et mobile à 375 px sans débordement horizontal. Console sans erreur.
+- `npx tsc --noEmit` propre, `npm run build` réussi, `npm run lint` inchangé (18 problèmes, tous antérieurs, aucun dans les fichiers touchés).
+
+### ⚠️ Non vérifié, et pourquoi
+
+**Le rendu connecté n'a pas été testé avec une vraie session.** L'authentification passe par un lien magique reçu par e-mail : ouvrir une session aurait voulu dire se connecter à la place d'un membre, ce qui n'a pas été fait. La couche données est vérifiée exhaustivement par SQL, et l'interface avec ces mêmes données réelles, mais **le parcours connecté de bout en bout reste à valider par Jérôme** (instructions dans la PR).
+
+### Reste ouvert
+
+- Fusionner la fiche en double de Gaïa BENNONI dans `personnes`.
+- Si le club veut un vrai taux de présence : table `convocations_d2 (rencontre_id, personne_id, statut, repondu_le)`, alimentée par le capitaine avant chaque rencontre. Rien n'a été créé tant que personne ne l'alimente.
+- `affectations` désigne le bénévole par un **nom en texte libre**, sans `personne_id` : le rattachement reste un `ilike` sur le nom.
 ## Session du 21/09/2026 (suite) — la fiche en double de `personnes`
 
 Mise au jour par la clé de rapprochement `cle_nom_joueur()` introduite pour le tableau de bord individuel : le registre portait **deux fiches pour la même personne**.
