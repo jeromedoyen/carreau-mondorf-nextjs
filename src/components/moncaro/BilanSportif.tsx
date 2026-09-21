@@ -7,7 +7,15 @@ import type { BilanSportifD2 } from '@/lib/tableauDeBord';
 
 const pourcent = (v: number) => `${Math.round(v * 100)} %`;
 
-export function BilanSportif({ bilan }: { bilan: BilanSportifD2 | null }) {
+export function BilanSportif({
+  bilan,
+  consultation = false,
+}: {
+  bilan: BilanSportifD2 | null;
+  /** Vue du comité sur la fiche d'un membre : les libellés passent de la
+   *  première personne à la troisième. */
+  consultation?: boolean;
+}) {
   if (!bilan || bilan.joues === 0) {
     return (
       <Carte>
@@ -126,7 +134,7 @@ export function BilanSportif({ bilan }: { bilan: BilanSportifD2 | null }) {
 
       {bilan.partenaires.length > 0 && (
         <Carte
-          titre="Avec qui tu joues"
+          titre={consultation ? 'Ses partenaires de jeu' : 'Avec qui tu joues'}
           icone={Users}
           enTeteSecondaire="Doublettes et triplettes uniquement"
         >

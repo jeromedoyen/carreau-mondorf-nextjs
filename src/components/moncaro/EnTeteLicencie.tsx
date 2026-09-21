@@ -20,6 +20,7 @@ export function EnTeteLicencie({
   adhesion,
   resume,
   distinctions,
+  consultation = false,
 }: {
   nom: string | null;
   saison: string;
@@ -28,8 +29,13 @@ export function EnTeteLicencie({
    *  à dire — on ne félicite jamais dans le vide. */
   resume: string | null;
   distinctions: Distinction[];
+  /** Vue du comité sur la fiche d'un membre : on affiche son nom complet
+   *  au lieu de le saluer — « Bonjour, Dominique » sur l'écran de
+   *  quelqu'un d'autre serait déroutant. */
+  consultation?: boolean;
 }) {
   const prenom = nom?.split(' ')[0] ?? null;
+  const titre = consultation ? (nom ?? 'Membre') : prenom ? `Bonjour, ${prenom}` : 'Bienvenue';
 
   const meta = [
     adhesion?.numeroLicence ? `Licence n° ${adhesion.numeroLicence}` : null,
@@ -51,7 +57,7 @@ export function EnTeteLicencie({
         <div className="min-w-0 flex-1">
           <p className="font-score text-[12.5px] tracking-[0.2em] text-terracotta">SAISON {saison}</p>
           <h1 className="font-display mt-0.5 text-[26px] leading-tight italic sm:text-[32px]">
-            {prenom ? `Bonjour, ${prenom}` : 'Bienvenue'}
+            {titre}
           </h1>
           {meta.length > 0 && (
             <p className="mt-1.5 text-[12.5px] text-encre-douce">{meta.join(' · ')}</p>

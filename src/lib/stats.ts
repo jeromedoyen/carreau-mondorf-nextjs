@@ -9,6 +9,7 @@ import type {
   StatJoueurPromotion,
   StatTrioPromotion,
 } from './types';
+import { cleNomJoueur, cleNomMajuscules } from './normalisationTexte';
 
 /** Une ligne telle que la renvoie la RPC `mes_parties_d2()` (migration
  *  0062) : la partie, plus le contexte de sa rencontre. */
@@ -27,7 +28,6 @@ type LigneMesParties = LigneParty & {
 export type MesStatistiquesD2 = Omit<StatJoueurD2, 'parties'> & {
   parties: PartieJoueurD2Enrichie[];
 };
-import { cleNomMajuscules } from './normalisationTexte';
 
 /** Port de pointsVictoirePartie_() (ChampionnatBackend.gs:54) — règlement
  *  FLBP 2025 : Triplette 5 pts/victoire, Doublette 3 pts/victoire, Tête à
@@ -145,7 +145,72 @@ export async function getMesStatistiquesD2(
 ): Promise<MesStatistiquesD2 | null> {
   const { data, error } = await supabase.rpc('mes_parties_d2', { p_saison: saison });
   if (error) throw error;
-  const lignes = (data ?? []) as LigneMesParties[];
+  return assemblerBilanJoueur((data ?? []) as LigneMesParties[]);
+}
+
+/** Même bilan, pour un joueur désigné par son nom plutôt que par la
+ *  session. Lit `parties_d2` **en direct**, table réservée au CA
+ *  (0006_verrouillage_stats.sql) : un appelant non-CA recevra simplement
+ *  un tableau vide, jamais les parties de quelqu'un d'autre. À n'appeler
+ *  que depuis un écran déjà gardé par `estMembreCA()`.
+ *
+ *  Le rapprochement du nom se fait ici en TypeScript, avec la même clé
+ *  insensible à l'ordre des mots que la fonction SQL `cle_nom_joueur()` —
+ *  une saison tient en quelques centaines de lignes, filtrer en mémoire
+ *  évite une RPC de plus. */
+export async function getStatistiquesD2PourJoueur(
+  supabase: SupabaseClient,
+  saison: string,
+  nomJoueur: string
+): Promise<MesStatistiquesD2 | null> {
+  const { data: rencontresData, error: errR } = await supabase
+    .from('rencontres_d2')
+    .select('id, journee, date, club_adverse, domicile, score_cm, score_adverse')
+    .eq('saison', saison);
+  if (errR) throw errR;
+  const rencontres = (rencontresData ?? []) as (LigneRencontre & {
+    domicile: boolean | null;
+    score_cm: number | null;
+    score_adverse: number | null;
+  })[];
+  if (!rencontres.length) return null;
+  const parId = new Map(rencontres.map((r) => [r.id, r]));
+
+  const { data: partiesData, error: errP } = await supabase
+    .from('parties_d2')
+    .select('rencontre_id, type, phase, ordre, joueurs_cm, score_cm, score_adverse')
+    .in('rencontre_id', rencontres.map((r) => r.id))
+    .eq('supprime', false)
+    .not('score_cm', 'is', null)
+    .not('score_adverse', 'is', null);
+  if (errP) throw errP;
+
+  const cible = cleNomJoueur(nomJoueur);
+  const lignes: LigneMesParties[] = (partiesData ?? [])
+    .filter((p) =>
+      String(p.joueurs_cm || '')
+        .split(',')
+        .some((jeton) => cleNomJoueur(jeton) === cible)
+    )
+    .map((p) => {
+      const r = parId.get(p.rencontre_id)!;
+      return {
+        ...p,
+        journee: r.journee,
+        date: r.date,
+        club_adverse: r.club_adverse,
+        domicile: r.domicile,
+        score_rencontre_cm: r.score_cm,
+        score_rencontre_adverse: r.score_adverse,
+      } as LigneMesParties;
+    });
+
+  return assemblerBilanJoueur(lignes);
+}
+
+/** Réduction commune aux deux chemins ci-dessus : mêmes agrégats, même
+ *  rattachement du contexte collectif. */
+function assemblerBilanJoueur(lignes: LigneMesParties[]): MesStatistiquesD2 | null {
   if (!lignes.length) return null;
 
   const rencontreParId = new Map(

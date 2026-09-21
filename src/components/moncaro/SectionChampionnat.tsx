@@ -81,14 +81,24 @@ function LigneRencontre({ r }: { r: RencontreDuJoueur }) {
   );
 }
 
-export function SectionChampionnat({ bilan }: { bilan: BilanSportifD2 | null }) {
+export function SectionChampionnat({
+  bilan,
+  consultation = false,
+}: {
+  bilan: BilanSportifD2 | null;
+  consultation?: boolean;
+}) {
   if (!bilan || bilan.rencontres.length === 0) {
     return (
       <Carte>
         <EtatVide
           icone={Swords}
           titre="Aucune rencontre de championnat cette saison."
-          detail="Cette page recense les rencontres de National D2 auxquelles tu as pris part."
+          detail={
+            consultation
+              ? 'Cette page recense les rencontres de National D2 auxquelles ce membre a pris part.'
+              : 'Cette page recense les rencontres de National D2 auxquelles tu as pris part.'
+          }
           action={{ libelle: 'Voir le calendrier', href: '/national-d2' }}
         />
       </Carte>
@@ -97,7 +107,7 @@ export function SectionChampionnat({ bilan }: { bilan: BilanSportifD2 | null }) 
 
   return (
     <Carte
-      titre="Mes rencontres de National D2"
+      titre={consultation ? 'Ses rencontres de National D2' : 'Mes rencontres de National D2'}
       icone={Swords}
       enTeteSecondaire={`${bilan.rencontres.length} ${bilan.rencontres.length > 1 ? 'rencontres' : 'rencontre'} · ${bilan.victoires}/${bilan.joues} parties gagnées`}
     >

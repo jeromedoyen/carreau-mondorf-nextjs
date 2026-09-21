@@ -47,6 +47,7 @@ export function SectionVieDeClub({
   benevolat,
   participationsConcours,
   concoursVisible,
+  consultation = false,
 }: {
   saison: string;
   monNom: string | null;
@@ -54,14 +55,18 @@ export function SectionVieDeClub({
   parametres: ParametresClub | null;
   benevolat: TableauDeBordBenevole | null;
   participationsConcours: MaParticipationConcours[];
+  /** Dans la vue du comité, cette carte n'apparaît que si l'appelant est à
+   *  la trésorerie : la RLS de `participations_concours` (migration 0047)
+   *  réserve les montants de remboursement à ce rôle, pas à tout le CA. */
   concoursVisible: boolean;
+  consultation?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Valorisant, jamais comptable : on montre ce qui a été donné au
           club, on ne note personne et on n'affiche aucun manque. */}
       <Carte
-        titre="Mon engagement au club"
+        titre={consultation ? 'Son engagement au club' : 'Mon engagement au club'}
         icone={HeartHandshake}
         enTeteSecondaire={`Saison ${saison}`}
         action={
@@ -197,6 +202,7 @@ export function SectionVieDeClub({
         monNom={monNom}
         adhesion={adhesion}
         parametres={parametres}
+        consultation={consultation}
       />
     </div>
   );

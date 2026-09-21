@@ -39,11 +39,17 @@ export function CarteCotisationMoncaro({
   monNom,
   adhesion,
   parametres,
+  consultation = false,
 }: {
   saison: string;
   monNom: string | null;
   adhesion: MonAdhesion | null;
   parametres: ParametresClub | null;
+  /** Vue du comité sur la fiche d'un membre : le titre et le message
+   *  passent à la troisième personne, et le bouton de paiement disparaît —
+   *  le QR SEPA est destiné à celui qui doit payer, pas à celui qui
+   *  consulte. */
+  consultation?: boolean;
 }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
@@ -52,10 +58,14 @@ export function CarteCotisationMoncaro({
       <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] sm:col-span-2">
         <div className="mb-3 flex items-center gap-2">
           <CreditCard size={16} className="text-pin" />
-          <h2 className="font-display text-[15px]">Ma cotisation — saison {saison}</h2>
+          <h2 className="font-display text-[15px]">
+            {consultation ? 'Sa cotisation' : 'Ma cotisation'} — saison {saison}
+          </h2>
         </div>
         <p className="mb-3 text-[13px] text-encre-douce">
-          Aucune adhésion enregistrée pour cette saison à ton nom.
+          {consultation
+            ? 'Aucune adhésion enregistrée pour cette saison à ce nom.'
+            : 'Aucune adhésion enregistrée pour cette saison à ton nom.'}
         </p>
         <Link
           href="/moncaro/renouveler"
@@ -91,7 +101,9 @@ export function CarteCotisationMoncaro({
     <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] sm:col-span-2">
       <div className="mb-2 flex items-center gap-2">
         <CreditCard size={15} className="text-pin" />
-        <h2 className="font-display text-[14px]">Ma cotisation — saison {saison}</h2>
+        <h2 className="font-display text-[14px]">
+          {consultation ? 'Sa cotisation' : 'Ma cotisation'} — saison {saison}
+        </h2>
       </div>
 
       <p className="mb-2.5 text-[12px] text-encre-douce">
@@ -104,7 +116,9 @@ export function CarteCotisationMoncaro({
         {estLicencie && <PuceStatut payee={adhesion.licencePayee} label="Licence" />}
       </div>
 
-      {!toutPaye && (
+      {/* Le QR SEPA règle la cotisation de celui qui le scanne : il n'a
+          aucun sens dans la vue du comité, qui consulte sans payer. */}
+      {!toutPaye && !consultation && (
         <div className="mt-4 border-t border-ligne pt-4">
           {!qrDataUrl ? (
             <button

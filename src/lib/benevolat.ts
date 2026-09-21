@@ -72,9 +72,24 @@ export function memeNom(a: string | null, b: string | null): boolean {
 export async function getMonTableauDeBordBenevole(
   bornes?: { debut: string; fin: string }
 ): Promise<TableauDeBordBenevole | null> {
-  const supabase = await createClient();
   const nom = await getMonNomBenevole();
   if (!nom) return null;
+  return getTableauDeBordBenevolePourNom(nom, bornes);
+}
+
+/** Même bilan, pour un nom explicite au lieu de la session courante.
+ *
+ *  ⚠️ **Aucun contrôle d'accès ici** : cette fonction ne vérifie pas qui
+ *  demande quoi, elle lit les affectations du nom qu'on lui passe. Elle
+ *  n'est appelable que depuis un écran déjà gardé par `estMembreCA()`
+ *  (consultation d'une fiche membre). Pour la session courante, passer
+ *  par `getMonTableauDeBordBenevole()`, qui dérive le nom de l'e-mail
+ *  authentifié et ne peut donc pas viser quelqu'un d'autre. */
+export async function getTableauDeBordBenevolePourNom(
+  nom: string,
+  bornes?: { debut: string; fin: string }
+): Promise<TableauDeBordBenevole | null> {
+  const supabase = await createClient();
 
   let requete = supabase
     .from('affectations')

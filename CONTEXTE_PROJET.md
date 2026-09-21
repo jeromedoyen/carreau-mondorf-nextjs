@@ -872,3 +872,34 @@ Suppression **douce** (`supprime = true`) de l'id 68, jamais de `DELETE` : conve
 ### ⚠️ Laissé en l'état, délibérément
 
 **L'orthographe du prénom n'a pas été touchée.** Laquelle des deux graphies est la bonne — « Gaia » ou « Gaïa » — n'est pas déterminable depuis la base : la fiche vide n'est pas une preuve. L'existence même du doublon suggère que quelqu'un a un jour voulu corriger la graphie et a créé une ligne au lieu d'en modifier une, mais ce n'est qu'une hypothèse. À trancher avec la personne concernée, pas par déduction.
+
+## Session du 21/09/2026 (suite) — le tableau de bord d'un membre, vu par le comité
+
+Demande de Jérôme, née d'une contrainte concrète : son propre compte **n'a aucune partie de D2**, il ne pouvait donc pas voir à quoi ressemble un tableau de bord rempli sans demander à un joueur de se connecter.
+
+Nouvelle route **`/membres/[id]/tableau-de-bord`**, accessible par un bouton depuis la fiche membre. Mêmes sections que `/moncaro`, avec un mode `consultation` qui bascule les libellés à la troisième personne — « Ses rencontres de National D2 », « Son engagement au club », « Sa cotisation » — et affiche le nom complet au lieu de saluer.
+
+### Ce que ça n'ouvre pas
+
+**Aucun accès nouveau.** `personnes`, `adhesions` et `parties_d2` sont déjà lisibles par le CA, et les statistiques individuelles de **tous** les joueurs s'affichent déjà sur `/national-d2`. Cet écran ne fait que les remettre dans la forme que voit le licencié.
+
+⚠️ **Une exception, et elle est volontaire.** La RLS de `participations_concours` (migration 0047) réserve la lecture à la **trésorerie**, pas à l'ensemble du comité : les montants de remboursement ne regardent pas tout le CA. La carte « Concours » disparaît donc pour un membre du CA hors trésorerie, et un bandeau le dit en haut de page. **Choix assumé : on n'a pas élargi la policy pour faire tenir la maquette.**
+
+Le bouton de paiement de la cotisation est masqué en mode consultation : le QR SEPA règle la cotisation de celui qui le scanne, il n'a aucun sens pour qui consulte.
+
+### Implémentation
+
+- `getStatistiquesD2PourJoueur()` (stats.ts) — jumelle de `getMesStatistiquesD2()` pour un nom explicite, par lecture directe de `parties_d2`. La réduction commune est sortie dans `assemblerBilanJoueur()`, les deux chemins la partagent.
+- `getTableauDeBordBenevolePourNom()` (benevolat.ts) — même extraction, `getMonTableauDeBordBenevole()` n'en est plus qu'un appel dérivé de la session.
+- `getTableauDeBordMembre()` (tableauDeBordMembre.ts) — assemble le tout. **Ne contrôle rien elle-même**, et son en-tête le dit : la garde `estMembreCA()` est posée par la page, la RLS tranche le reste.
+- Les participations concours sont lues **sans condition** : c'est la RLS qui décide, et `concoursVisible` fait ensuite disparaître la carte. « Pas le droit d'en voir » et « rien à voir » ne doivent pas se ressembler à l'écran.
+
+### Vérifications
+
+- Mode consultation contrôlé au navigateur : en-tête au nom complet, onglets sans « Ma », « Ses partenaires de jeu », « Son engagement au club », « Sa cotisation », bouton Payer absent.
+- **Garde d'accès** : `/membres/5/tableau-de-bord` hors session renvoie « Accès restreint », et aucun nom de membre ne fuit dans le HTML.
+- `tsc --noEmit` propre, `npm run build` réussi, lint inchangé (18 problèmes, tous antérieurs).
+
+### Reste à faire
+
+Le **test connecté** reste entier, ici comme pour `/moncaro` : je ne me connecte pas à la place d'un membre. Jérôme est administrateur, il peut désormais ouvrir la fiche de n'importe quel joueur et voir son tableau de bord — c'est précisément ce que cette route rend possible.

@@ -26,8 +26,10 @@ export function SectionPromotion({
   saison,
   entree,
   sorties,
+  consultation = false,
 }: {
   saison: string;
+  consultation?: boolean;
   /** Bilan chiffré du joueur, `null` si la saison n'a pas de résultats
    *  Promotion enregistrés. */
   entree: StatJoueurPromotion | null;
@@ -50,7 +52,7 @@ export function SectionPromotion({
     <div className="flex flex-col gap-4">
       {entree ? (
         <Carte
-          titre="Mon bilan en Promotion"
+          titre={consultation ? 'Son bilan en Promotion' : 'Mon bilan en Promotion'}
           icone={Medal}
           enTeteSecondaire={`${entree.participations} ${entree.participations > 1 ? 'journées' : 'journée'}`}
         >
@@ -96,7 +98,7 @@ export function SectionPromotion({
 
       {sorties.length > 0 && (
         <Carte
-          titre="Mes journées de Promotion"
+          titre={consultation ? 'Ses journées de Promotion' : 'Mes journées de Promotion'}
           icone={CalendarDays}
           enTeteSecondaire={`${sorties.length} ${sorties.length > 1 ? 'sorties déclarées' : 'sortie déclarée'}`}
         >
