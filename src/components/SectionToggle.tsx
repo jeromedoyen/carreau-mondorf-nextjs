@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 
 /** Bascule Calendrier/Statistiques sur la même page, plutôt que l'empilement
  *  vertical qui obligeait à défiler jusqu'en bas pour voir les stats
@@ -55,9 +55,15 @@ export function SectionToggle({
           </button>
         )}
       </div>
-      {vue === 'calendrier' && calendrier}
-      {vue === 'statistiques' && statistiques}
-      {vue === 'propositionIA' && propositionIA}
+      {/* Chaque section porte l'identifiant de son onglet comme clé : rendues
+          côté Server Component, elles arrivent ici sous forme de `lazy` pas
+          encore initialisés, dont React ne peut pas inspecter l'élément
+          enveloppé. Sans clé explicite il réclame donc une `key` dès que la
+          section rejoint la liste des enfants du bloc (avertissement visible
+          en console au changement d'onglet). Ne pas retirer ces Fragment. */}
+      {vue === 'calendrier' && <Fragment key="calendrier">{calendrier}</Fragment>}
+      {vue === 'statistiques' && <Fragment key="statistiques">{statistiques}</Fragment>}
+      {vue === 'propositionIA' && <Fragment key="propositionIA">{propositionIA}</Fragment>}
     </div>
   );
 }
