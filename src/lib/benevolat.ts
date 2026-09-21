@@ -61,19 +61,32 @@ export function memeNom(a: string | null, b: string | null): boolean {
   return normaliser(a) === normaliser(b);
 }
 
-/** Retrouve les affectations enregistrées sous ce nom canonique. */
-export async function getMonTableauDeBordBenevole(): Promise<TableauDeBordBenevole | null> {
+/** Retrouve les affectations enregistrées sous ce nom canonique.
+ *
+ *  `bornes` restreint le bilan à une saison. Sans bornes, il couvre toute
+ *  la vie de club du membre — c'est ce que montre `/benevole/moi` ("depuis
+ *  toujours"), alors que le tableau de bord `/moncaro` raisonne saison par
+ *  saison et doit donc les fournir. Le filtre porte sur la date du créneau
+ *  plutôt que sur `manifestations.saison` : c'est le jour où l'on a
+ *  réellement donné de son temps qui fait foi. */
+export async function getMonTableauDeBordBenevole(
+  bornes?: { debut: string; fin: string }
+): Promise<TableauDeBordBenevole | null> {
   const supabase = await createClient();
   const nom = await getMonNomBenevole();
   if (!nom) return null;
 
-  const { data: affectations, error } = await supabase
+  let requete = supabase
     .from('affectations')
     .select(
       'id, nom, creneaux!inner(id, tache, categorie, date, heure_debut, heure_fin, manifestation_id, manifestations!inner(nom))'
     )
     .ilike('nom', nom)
     .eq('supprime', false);
+  if (bornes) {
+    requete = requete.gte('creneaux.date', bornes.debut).lte('creneaux.date', bornes.fin);
+  }
+  const { data: affectations, error } = await requete;
   if (error) throw error;
 
   const aujourdHui = new Date().toISOString().slice(0, 10);

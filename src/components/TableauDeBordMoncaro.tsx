@@ -1,26 +1,26 @@
-import Link from 'next/link';
-import { HeartHandshake, Trophy, ReceiptText, ClipboardList, ArrowRight } from 'lucide-react';
-import { CarteCotisationMoncaro } from './CarteCotisationMoncaro';
+import type { ReactElement } from 'react';
+import { Tabs } from './Tabs';
+import { EnTeteLicencie } from './moncaro/EnTeteLicencie';
+import { BandeauKPI } from './moncaro/BandeauKPI';
+import { BilanSportif } from './moncaro/BilanSportif';
+import { SectionChampionnat } from './moncaro/SectionChampionnat';
+import { SectionPromotion } from './moncaro/SectionPromotion';
+import { SectionVieDeClub } from './moncaro/SectionVieDeClub';
+import type { MaParticipationConcours } from './moncaro/SectionVieDeClub';
 import type { MonAdhesion } from '@/lib/moncaro';
 import type { ParametresClub } from '@/lib/paiements';
 import type { TableauDeBordBenevole } from '@/lib/benevolat';
-import type { StatJoueurD2, StatistiquesPromotion } from '@/lib/types';
-import { sansAccentsMinuscules } from '@/lib/normalisationTexte';
+import type { StatistiquesPromotion } from '@/lib/types';
+import type { BilanSportifD2 } from '@/lib/tableauDeBord';
+import { calculerDistinctions, resumeSaison } from '@/lib/tableauDeBord';
+import { cleNomJoueur } from '@/lib/normalisationTexte';
 
-type MaParticipationConcours = {
-  id: number;
-  type: string;
-  statut: string;
-  montant_final: number | null;
-};
-
-const LIBELLE_TYPE_CONCOURS: Record<string, string> = {
-  Championnat_D2: 'National D2',
-  Promotion: 'Promotion',
-  Concours_National: 'Championnat national',
-  Concours: 'Concours',
-};
-
+/* Assemblage du tableau de bord individuel.
+ *
+ * Les onglets évitent la page-fleuve : sur un téléphone, tout empiler
+ * obligerait à défiler longuement avant d'atteindre la vie de club. Un
+ * membre non-licencié ne voit que « Ma vie de club » — les autres onglets
+ * ne seraient pas vides, ils seraient sans objet. */
 export function TableauDeBordMoncaro({
   saison,
   adhesion,
@@ -29,7 +29,7 @@ export function TableauDeBordMoncaro({
   statsVisibles,
   concoursVisible,
   monNom,
-  mesStatsD2,
+  bilan,
   statsPromotion,
   participationsConcours,
 }: {
@@ -38,154 +38,76 @@ export function TableauDeBordMoncaro({
   parametres: ParametresClub | null;
   benevolat: TableauDeBordBenevole | null;
   statsVisibles: boolean;
-  /** Carte "Concours & remboursements" — n'a de sens que pour un licencié
-   *  (participe aux concours) ou le CA (gère les remboursements). Un simple
-   *  membre non-licencié n'a rien à y voir (retour Jérôme, note vocale #128
-   *  du 07/08/2026). */
   concoursVisible: boolean;
   monNom: string | null;
-  mesStatsD2: StatJoueurD2 | null;
+  bilan: BilanSportifD2 | null;
   statsPromotion: StatistiquesPromotion | null;
   participationsConcours: MaParticipationConcours[];
 }) {
+  // Rapprochement par clé insensible à l'ordre des mots : `promotion_equipes`
+  // écrit « SCHMIT Marie-Louise » là où le registre donne « Marie-Louise
+  // SCHMIT ». Une comparaison littérale ne trouvait jamais personne.
   const monEntreePromotion =
-    monNom && statsPromotion ? statsPromotion.joueurs.find((j) => sansAccentsMinuscules(j.nom) === sansAccentsMinuscules(monNom)) : null;
+    monNom && statsPromotion
+      ? (statsPromotion.joueurs.find((j) => cleNomJoueur(j.nom) === cleNomJoueur(monNom)) ?? null)
+      : null;
+
+  const sortiesPromotion = participationsConcours
+    .filter((p) => p.type === 'Promotion')
+    .map((p) => ({ id: p.id, date: p.date, club: p.club }));
+
+  // Les sections sont passées à `Tabs` sous forme de tableau : chacune porte
+  // donc sa clé, posée ici où l'élément est créé (React attribue l'absence
+  // de clé au composant créateur, pas au consommateur).
+  const vieDeClub = (
+    <SectionVieDeClub
+      key="vie-de-club"
+      saison={saison}
+      monNom={monNom}
+      adhesion={adhesion}
+      parametres={parametres}
+      benevolat={benevolat}
+      participationsConcours={participationsConcours}
+      concoursVisible={concoursVisible}
+    />
+  );
+
+  const onglets: { label: string; contenu: ReactElement }[] = statsVisibles
+    ? [
+        { label: 'Ma saison', contenu: <BilanSportif key="saison" bilan={bilan} /> },
+        { label: 'Championnat', contenu: <SectionChampionnat key="championnat" bilan={bilan} /> },
+        {
+          label: 'Promotion',
+          contenu: (
+            <SectionPromotion
+              key="promotion"
+              saison={saison}
+              entree={monEntreePromotion}
+              sorties={sortiesPromotion}
+            />
+          ),
+        },
+        { label: 'Ma vie de club', contenu: vieDeClub },
+      ]
+    : [{ label: 'Ma vie de club', contenu: vieDeClub }];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <CarteCotisationMoncaro saison={saison} monNom={monNom} adhesion={adhesion} parametres={parametres} />
+    <div className="flex flex-col gap-6">
+      <EnTeteLicencie
+        nom={monNom}
+        saison={saison}
+        adhesion={adhesion}
+        resume={statsVisibles ? resumeSaison(bilan) : null}
+        distinctions={statsVisibles && bilan ? calculerDistinctions(bilan) : []}
+      />
 
-      {statsVisibles && (
-        <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-          <div className="mb-3 flex items-center gap-2">
-            <Trophy size={16} className="text-pin" />
-            <h2 className="font-display text-[15px]">Compétition</h2>
-          </div>
-          <div className="flex flex-col gap-2.5">
-            {mesStatsD2 ? (
-              <Link
-                href="/national-d2"
-                className="flex items-center justify-between text-[13px] text-encre hover:text-terracotta"
-              >
-                <span>National D2 — {mesStatsD2.joues} partie(s)</span>
-                <span className="font-score text-base text-terracotta">
-                  {Math.round(mesStatsD2.tauxVictoire * 100)}%
-                </span>
-              </Link>
-            ) : (
-              <p className="text-[12.5px] text-encre-douce">National D2 — aucune partie cette saison.</p>
-            )}
-            {monEntreePromotion ? (
-              <Link
-                href="/promotion"
-                className="flex items-center justify-between text-[13px] text-encre hover:text-terracotta"
-              >
-                <span>Promotion — {monEntreePromotion.participations} journée(s)</span>
-                <span className="font-score text-base text-terracotta">
-                  {Math.round(monEntreePromotion.tauxVictoire * 100)}%
-                </span>
-              </Link>
-            ) : (
-              <p className="text-[12.5px] text-encre-douce">Promotion — aucune journée cette saison.</p>
-            )}
-          </div>
-        </div>
+      <BandeauKPI bilan={statsVisibles ? bilan : null} engagementTotal={benevolat?.total ?? null} />
+
+      {onglets.length > 1 ? (
+        <Tabs labels={onglets.map((o) => o.label)}>{onglets.map((o) => o.contenu)}</Tabs>
+      ) : (
+        onglets[0].contenu
       )}
-
-      {concoursVisible && (
-      <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
-        <div className="mb-3 flex items-center gap-2">
-          <ReceiptText size={16} className="text-pin" />
-          <h2 className="font-display text-[15px]">Concours &amp; remboursements</h2>
-        </div>
-        {participationsConcours.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {participationsConcours.map((p) => (
-              <div key={p.id} className="flex items-center justify-between text-[13px] text-encre">
-                <span>{LIBELLE_TYPE_CONCOURS[p.type] ?? p.type}</span>
-                <span className="flex items-center gap-2">
-                  <span className="font-score text-terracotta">
-                    {p.montant_final != null ? `${p.montant_final.toFixed(2)} €` : '—'}
-                  </span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10.5px] ${
-                      p.statut === 'paye'
-                        ? 'bg-pin/10 text-pin'
-                        : p.statut === 'valide'
-                          ? 'bg-marine/10 text-marine'
-                          : 'bg-sable text-encre-douce'
-                    }`}
-                  >
-                    {p.statut === 'paye' ? 'Payé' : p.statut === 'valide' ? 'Validé' : 'En attente'}
-                  </span>
-                </span>
-              </div>
-            ))}
-            <Link href="/concours" className="mt-1 text-[12.5px] text-terracotta hover:underline">
-              Voir le détail →
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-encre-douce">Aucune participation enregistrée pour l&apos;instant.</p>
-            <Link href="/concours" className="text-[12.5px] text-terracotta hover:underline">
-              Déclarer un concours →
-            </Link>
-          </div>
-        )}
-      </div>
-      )}
-
-      <div className="rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] sm:col-span-2">
-        <div className="mb-3 flex items-center gap-2">
-          <HeartHandshake size={16} className="text-pin" />
-          <h2 className="font-display text-[15px]">Bénévolat</h2>
-        </div>
-        {benevolat && benevolat.total > 0 ? (
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <div className="font-score text-xl">{benevolat.total}</div>
-                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">total</div>
-              </div>
-              <div>
-                <div className="font-score text-xl">{benevolat.totalAVenir}</div>
-                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">à venir</div>
-              </div>
-              <div>
-                <div className="font-score text-xl">{benevolat.heuresTotal}h</div>
-                <div className="text-[10.5px] uppercase tracking-wide text-encre-douce/70">cumulées</div>
-              </div>
-            </div>
-            <Link href="/benevole/moi" className="mt-1 text-[12.5px] text-terracotta hover:underline">
-              Voir le détail →
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <p className="text-[13px] text-encre-douce">Aucune participation enregistrée pour l&apos;instant.</p>
-            <Link href="/benevole" className="text-[12.5px] text-terracotta hover:underline">
-              Voir les postes à pourvoir →
-            </Link>
-          </div>
-        )}
-      </div>
-
-      <Link
-        href="/manifestations/protocole"
-        className="flex items-center justify-between gap-3 rounded-2xl border border-ligne bg-sable-carte p-5 shadow-[0_1px_3px_rgba(36,27,18,.04)] transition-transform hover:-translate-y-0.5 sm:col-span-2"
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-terracotta/10 text-terracotta">
-            <ClipboardList size={16} />
-          </span>
-          <div>
-            <p className="font-display text-[15px]">Organiser une manifestation</p>
-            <p className="text-[12px] text-encre-douce">Formulaire de demande simplifiée</p>
-          </div>
-        </div>
-        <ArrowRight size={16} className="shrink-0 text-terracotta" />
-      </Link>
     </div>
   );
 }

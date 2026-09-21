@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
+  ContexteRencontreD2,
+  PartieJoueurD2Enrichie,
   StatEquipeD2,
   StatistiquesD2,
   StatistiquesPromotion,
@@ -7,6 +9,24 @@ import type {
   StatJoueurPromotion,
   StatTrioPromotion,
 } from './types';
+
+/** Une ligne telle que la renvoie la RPC `mes_parties_d2()` (migration
+ *  0062) : la partie, plus le contexte de sa rencontre. */
+type LigneMesParties = LigneParty & {
+  ordre: number | null;
+  journee: number;
+  date: string;
+  club_adverse: string | null;
+  domicile: boolean | null;
+  score_rencontre_cm: number | null;
+  score_rencontre_adverse: number | null;
+};
+
+/** Le bilan D2 du licencié connecté : la même forme que pour n'importe quel
+ *  joueur, mais avec le contexte collectif attaché à chaque partie. */
+export type MesStatistiquesD2 = Omit<StatJoueurD2, 'parties'> & {
+  parties: PartieJoueurD2Enrichie[];
+};
 import { cleNomMajuscules } from './normalisationTexte';
 
 /** Port de pointsVictoirePartie_() (ChampionnatBackend.gs:54) — règlement
@@ -122,17 +142,53 @@ export async function getStatistiquesJoueursD2(
 export async function getMesStatistiquesD2(
   supabase: SupabaseClient,
   saison: string
-): Promise<StatJoueurD2 | null> {
+): Promise<MesStatistiquesD2 | null> {
   const { data, error } = await supabase.rpc('mes_parties_d2', { p_saison: saison });
   if (error) throw error;
-  const lignes = (data ?? []) as (LigneParty & { journee: number; date: string; club_adverse: string | null })[];
+  const lignes = (data ?? []) as LigneMesParties[];
   if (!lignes.length) return null;
 
   const rencontreParId = new Map(
     lignes.map((l) => [l.rencontre_id, { id: l.rencontre_id, journee: l.journee, date: l.date, club_adverse: l.club_adverse }])
   );
   const { joueurs } = reduireStatistiquesD2(lignes, rencontreParId);
-  return joueurs[0] ?? null;
+  const stat = joueurs[0];
+  if (!stat) return null;
+
+  // Le camp et le score collectif sont portés par la rencontre, pas par la
+  // partie : on les rattache après coup plutôt que de les injecter dans
+  // reduireStatistiquesD2(), qui sert aussi la vue collective
+  // /national-d2 où ces colonnes n'existent pas.
+  //
+  // Clé (rencontre, phase, type) : pour UN joueur donné elle est unique —
+  // le règlement l'aligne au plus une fois par phase, et les lignes
+  // renvoyées ici ne concernent que lui.
+  const cle = (rencontreId: number, phase: number, type: string) => `${rencontreId}|${phase}|${type}`;
+  const contexteParPartie = new Map<string, ContexteRencontreD2>(
+    lignes.map((l) => [
+      cle(l.rencontre_id, l.phase, l.type),
+      {
+        domicile: l.domicile ?? null,
+        scoreRencontreCM: l.score_rencontre_cm ?? null,
+        scoreRencontreAdverse: l.score_rencontre_adverse ?? null,
+        ordre: l.ordre ?? null,
+      },
+    ])
+  );
+  const SANS_CONTEXTE: ContexteRencontreD2 = {
+    domicile: null,
+    scoreRencontreCM: null,
+    scoreRencontreAdverse: null,
+    ordre: null,
+  };
+
+  return {
+    ...stat,
+    parties: stat.parties.map((p) => ({
+      ...p,
+      ...(contexteParPartie.get(cle(p.idRencontre, p.phase, p.type)) ?? SANS_CONTEXTE),
+    })),
+  };
 }
 
 function reduireStatistiquesD2(
