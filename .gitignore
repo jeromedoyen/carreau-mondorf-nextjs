@@ -48,3 +48,11 @@ next-env.d.ts
 .vercel
 .env*
 __pycache__/
+
+# Graphe genere par le skill /graphify : 32 Mo regenerables
+graphify-out/
+
+# Outillage local de la machine, pas du code du projet :
+# skills installes, et des hooks qui referencent un chemin absolu de poste
+.claude/skills/
+.claude/settings.json
