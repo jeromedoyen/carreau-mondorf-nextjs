@@ -2,7 +2,19 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : 06/08/2026 (voir section dédiée en fin de fichier — note #125 déclaration concours assistée par IA livrée et passée en production, règle de process cherry-pick pour dev→main). Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
+Dernière mise à jour : **21/09/2026** — journée 14 saisie, **Carreau Mondorf champion de National D2 2026** (voir la dernière section du fichier).
+
+Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
+
+### Où en est le projet, en une lecture
+
+⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
+
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. Quarante et une routes, dont : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et une quinzaine d'écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+
+Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nextjs.vercel.app`.
+
+**Saison D2 2026 close.** Les 14 journées sont en base, 12 rencontres détaillées partie par partie, 18 joueurs. Un seul reliquat de données, décrit en fin de fichier : trois lignes de poule de la J14 que la FLBP n'avait pas encore publiées au 21/09.
 
 ## Session du 24/07/2026 — Phases 0 à D de la feuille de route
 
@@ -97,6 +109,8 @@ Choix assumé et explicite de **ne pas reproduire la charte graphique de `carrea
 
 ## Feuille de route "développement total" (décidée le 22/07/2026 avec Jérôme)
 
+> 🗄️ **Archive — les cinq phases sont livrées depuis longtemps.** Conservé pour la trace de la décision, pas pour l'état du projet. Ce qui a changé depuis : l'authentification tourne en **OTP à 6 chiffres** (Brevo abandonné, voir session du 23/07), les statistiques individuelles ont été **reverrouillées au CA** le 23/07, et les phases 4 et 5 sont en production. Voir « Où en est le projet » en tête de fichier.
+
 Jérôme a demandé de poursuivre le développement complet du prototype (pas juste le module Compétition en lecture seule). Séquencée en 5 phases :
 
 1. **Statistiques individuelles** (National D2 + Promotion) — **FAIT**, voir session du 22/07.
@@ -108,6 +122,8 @@ Jérôme a demandé de poursuivre le développement complet du prototype (pas ju
 **Décision actée** : les statistiques individuelles sont **publiques pour l'instant** (cohérent avec le périmètre 100% public actuel du prototype), alors qu'elles sont réservées au CA dans l'app d'origine (`requireMembreCA_`) — à reverrouiller une fois la phase 3 (auth) faite.
 
 ## Périmètre non couvert (pistes pour la suite, pas encore commencées)
+
+> 🗄️ **Archive — plus rien de cette liste n'est vrai au 21/09/2026.** Les trois points sont livrés et en production. En particulier, la phrase « ce prototype est 100% public/sans connexion » est **fausse** depuis le 23/07/2026 : l'application est authentifiée et l'essentiel des écrans est réservé aux licenciés ou au CA. Conservé pour la trace ; voir « Où en est le projet » en tête de fichier.
 
 - **Actions CA** : saisie de feuille de match, déclaration de forfait, édition d'une rencontre — tout ça reste dans l'app Apps Script pour l'instant (phase 5 ci-dessus).
 - **Authentification** : ce prototype est 100% public/sans connexion (phase 3 ci-dessus).
