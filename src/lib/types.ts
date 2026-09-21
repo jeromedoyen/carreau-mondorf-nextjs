@@ -85,6 +85,22 @@ export type StatEquipeD2 = {
   tauxVictoire: number;
 };
 
+/** Contexte collectif d'une partie — le résultat de la rencontre dans
+ *  laquelle elle s'est jouée, et le camp. Disponible uniquement via la RPC
+ *  `mes_parties_d2()` (migration 0062), donc absent de la vue collective
+ *  `/national-d2` qui lit `parties_d2` sans jointure sur la rencontre. */
+export type ContexteRencontreD2 = {
+  domicile: boolean | null;
+  scoreRencontreCM: number | null;
+  scoreRencontreAdverse: number | null;
+  /** Rang de la partie dans sa phase, tel que numéroté sur la feuille de
+   *  match — permet de réordonner les parties d'une journée comme elles
+   *  ont été jouées. */
+  ordre: number | null;
+};
+
+export type PartieJoueurD2Enrichie = PartieJoueurD2 & ContexteRencontreD2;
+
 export type StatistiquesD2 = {
   joueurs: StatJoueurD2[];
   equipes: StatEquipeD2[];
