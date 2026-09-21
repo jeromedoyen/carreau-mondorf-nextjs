@@ -754,3 +754,39 @@ Vérifié en poussant les deux rencontres non publiées à leurs issues extrême
 ### Reste ouvert
 
 Insérer les **trois lignes de poule manquantes de la J14** dès publication FLBP (Lasauvage–Schieren, Belvaux–Steinfort, exempt Steinheim), sous le préfixe `DIVD2-FLBP-2026-J14-*`, et en profiter pour recouper notre 37‑26 avec le tableau officiel.
+
+## Session du 21/09/2026 — avertissement React « unique key » sur /national-d2
+
+### Le symptôme
+
+En développement, la console de `/national-d2` affichait :
+
+> Each child in a list should have a unique "key" prop. Check the render method of `SectionToggle`. It was passed a child from NationalD2Page.
+
+Particularité qui a orienté le diagnostic : **rien au chargement de la page**, l'avertissement n'apparaissait qu'au **premier changement d'onglet**.
+
+### La cause n'est pas celle qu'on suppose
+
+`SectionToggle` ne construit aucun tableau : il reçoit `calendrier`, `statistiques` et `propositionIA` en props et n'en affiche qu'un à la fois. Le « tableau » incriminé est simplement la liste des enfants de son `<div>`, produite par JSX.
+
+Normalement React valide ces enfants statiques au moment de créer l'élément parent (`validateChildKeys`) et ne réclame donc pas de `key`. Sauf que ces trois sections sont rendues **côté Server Component** et traversent la charge RSC : elles arrivent au client sous forme de `lazy` **pas encore initialisés**. Relevé sur la fibre en direct, dans le navigateur :
+
+| prop | forme reçue côté client | `_store.validated` |
+|---|---|---|
+| `calendrier` | élément React | 1 |
+| `statistiques` | `lazy` (`fulfilled`) | 1 |
+| `propositionIA` | `lazy` (`resolved_model`) | **0** |
+
+`validateChildKeys` ne sait pas regarder à l'intérieur d'un `lazy` non résolu : il marque l'enveloppe, pas l'élément enveloppé. Le réconciliateur, lui, initialise le `lazy`, tombe sur un élément `validated: 0` sans `key`, et avertit. `calendrier` y échappe parce qu'il est déjà un élément simple au montage — d'où le silence au chargement et l'avertissement au premier basculement.
+
+### Le correctif
+
+Une `key` explicite par section, égale à l'identifiant de l'onglet, portée par un `Fragment` (aucun nœud DOM ajouté, rendu inchangé) — `src/components/SectionToggle.tsx`. La condition d'avertissement de React (`!validated && key == null`) ne se vérifie plus.
+
+⚠️ **Ne pas « nettoyer » ces `Fragment`** en les jugeant superflus : ils ne servent qu'à porter la clé, et les retirer ramène l'avertissement. Un commentaire le rappelle dans le fichier.
+
+**Le piège vaut pour tout composant client qui reçoit des sections rendues côté serveur et les place dans une liste d'enfants**, pas seulement pour `SectionToggle`.
+
+### Vérification
+
+Console vide, sur un onglet neuf, après un cycle complet Calendrier → Statistiques → Proposition IA → Calendrier (les deux panneaux réservés se montent bien : ils affichent leur message de restriction, l'essai n'est donc pas à vide). `npx tsc --noEmit` et `npm run build` passent. `npm run lint` rend exactement les mêmes 18 remontées qu'avant le correctif — toutes préexistantes, aucune sur `SectionToggle.tsx`.
