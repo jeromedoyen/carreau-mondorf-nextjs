@@ -738,3 +738,29 @@ Vérifié en poussant les deux rencontres non publiées à leurs issues extrême
 ### Reste ouvert
 
 Insérer les **trois lignes de poule manquantes de la J14** dès publication FLBP (Lasauvage–Schieren, Belvaux–Steinfort, exempt Steinheim), sous le préfixe `DIVD2-FLBP-2026-J14-*`, et en profiter pour recouper notre 37‑26 avec le tableau officiel.
+
+## Session du 21/09/2026 (suite) — la fiche en double de `personnes`
+
+Mise au jour par la clé de rapprochement `cle_nom_joueur()` introduite pour le tableau de bord individuel : le registre portait **deux fiches pour la même personne**.
+
+| | |
+|---|---|
+| **id 5** (`P-5`) | BENNONI « Gaia » — fiche complète : naissance, nationalité, adresse, téléphone, e-mail, droit à l'image, **et une adhésion 2026 « Licencié »** |
+| **id 68** (`P-68`) | BENNONI « Gaïa » — **le nom seul**, aucune autre colonne, aucune adhésion |
+
+**Ce n'était pas la clé qui se trompait, c'était le registre** — et c'est exactement ce qu'on attend d'elle : reconnaître comme une seule personne deux écritures d'un même nom.
+
+### Vérifications avant écriture
+
+- Les **sept clés étrangères** pointant vers `personnes` (`adhesions`, `appels_paiement`, `demandes_adhesion`, `participations_concours` ×2, `tournoi_participants`, `declarations_vocales_clarification`) : **aucune ligne** pour l'id 68.
+- Balayage des **146 colonnes texte** de la base : « Gaïa BENNONI » n'apparaît nulle part ailleurs. Ni dans `affectations.nom` — qui désigne pourtant les bénévoles par un nom libre, donc le seul endroit où un doublon aurait pu se cacher hors clé étrangère — ni dans `acces`, qui ne porte que « Gaia BENNONI » rattachée à son e-mail, donc à l'id 5.
+
+### Ce qui a été fait (migration 0063)
+
+Suppression **douce** (`supprime = true`) de l'id 68, jamais de `DELETE` : convention du projet sur toute donnée de registre, et trace réversible qu'exige une donnée RGPD. Une note explicative est écrite sur la fiche archivée. La migration porte cinq garde-fous (`prenom`/`nom` attendus, colonnes vides, aucun rattachement) : si quoi que ce soit avait été ajouté à cette fiche entre-temps, elle n'aurait rien fait.
+
+**Après** : plus aucune collision de clé dans le registre actif (124 personnes), et `gbennoni@gmail.com` résout toujours vers la seule fiche id 5, en lecture directe comme via `licencies_saison()`.
+
+### ⚠️ Laissé en l'état, délibérément
+
+**L'orthographe du prénom n'a pas été touchée.** Laquelle des deux graphies est la bonne — « Gaia » ou « Gaïa » — n'est pas déterminable depuis la base : la fiche vide n'est pas une preuve. L'existence même du doublon suggère que quelqu'un a un jour voulu corriger la graphie et a créé une ligne au lieu d'en modifier une, mais ce n'est qu'une hypothèse. À trancher avec la personne concernée, pas par déduction.
