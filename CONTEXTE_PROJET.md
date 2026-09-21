@@ -690,3 +690,51 @@ Détail conservé tel quel plutôt que tranché : la feuille porte « lalli nell
 ### Reste ouvert
 
 La **J14** (KaBoule à domicile, 19/09) clôt la saison. Elle décidera du titre : Mondorf mène d'un point avec le même nombre de rencontres jouées, et reçoit précisément son poursuivant.
+
+## Session du 21/09/2026 — journée 14 : **Carreau Mondorf champion de National D2 2026**
+
+### Carreau Mondorf 37 – 26 KaBoule (19/09)
+
+Dernière journée de la saison, à domicile, contre le poursuivant direct. Saisie depuis la feuille de match.
+
+Sous-totaux : tête à tête **12‑6**, triplettes **0‑15**, doublettes + 1 tête à tête **15‑0**, triplettes **10‑5**.
+
+Les neuf alignés : SCHMIT Marie-Louise, COLPIN Christophe, GARIDEL Serge, HONGROIS Julien, LE BERRE Yann, MARTINS José Antonio, OCHEM Eric, ROUSSET Dominique, TIHY Cyrille. Effectif de la saison inchangé à **18 joueurs**.
+
+**Classement final : Carreau Mondorf 1er** — 12 rencontres, 10 victoires, 2 défaites, 472/284 (+188), **22 points**. KaBoule 2e avec 20.
+
+### ⚠️ Correction de la règle notée à la J13 sur le nommage des joueurs
+
+La J13 concluait : « club A → prénoms, club B → noms de famille ». **C'est faux.** Ici Mondorf est club A (réception) et la feuille donne quand même les noms de famille (`Schmit M`, `Colpin C`, `Garidel S`…).
+
+**La bonne règle : lire la colonne, ne jamais déduire du camp.** Le libellé de l'en-tête est « nom prénom » dans les deux cas ; c'est le rédacteur de la feuille qui choisit, journée par journée.
+
+Deux relevés conservés tels quels plutôt que corrigés :
+
+- `Martins T` en partie 1, `martins A` dans les trois autres. Le registre ne contient **qu'un seul** MARTINS (José Antonio) — enregistré comme tel, le `T` est un lapsus d'écriture.
+- Côté KaBoule, `duchem P` (parties 1 et 2) et `juchem P` (parties 3 et 4), très probablement la même personne. On n'a pas réécrit la source.
+
+### La table de poule est incomplète, volontairement
+
+**La FLBP n'avait pas publié la J14 au 21/09** — le dernier tableau en ligne s'arrête à la J13. Une seule ligne de poule a donc été insérée, celle dont on a la preuve directe : `DIVD2-FEUILLE-2026-J14-CM`, Carreau Mondorf 37‑26 KaBoule, **source = notre feuille de match, pas la fédération**. Le préfixe diffère à dessein des `DIVD2-FLBP-2026-J*` pour que la provenance reste lisible.
+
+Conséquence visible à l'écran : Mondorf et KaBoule affichent 12 rencontres, les cinq autres clubs encore 11. C'est exact, pas un bug.
+
+Les affiches manquantes sont connues sans être chiffrées — **la poule à 7 rejoue les mêmes affiches à 7 journées d'écart, terrains inversés**. Le miroir de la J7 donne pour la J14 : Lasauvage–Schieren, Belvaux–Steinfort, **Mondorf–KaBoule** et exempt Stenemer Bulls Steinheim. La seule affiche vérifiable confirme le miroir (J7 : KaBoule‑Mondorf ; J14 : Mondorf‑KaBoule).
+
+⚠️ **Le format de publication de la FLBP a changé** : ce n'est plus un PDF mais un PNG (`.../2026/09/Resultats-J-13.png`, avec un `Classement-J-13.png` séparé). Le chemin `Resultats-J-11.pdf` noté en août ne vaut plus.
+
+### Le titre ne dépend pas des deux résultats manquants
+
+Vérifié en poussant les deux rencontres non publiées à leurs issues extrêmes (63‑0 dans un sens, puis dans l'autre) : dans les deux cas Mondorf finit **1er à 22 points**, KaBoule 2e à 20, et le mieux qu'un autre club puisse atteindre est 18. Aucun club n'a de rencontre en retard. **Le titre est acquis arithmétiquement.**
+
+### Vérifications
+
+- Les quatre sous-totaux de la feuille se recalculent depuis les parties : 12‑6, 0‑15, 15‑0, 10‑5, total 37‑26. Le script refusait d'écrire sinon, et refusait aussi si un joueur n'apparaissait pas exactement une fois par phase.
+- Statistiques joueurs : 18 joueurs, **432 couples joueur×partie** (12 rencontres × 9 joueurs × 4), chaque joueur à `journées × 4`, aucune double présence dans une même phase.
+- Les **douze** scores de rencontre se reconstituent exactement depuis les points individuels.
+- Somme de nos scores sur la saison : **472**. À recouper avec le « Points + » de la fédération quand elle publiera la J14 — c'est ce recoupement qui a validé les J11 à J13.
+
+### Reste ouvert
+
+Insérer les **trois lignes de poule manquantes de la J14** dès publication FLBP (Lasauvage–Schieren, Belvaux–Steinfort, exempt Steinheim), sous le préfixe `DIVD2-FLBP-2026-J14-*`, et en profiter pour recouper notre 37‑26 avec le tableau officiel.
