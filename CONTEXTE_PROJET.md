@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **21/09/2026** — journée 14 saisie, **Carreau Mondorf champion de National D2 2026** (voir la dernière section du fichier).
+Dernière mise à jour : **22/09/2026** — **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les neuf sections datées des 21 et 22/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,11 +10,21 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. Quarante et une routes, dont : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et une quinzaine d'écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 64 migrations, 99 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+
+**`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
 Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nextjs.vercel.app`.
 
-**Saison D2 2026 close.** Les 14 journées sont en base, 12 rencontres détaillées partie par partie, 18 joueurs. Un seul reliquat de données, décrit en fin de fichier : trois lignes de poule de la J14 que la FLBP n'avait pas encore publiées au 21/09.
+**Saison D2 2026 close.** Les 14 journées sont en base, 12 rencontres détaillées partie par partie, 18 joueurs.
+
+### Les trois chantiers ouverts, par ordre d'utilité
+
+1. **Résultats Promotion 2026** — 84 sorties déclarées dans `participations_concours`, **aucune feuille de journée saisie**. `promotion_equipes` s'arrête à 2025, donc l'onglet Promotion reste vide pour tout le monde et le dit franchement.
+2. **Convocations** — la table n'existe pas. Sans elle, pas de taux de présence réel ni de prochaines échéances ; le tableau de bord se rabat sur « journées jouées / rencontres disputées », exact mais différent. Structure proposée en fin de fichier. **Décision de fonctionnement du club avant d'être technique.**
+3. **Aucun harnais de test** — le défaut du 22/09, qui affichait le bilan d'un coéquipier, aurait été attrapé par trois lignes d'assertion.
+
+Reliquat de données : les **trois lignes de poule de la J14** (Lasauvage–Schieren, Belvaux–Steinfort, exempt Steinheim). Revérifié le 22/09 : la FLBP n'a toujours publié que jusqu'à la J13, et les URL J14 répondent 404. Le titre n'en dépend pas, c'est démontré en fin de fichier.
 
 ## Session du 24/07/2026 — Phases 0 à D de la feuille de route
 
