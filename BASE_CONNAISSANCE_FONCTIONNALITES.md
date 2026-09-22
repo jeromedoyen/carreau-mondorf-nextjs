@@ -74,7 +74,7 @@
 **Description** : exactement les mêmes sections que `/moncaro` (en-tête, indicateurs, onglets Saison / Championnat / Promotion / Vie de club), avec les libellés à la troisième personne (« Ses rencontres », « Son engagement au club ») et le nom complet en titre au lieu d'une salutation. Sélecteur de saison disponible. Le bouton de paiement de la cotisation n'apparaît pas : le QR SEPA est destiné à celui qui doit payer.
 **N'ouvre aucun accès nouveau** : `parties_d2`, `adhesions` et `personnes` sont déjà lisibles par le CA, et les statistiques de tous les joueurs figurent déjà sur `/national-d2`.
 **Exception, voulue** : la carte « Concours et remboursements » n'apparaît que pour la **trésorerie**. La RLS de `participations_concours` réserve les montants de remboursement à ce rôle, pas à l'ensemble du comité — un bandeau le signale en haut de page.
-**Accès depuis** : l'icône de tableau de bord sur chaque ligne du registre `/membres` (à côté du crayon de modification), ou le bouton « Voir son tableau de bord » sur la fiche `/membres/[id]`.
+**Accès depuis** : l'icône de tableau de bord sur chaque ligne du registre `/membres` (à côté du crayon de modification), le bouton « Voir son tableau de bord » sur la fiche `/membres/[id]`, ou le lien au bas du panneau déplié d'un joueur sur `/national-d2` → *Statistiques individuelles*. **Ce dernier lien n'apparaît que pour le CA** : ce classement est aussi visible par la commission sportive, plus large que le comité, qui n'a pas accès à cette page.
 
 ### `/moncaro/renouveler`
 **Accès** : licencié connecté.
