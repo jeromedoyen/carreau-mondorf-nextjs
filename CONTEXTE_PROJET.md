@@ -977,3 +977,22 @@ Les 18 joueurs de la saison passés par `getStatistiquesD2PourJoueur()` puis `co
 ### Reste ouvert
 
 Le projet n'a **aucun harnais de test**. Ce défaut aurait été attrapé par trois lignes d'assertion. À considérer si d'autres calculs de ce genre s'ajoutent.
+
+## Session du 22/09/2026 (suite) — le lien depuis le classement individuel, conditionné au CA
+
+Arbitrage rendu par Jérôme sur la question laissée ouverte : **conditionner le lien**, plutôt qu'élargir la route.
+
+Le bas du panneau déplié d'un joueur, sur `/national-d2` → *Statistiques individuelles*, porte désormais « Voir le tableau de bord de X ».
+
+### Deux conditions, pas une
+
+1. **`est_membre_ca()`**, et non l'accès qui ouvre l'écran. Ce classement est visible par la **commission sportive** (migration 0044), plus large que le comité, alors que `/membres/[id]/tableau-de-bord` est réservé au CA. Sans cette distinction, un membre de la commission aurait cliqué vers « Accès restreint ». **La route n'a pas été élargie** : le tableau de bord contient l'adhésion, les paiements et le bénévolat, bien au-delà du sportif.
+2. **La fiche du joueur doit être retrouvée.** Le classement regroupe par nom (depuis `parties_d2`), pas par identifiant : la résolution passe par `licencies_saison()` (qui n'expose qu'id, nom, prénom) et la clé insensible à l'ordre des mots. Joueur non retrouvé, pas de lien — plutôt qu'un lien cassé.
+
+Le lien est placé **dans le panneau déplié et non sur la ligne** : celle-ci est un `<button>` qui ouvre le détail, et un `<a>` ne peut pas y être imbriqué.
+
+### Vérifications
+
+- **18 joueurs du classement sur 18** résolvent vers leur fiche. La clé distingue correctement **Yann de Evan LE BERRE** et **Julien de Hugo HONGROIS**, deux paires présentes au registre dont un seul membre joue en D2.
+- Hors session : **aucun lien, aucun nom de joueur dans le HTML**, message « réservé aux licenciés ».
+- `tsc --noEmit` propre, lint inchangé (18 problèmes, tous antérieurs).

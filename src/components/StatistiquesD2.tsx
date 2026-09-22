@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, ChevronUp, LayoutDashboard } from 'lucide-react';
 import type { StatistiquesD2 as StatistiquesD2Data, StatJoueurD2 } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { getStatistiquesJoueursD2, getMesStatistiquesD2 } from '@/lib/stats';
 import { SparklinePoints, BarreProportion, GraphiquePointsParJournee, IconeTypePartie } from './StatsCharts';
+import { cleNomJoueur } from '@/lib/normalisationTexte';
 
 type TriColonne = 'tauxVictoire' | 'joues' | 'points';
 type Etat = 'verification' | 'mesStats' | 'chargement' | 'pret' | 'nonLicencie';
@@ -37,6 +39,18 @@ export function StatistiquesD2({ saison }: { saison: string }) {
   const [mesStats, setMesStats] = useState<StatJoueurD2 | null>(null);
   const [tri, setTri] = useState<TriColonne>('tauxVictoire');
   const [ouvert, setOuvert] = useState<string | null>(null);
+  /** Nom de joueur -> identifiant de fiche, pour le lien vers le tableau de
+   *  bord. Vide tant qu'on n'est pas CA : cette liste ne sert qu'à ça.
+   *
+   *  ⚠️ Le lien est conditionné à `est_membre_ca()` et **non** à l'accès qui
+   *  ouvre cet écran : le classement complet est aussi visible par la
+   *  commission sportive (migration 0044), plus large que le comité, alors
+   *  que `/membres/[id]/tableau-de-bord` est réservé au CA. Sans cette
+   *  distinction, un membre de la commission cliquerait vers un « Accès
+   *  restreint ». Élargir la route serait exposer l'adhésion, les paiements
+   *  et le bénévolat, bien au-delà du sportif — décision volontairement non
+   *  prise ici (arbitrage Jérôme, 22/09/2026). */
+  const [fichesParJoueur, setFichesParJoueur] = useState<Map<string, number>>(new Map());
 
   /** Un licencié non-CA ne voit plus "réservé au comité" (retour Jérôme,
    *  26/07/2026) mais SES propres statistiques, via mes_parties_d2() —
@@ -54,10 +68,29 @@ export function StatistiquesD2({ saison }: { saison: string }) {
       if (annule) return;
       if (accesComplet) {
         setEtat('chargement');
-        const resultat = await getStatistiquesJoueursD2(supabase, saison);
+        const [resultat, { data: ca }] = await Promise.all([
+          getStatistiquesJoueursD2(supabase, saison),
+          supabase.rpc('est_membre_ca'),
+        ]);
         if (annule) return;
         setStats(resultat);
         setEtat('pret');
+        if (ca) {
+          // `licencies_saison()` n'expose qu'id, nom et prénom (migration
+          // 0050) — rien de plus sensible, et seulement pour la saison
+          // demandée. Un joueur absent de la liste n'aura simplement pas de
+          // lien, plutôt qu'un lien cassé.
+          const { data: licencies } = await supabase.rpc('licencies_saison', { p_saison: saison });
+          if (annule) return;
+          setFichesParJoueur(
+            new Map(
+              ((licencies ?? []) as { id: number; nom: string; prenom: string }[]).map((l) => [
+                cleNomJoueur(`${l.prenom} ${l.nom}`),
+                l.id,
+              ])
+            )
+          );
+        }
         return;
       }
       const { data: licencie } = await supabase.rpc('est_licencie', { p_saison: saison });
@@ -220,6 +253,22 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                         ))}
                       </div>
                     </div>
+                    {/* Le lien vit dans le panneau déplié, pas sur la ligne :
+                        celle-ci est un <button> qui ouvre le détail, et un
+                        <a> ne peut pas y être imbriqué. Il n'apparaît que
+                        pour le CA, et seulement si la fiche du joueur est
+                        retrouvée. */}
+                    {fichesParJoueur.has(cleNomJoueur(j.nom)) && (
+                      <div className="border-t border-ligne pt-3 sm:col-span-3">
+                        <Link
+                          href={`/membres/${fichesParJoueur.get(cleNomJoueur(j.nom))}/tableau-de-bord`}
+                          className="inline-flex items-center gap-2 rounded-lg px-1.5 py-1 text-[12.5px] text-terracotta hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta"
+                        >
+                          <LayoutDashboard size={13} className="shrink-0" aria-hidden="true" />
+                          Voir le tableau de bord de {j.nom}
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
