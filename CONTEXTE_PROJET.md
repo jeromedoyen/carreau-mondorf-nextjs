@@ -903,3 +903,39 @@ Le bouton de paiement de la cotisation est masqué en mode consultation : le QR 
 ### Reste à faire
 
 Le **test connecté** reste entier, ici comme pour `/moncaro` : je ne me connecte pas à la place d'un membre. Jérôme est administrateur, il peut désormais ouvrir la fiche de n'importe quel joueur et voir son tableau de bord — c'est précisément ce que cette route rend possible.
+## Session du 22/09/2026 — le graphique des points recouvrait la liste des parties
+
+Signalé par Jérôme sur `/national-d2` → *Statistiques individuelles*, panneau déplié de Dominique ROUSSET : la colonne « Toutes les parties » passait par-dessus les dernières barres du graphique. Son intuition était juste — **ça ne touche que les joueurs ayant beaucoup de journées**.
+
+### Cause
+
+`GraphiquePointsParJournee` a une **largeur intrinsèque fixe** : `n × 22 px + (n−1) × 8 px`.
+
+| Journées | Largeur | Colonne disponible |
+|---|---|---|
+| 8 | 232 px | ~296 px ✓ |
+| 10 | 292 px | ~296 px ✓ (à la limite) |
+| **12** | **352 px** | ~296 px ✗ |
+| **14** | **412 px** | ~296 px ✗ |
+
+Au-delà d'une dizaine de journées, le graphique dépassait sa cellule. Et comme la troisième colonne est peinte après, c'est elle qui recouvrait le graphique — d'où l'impression que la liste « passait dessus ».
+
+Deux ingrédients, pas un seul : la largeur fixe, **et** le fait qu'un enfant de grille CSS a `min-width: auto` par défaut, donc refuse de rétrécir sous la largeur de son contenu.
+
+### Correction
+
+- Le graphique est enveloppé dans un conteneur `overflow-x-auto` : **il défile au lieu de déborder**. Les barres gardent leur largeur fixe — les rétrécir pour faire tenir quatorze journées les rendrait illisibles.
+- `[&>*]:min-w-0` sur les grilles qui l'accueillent, sans quoi la cellule ne peut pas rétrécir et c'est toute la grille qui déborde.
+
+Corrigé **à la source**, donc les trois usages en bénéficient : le panneau déplié et la fiche joueur de `/national-d2`, et la carte « Points par journée » de `/moncaro`, qui courait le même risque.
+
+### Vérifications
+
+Structure du panneau reproduite à l'identique et mesurée pour 8, 10, 12 et 14 journées :
+
+- **aucun débordement sur la colonne voisine** dans les quatre cas ;
+- défilement déclenché à partir de 12 journées seulement, apparence inchangée en dessous ;
+- ni la grille ni la page ne débordent ;
+- colonne unique (mobile) contrôlée à l'écran : graphique défilant, liste en dessous intacte.
+
+`tsc --noEmit` propre, lint inchangé (18 problèmes, tous antérieurs).

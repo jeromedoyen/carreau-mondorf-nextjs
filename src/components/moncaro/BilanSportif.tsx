@@ -31,7 +31,7 @@ export function BilanSportif({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
+      <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[auto_1fr]">
         <Carte titre="Victoires et défaites" icone={PieChart}>
           <AnneauVictoires victoires={bilan.victoires} defaites={bilan.defaites} />
           {bilan.meilleureSerie >= 2 && (
