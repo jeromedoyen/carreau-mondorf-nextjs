@@ -135,17 +135,26 @@ export async function getStatistiquesJoueursD2(
 
 /** Statistiques d'un seul joueur (le licencié connecté), via la RPC
  *  `mes_parties_d2()` (migration 0022) plutôt qu'une lecture directe de
- *  `parties_d2` (CA-only) — la RPC ne renvoie déjà que les lignes où le nom
- *  de la session apparaît, donc `reduireStatistiquesD2` produira au plus
- *  une entrée dans `joueurs`. Remplace le message "réservé au CA" pour un
- *  licencié non-CA (retour Jérôme, 26/07/2026). */
+ *  `parties_d2` (CA-only). Remplace le message "réservé au CA" pour un
+ *  licencié non-CA (retour Jérôme, 26/07/2026).
+ *
+ *  ⚠️ La RPC ne renvoie que les lignes où le nom de la session apparaît,
+ *  **mais chacune cite aussi ses partenaires** : le regroupement produit
+ *  donc plusieurs joueurs, et il faut retrouver le bon par son nom. C'est
+ *  pourquoi on résout ici `mon_nom_benevole()` pour le passer plus bas —
+ *  le raisonnement inverse, écrit ici jusqu'au 22/09/2026, est ce qui
+ *  faisait afficher le bilan d'un coéquipier. */
 export async function getMesStatistiquesD2(
   supabase: SupabaseClient,
   saison: string
 ): Promise<MesStatistiquesD2 | null> {
-  const { data, error } = await supabase.rpc('mes_parties_d2', { p_saison: saison });
+  const [{ data, error }, { data: monNom }] = await Promise.all([
+    supabase.rpc('mes_parties_d2', { p_saison: saison }),
+    supabase.rpc('mon_nom_benevole'),
+  ]);
   if (error) throw error;
-  return assemblerBilanJoueur((data ?? []) as LigneMesParties[]);
+  if (!monNom) return null;
+  return assemblerBilanJoueur((data ?? []) as LigneMesParties[], monNom as string);
 }
 
 /** Même bilan, pour un joueur désigné par son nom plutôt que par la
@@ -205,19 +214,37 @@ export async function getStatistiquesD2PourJoueur(
       } as LigneMesParties;
     });
 
-  return assemblerBilanJoueur(lignes);
+  return assemblerBilanJoueur(lignes, nomJoueur);
 }
 
 /** Réduction commune aux deux chemins ci-dessus : mêmes agrégats, même
- *  rattachement du contexte collectif. */
-function assemblerBilanJoueur(lignes: LigneMesParties[]): MesStatistiquesD2 | null {
+ *  rattachement du contexte collectif.
+ *
+ *  ⚠️ `nomJoueur` n'est pas facultatif, et c'est tout l'objet du correctif du
+ *  22/09/2026. Les lignes reçues ne concernent que le joueur visé, mais
+ *  chacune cite AUSSI ses partenaires de doublette ou de triplette :
+ *  `reduireStatistiquesD2` produit donc une entrée par joueur cité, pas une
+ *  seule. Prendre `joueurs[0]` — trié par taux de victoire décroissant —
+ *  renvoyait le partenaire au meilleur pourcentage.
+ *
+ *  Constaté en production : la fiche de Dominique ROUSSET (48 parties, 65 %)
+ *  affichait 4 parties à 100 %, qui étaient celles de Marco BERTEMES, sous
+ *  le nom de ROUSSET. Le bilan doit être **cherché par sa clé**, jamais pris
+ *  par position. */
+function assemblerBilanJoueur(
+  lignes: LigneMesParties[],
+  nomJoueur: string
+): MesStatistiquesD2 | null {
   if (!lignes.length) return null;
 
   const rencontreParId = new Map(
     lignes.map((l) => [l.rencontre_id, { id: l.rencontre_id, journee: l.journee, date: l.date, club_adverse: l.club_adverse }])
   );
   const { joueurs } = reduireStatistiquesD2(lignes, rencontreParId);
-  const stat = joueurs[0];
+  const cleCible = cleNomJoueur(nomJoueur);
+  const stat = joueurs.find((j) => cleNomJoueur(j.nom) === cleCible);
+  // Pas de repli sur un autre joueur : si le nom demandé n'apparaît pas,
+  // c'est qu'il n'a pas joué, et un bilan vide est la seule réponse juste.
   if (!stat) return null;
 
   // Le camp et le score collectif sont portés par la rencontre, pas par la

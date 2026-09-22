@@ -939,3 +939,41 @@ Structure du panneau reproduite à l'identique et mesurée pour 8, 10, 12 et 14 
 - colonne unique (mobile) contrôlée à l'écran : graphique défilant, liste en dessous intacte.
 
 `tsc --noEmit` propre, lint inchangé (18 problèmes, tous antérieurs).
+
+## Session du 22/09/2026 — 🔴 le tableau de bord affichait le bilan d'un coéquipier
+
+Signalé par Jérôme sur la fiche de Dominique ROUSSET : **4 parties, 100 %, 2 journées** au lieu de 48 parties, 65 %, 12 journées.
+
+Ce n'était pas un défaut d'affichage. **C'étaient les statistiques de quelqu'un d'autre, sous son nom** — celles de Marco BERTEMES (4 parties, 4 victoires, 18 points, 2 journées), au chiffre près.
+
+### Cause
+
+`assemblerBilanJoueur()` prenait **`joueurs[0]`**, en s'appuyant sur ce raisonnement, écrit en commentaire depuis juillet :
+
+> « la RPC ne renvoie déjà que les lignes où le nom de la session apparaît, donc `reduireStatistiquesD2` produira au plus une entrée dans `joueurs` »
+
+**Ce raisonnement est faux.** Les lignes ne concernent bien que le joueur visé, mais chacune cite **aussi ses partenaires** de doublette et de triplette. Le regroupement produit donc une entrée par joueur cité — onze dans le cas de ROUSSET — et la liste est triée par **taux de victoire décroissant**. `joueurs[0]` renvoyait donc le partenaire au meilleur pourcentage, jamais le joueur demandé sauf coïncidence.
+
+### Correction
+
+Le bilan est **cherché par sa clé**, plus jamais pris par position. `getMesStatistiquesD2()` résout désormais `mon_nom_benevole()` pour savoir qui chercher ; `getStatistiquesD2PourJoueur()` a déjà le nom. **Aucun repli sur un autre joueur** : si le nom demandé n'apparaît pas, le bilan est vide, ce qui est la seule réponse juste.
+
+### Portée
+
+Le défaut touchait **`/moncaro` depuis sa mise en ligne** : chaque licencié pouvait lire le bilan partiel d'un coéquipier présenté comme le sien. Et la vue comité depuis la veille.
+
+### ⚠️ Pourquoi ma vérification ne l'avait pas vu
+
+Ma page d'aperçu construisait l'objet de statistiques **à la main** avant de le passer aux composants. Elle a donc validé le rendu, la mise en page et les états vides — mais **jamais la sélection du joueur**, qui est précisément là où était le bug. Un aperçu qui contourne la couche qu'il est censé éprouver ne prouve rien sur elle.
+
+**Leçon à retenir pour les prochaines vérifications : passer par le vrai chemin de code, même quand il est plus pénible à instrumenter.**
+
+### Vérification refaite, correctement
+
+Les 18 joueurs de la saison passés par `getStatistiquesD2PourJoueur()` puis `construireBilanSportifD2()` — le chemin exact de la page — et comparés à une vérité recalculée séparément depuis les lignes brutes : **aucun écart**. ROUSSET rend bien 48 parties, 31 victoires, 112 points.
+
+⚠️ `/moncaro` emprunte l'autre chemin (la RPC, avec session) : la logique de sélection est la même et se trouve dans la fonction partagée, mais **le parcours connecté reste à confirmer par Jérôme**.
+
+### Reste ouvert
+
+Le projet n'a **aucun harnais de test**. Ce défaut aurait été attrapé par trois lignes d'assertion. À considérer si d'autres calculs de ce genre s'ajoutent.
