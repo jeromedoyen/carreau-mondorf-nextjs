@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MessageSquareText, Pencil, Trash2 } from 'lucide-react';
+import { LayoutDashboard, MessageSquareText, Pencil, Trash2 } from 'lucide-react';
 import { supprimerMembre } from '@/lib/actions/membres';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
@@ -277,9 +277,21 @@ export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion
               </td>
               <td className="px-4 py-2.5">
                 <div className="flex items-center gap-2.5">
+                  {/* Consulter avant de modifier : on ne devrait pas avoir à
+                      ouvrir un formulaire d'édition pour simplement regarder
+                      la saison de quelqu'un (retour Jérôme, 22/09/2026). */}
+                  <Link
+                    href={`/membres/${p.id}/tableau-de-bord`}
+                    aria-label={`Tableau de bord de ${p.nom} ${p.prenom}`}
+                    title="Voir son tableau de bord"
+                    className="text-encre-douce/60 hover:text-terracotta"
+                  >
+                    <LayoutDashboard size={14} />
+                  </Link>
                   <Link
                     href={`/membres/${p.id}`}
                     aria-label={`Modifier ${p.nom} ${p.prenom}`}
+                    title="Modifier sa fiche"
                     className="text-encre-douce/60 hover:text-terracotta"
                   >
                     <Pencil size={14} />
