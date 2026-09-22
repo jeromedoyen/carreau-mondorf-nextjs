@@ -169,7 +169,11 @@ export function StatistiquesD2({ saison }: { saison: string }) {
                   )}
                 </button>
                 {estOuvert && (
-                  <div className="entree grid gap-4 border-t border-ligne bg-sable/40 px-2 py-4 sm:grid-cols-3">
+                  // `[&>*]:min-w-0` : sans ça, une cellule de grille refuse de
+                  // rétrécir sous la largeur de son contenu, et le graphique des
+                  // points par journée débordait sur la liste des parties pour
+                  // les joueurs ayant beaucoup de journées (22/09/2026).
+                  <div className="entree grid gap-4 border-t border-ligne bg-sable/40 px-2 py-4 [&>*]:min-w-0 sm:grid-cols-3">
                     <div>
                       <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">
                         Par type de partie
@@ -267,7 +271,7 @@ function CarteMesStatistiques({ joueur }: { joueur: StatJoueurD2 }) {
         pts/partie en moyenne.
       </p>
 
-      <div className="grid gap-6 sm:grid-cols-3">
+      <div className="grid gap-6 [&>*]:min-w-0 sm:grid-cols-3">
         <div>
           <p className="mb-2 text-[11px] uppercase tracking-wide text-encre-douce/60">Par type de partie</p>
           <div className="flex flex-col gap-2.5">

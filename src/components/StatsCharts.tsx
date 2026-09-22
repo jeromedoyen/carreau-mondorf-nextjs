@@ -108,6 +108,18 @@ export function GraphiquePointsParJournee({
       <div className="flex h-4 items-center text-[11.5px] font-medium text-terracotta">
         {actif ? `Journée ${actif.journee} · ${actif.points} pts` : ' '}
       </div>
+      {/* Les barres gardent une largeur fixe : les rétrécir pour faire
+          tenir quatorze journées les rendrait illisibles. Au-delà d'une
+          dizaine, le graphique dépasse donc sa colonne — il défile
+          désormais horizontalement au lieu de déborder sur ce qui suit.
+          Sans ce conteneur, il recouvrait la liste des parties dès qu'un
+          joueur avait beaucoup de journées (constaté sur un joueur à 12
+          journées, le 22/09/2026).
+          ⚠️ La cellule qui accueille ce graphique doit porter `min-w-0` :
+          sans ça, un enfant de grille refuse de rétrécir sous la largeur
+          de son contenu et c'est toute la grille qui déborde. */}
+      <div className="max-w-full overflow-x-auto overscroll-x-contain">
+        <div style={{ width: largeur }}>
       <svg
         width={largeur}
         height={hauteur}
@@ -144,16 +156,18 @@ export function GraphiquePointsParJournee({
           );
         })}
       </svg>
-      <div className="flex text-[10px] text-encre-douce/60" style={{ width: largeur }}>
-        {donnees.map((d, i) => (
-          <span
-            key={d.journee}
-            className="text-center"
-            style={{ width: largeurBarre, marginRight: i < donnees.length - 1 ? gap : 0 }}
-          >
-            J{d.journee}
-          </span>
-        ))}
+          <div className="mt-1.5 flex text-[10px] text-encre-douce/60" style={{ width: largeur }}>
+            {donnees.map((d, i) => (
+              <span
+                key={d.journee}
+                className="text-center"
+                style={{ width: largeurBarre, marginRight: i < donnees.length - 1 ? gap : 0 }}
+              >
+                J{d.journee}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
