@@ -1020,3 +1020,60 @@ Le lien est placé **dans le panneau déplié et non sur la ligne** : celle-ci e
 - **18 joueurs du classement sur 18** résolvent vers leur fiche. La clé distingue correctement **Yann de Evan LE BERRE** et **Julien de Hugo HONGROIS**, deux paires présentes au registre dont un seul membre joue en D2.
 - Hors session : **aucun lien, aucun nom de joueur dans le HTML**, message « réservé aux licenciés ».
 - `tsc --noEmit` propre, lint inchangé (18 problèmes, tous antérieurs).
+
+## Session du 22/09/2026 (suite) — audit de confidentialité, et trois défauts corrigés
+
+Demande de Jérôme : « toute information associée à une personne n'est-elle vue que par cette personne ou par les rôles autorisés ? **Vérifie précisément cela.** »
+
+Audit mené **par l'expérience** et non par relecture : sondage de toutes les tables et de toutes les RPC **avec la clé anonyme**, plus lecture des policies et des droits réels en base.
+
+### 🔴 1. La liste nominative des licenciés était lisible sans connexion
+
+`licencies_saison('2026')`, appelée avec la clé anonyme — celle qui est publiée dans le navigateur — renvoyait **les 62 licenciés avec id, nom et prénom**. L'annuaire du club, accessible à quiconque.
+
+⚠️ **PIÈGE SUPABASE, à retenir pour toute fonction future.** La migration 0050 écrivait pourtant la bonne intention :
+
+```sql
+revoke all on function ... from public;
+grant execute on function ... to authenticated;
+```
+
+Mais Supabase accorde `EXECUTE` au rôle `anon` par **privilège par défaut**, et `revoke ... from public` **ne retire pas** un droit accordé nommément à `anon` :
+
+```
+{postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
+                      ^^^^^^^^^^^^^^^
+```
+
+**Il faut révoquer `anon` explicitement.** Les 27 autres fonctions `security definer` portent le même défaut de droits, mais **aucune ne fuit** : toutes dérivent l'identité de `auth.jwt()->>'email'` et ne renvoient rien à un anonyme — vérifié en les appelant une à une. `licencies_saison` était la seule à prendre un paramètre sans vérifier qui appelle.
+
+### 🟠 2. Des noms de joueurs adverses en lecture publique
+
+`rencontres_d2` est publique à dessein (les scores), mais sa colonne `notes` portait, pour les journées 12 à 14, **la composition des équipes adverses** — des joueurs d'autres clubs, sans lien avec cette application. Écrites par Claude lors des saisies.
+
+La provenance est conservée, les noms partent. Le détail reste dans `parties_d2.joueurs_adverse`, réservée au CA, où il a sa place.
+
+### 🔴 3. `mes_participations_concours` échouait pour tous les appelants
+
+```
+column reference "id" is ambiguous
+select id into mon_id from public.personnes
+```
+
+Conflit entre le `id` du select et la colonne `id` du `returns table`. **La fonction plantait à chaque appel**, et `/moncaro` avalait l'erreur : la carte « Concours et remboursements » affichait « Aucune participation déclarée » à tout le monde. Même motif que les deux bugs de la veille — une réponse plausible et fausse. Corrigé en qualifiant `p.id`.
+
+### Ce qui était déjà correct
+
+- **RLS activée sur les 35 tables**, aucune sans protection.
+- Sondage anonyme : `personnes`, `adhesions`, `acces`, `parties_d2`, `participations_concours`, `affectations`, `conges`, `demandes_adhesion`, `appels_paiement`, `notes_vocales`, `journal_modifications`, tournois → **0 ligne**.
+- Cloisonnement par rôle exact : registre et parties → CA · remboursements → **trésorerie seule** · classement complet → commission sportive · bénévolat → licenciés.
+- `participations_concours` : `est_membre_tresorerie() OR personne_id = moi OR chef_equipe_id = moi`.
+- **23 des 28** fonctions `security definer` portent une garde interne ; toutes les fonctions d'écriture sont gardées ; les deux sans garde (`montants_club`, jeton de clarification) le sont par conception.
+
+### Après correctifs, revérifié
+
+Tables personnelles lisibles en anonyme : **0**. RPC renvoyant des données personnelles en anonyme : **aucune**. `licencies_saison` répond `permission denied`, et les cinq appelants — tous porteurs d'une session — gardent leur accès via `authenticated`.
+
+### ⚠️ La limite de cet audit
+
+**Le point de vue d'un licencié connecté non-CA n'a pas été éprouvé.** Ouvrir une session à la place d'un membre n'a pas été fait. Ce volet est établi par lecture des policies et par sondage anonyme, pas par l'expérience — c'est le seul angle mort, et il mériterait un test réel un jour.
