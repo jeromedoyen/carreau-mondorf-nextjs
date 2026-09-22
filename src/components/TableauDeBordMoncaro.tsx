@@ -10,7 +10,7 @@ import type { MaParticipationConcours } from './moncaro/SectionVieDeClub';
 import type { MonAdhesion } from '@/lib/moncaro';
 import type { ParametresClub } from '@/lib/paiements';
 import type { TableauDeBordBenevole } from '@/lib/benevolat';
-import type { StatistiquesPromotion } from '@/lib/types';
+import type { StatistiquesPromotion, StatJoueurPromotion } from '@/lib/types';
 import type { BilanSportifD2 } from '@/lib/tableauDeBord';
 import { calculerDistinctions, resumeSaison } from '@/lib/tableauDeBord';
 import { cleNomJoueur } from '@/lib/normalisationTexte';
@@ -32,6 +32,8 @@ export function TableauDeBordMoncaro({
   bilan,
   statsPromotion,
   participationsConcours,
+  entreePromotion,
+  consultation = false,
 }: {
   saison: string;
   adhesion: MonAdhesion | null;
@@ -43,14 +45,22 @@ export function TableauDeBordMoncaro({
   bilan: BilanSportifD2 | null;
   statsPromotion: StatistiquesPromotion | null;
   participationsConcours: MaParticipationConcours[];
+  /** Entrée Promotion déjà résolue par l'appelant. La vue du comité la
+   *  fournit directement ; /moncaro la laisse vide et on la déduit du nom. */
+  entreePromotion?: StatJoueurPromotion | null;
+  /** Vue du comité sur la fiche d'un membre : libellés à la troisième
+   *  personne, et le nom complet en titre plutôt qu'une salutation. */
+  consultation?: boolean;
 }) {
   // Rapprochement par clé insensible à l'ordre des mots : `promotion_equipes`
   // écrit « SCHMIT Marie-Louise » là où le registre donne « Marie-Louise
   // SCHMIT ». Une comparaison littérale ne trouvait jamais personne.
   const monEntreePromotion =
-    monNom && statsPromotion
-      ? (statsPromotion.joueurs.find((j) => cleNomJoueur(j.nom) === cleNomJoueur(monNom)) ?? null)
-      : null;
+    entreePromotion !== undefined
+      ? entreePromotion
+      : monNom && statsPromotion
+        ? (statsPromotion.joueurs.find((j) => cleNomJoueur(j.nom) === cleNomJoueur(monNom)) ?? null)
+        : null;
 
   const sortiesPromotion = participationsConcours
     .filter((p) => p.type === 'Promotion')
@@ -69,13 +79,20 @@ export function TableauDeBordMoncaro({
       benevolat={benevolat}
       participationsConcours={participationsConcours}
       concoursVisible={concoursVisible}
+      consultation={consultation}
     />
   );
 
   const onglets: { label: string; contenu: ReactElement }[] = statsVisibles
     ? [
-        { label: 'Ma saison', contenu: <BilanSportif key="saison" bilan={bilan} /> },
-        { label: 'Championnat', contenu: <SectionChampionnat key="championnat" bilan={bilan} /> },
+        {
+          label: consultation ? 'Saison' : 'Ma saison',
+          contenu: <BilanSportif key="saison" bilan={bilan} consultation={consultation} />,
+        },
+        {
+          label: 'Championnat',
+          contenu: <SectionChampionnat key="championnat" bilan={bilan} consultation={consultation} />,
+        },
         {
           label: 'Promotion',
           contenu: (
@@ -84,12 +101,13 @@ export function TableauDeBordMoncaro({
               saison={saison}
               entree={monEntreePromotion}
               sorties={sortiesPromotion}
+              consultation={consultation}
             />
           ),
         },
-        { label: 'Ma vie de club', contenu: vieDeClub },
+        { label: consultation ? 'Vie de club' : 'Ma vie de club', contenu: vieDeClub },
       ]
-    : [{ label: 'Ma vie de club', contenu: vieDeClub }];
+    : [{ label: consultation ? 'Vie de club' : 'Ma vie de club', contenu: vieDeClub }];
 
   return (
     <div className="flex flex-col gap-6">
@@ -99,6 +117,7 @@ export function TableauDeBordMoncaro({
         adhesion={adhesion}
         resume={statsVisibles ? resumeSaison(bilan) : null}
         distinctions={statsVisibles && bilan ? calculerDistinctions(bilan) : []}
+        consultation={consultation}
       />
 
       <BandeauKPI bilan={statsVisibles ? bilan : null} engagementTotal={benevolat?.total ?? null} />

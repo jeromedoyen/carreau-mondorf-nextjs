@@ -68,6 +68,14 @@
 
 **Actions possibles** : changer de saison, ouvrir le détail d'une rencontre, accéder au bénévolat, déclarer un concours, accéder au renouvellement d'adhésion (`/moncaro/renouveler`) si applicable.
 
+### `/membres/[id]/tableau-de-bord` — le tableau de bord d'un membre, vu par le comité
+**Accès** : **CA uniquement**. Un licencié non-CA ou un visiteur non connecté reçoit « Accès restreint ».
+**Objectif** : consulter ce qu'un membre voit sur son propre espace `/moncaro` — pour l'accompagner au téléphone, ou vérifier ce qui s'affiche chez lui.
+**Description** : exactement les mêmes sections que `/moncaro` (en-tête, indicateurs, onglets Saison / Championnat / Promotion / Vie de club), avec les libellés à la troisième personne (« Ses rencontres », « Son engagement au club ») et le nom complet en titre au lieu d'une salutation. Sélecteur de saison disponible. Le bouton de paiement de la cotisation n'apparaît pas : le QR SEPA est destiné à celui qui doit payer.
+**N'ouvre aucun accès nouveau** : `parties_d2`, `adhesions` et `personnes` sont déjà lisibles par le CA, et les statistiques de tous les joueurs figurent déjà sur `/national-d2`.
+**Exception, voulue** : la carte « Concours et remboursements » n'apparaît que pour la **trésorerie**. La RLS de `participations_concours` réserve les montants de remboursement à ce rôle, pas à l'ensemble du comité — un bandeau le signale en haut de page.
+**Accès depuis** : le bouton « Voir son tableau de bord » sur la fiche membre `/membres/[id]`.
+
 ### `/moncaro/renouveler`
 **Accès** : licencié connecté.
 **Objectif** : demander le renouvellement de son adhésion pour la saison active.

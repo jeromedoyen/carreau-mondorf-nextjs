@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { LayoutDashboard } from 'lucide-react';
 import { MembreForm } from '@/components/MembreForm';
 import { getPersonne, estMembreCA } from '@/lib/membres';
 import { getSaisonActive } from '@/lib/saisons';
@@ -40,6 +41,17 @@ export default async function ModifierMembrePage({ params }: { params: Promise<{
         <h1 className="font-display mt-1 text-3xl italic">
           {personne.prenom} {personne.nom}
         </h1>
+        {/* Raccourci vers ce que ce membre voit de son propre espace —
+            utile pour l'accompagner au téléphone, ou vérifier ce qui
+            s'affiche chez lui. N'ouvre aucun accès nouveau : le CA lit
+            déjà ces données. */}
+        <Link
+          href={`/membres/${id}/tableau-de-bord`}
+          className="mt-3 inline-flex items-center gap-2 rounded-lg border border-ligne bg-sable-carte px-3 py-1.5 text-[13px] text-encre transition-colors hover:border-terracotta hover:text-terracotta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta"
+        >
+          <LayoutDashboard size={14} className="shrink-0 text-terracotta" aria-hidden="true" />
+          Voir son tableau de bord
+        </Link>
       </header>
       <MembreForm personne={personne} saisonActuelle={saisonActive} />
     </main>
