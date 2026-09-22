@@ -977,3 +977,18 @@ Les 18 joueurs de la saison passés par `getStatistiquesD2PourJoueur()` puis `co
 ### Reste ouvert
 
 Le projet n'a **aucun harnais de test**. Ce défaut aurait été attrapé par trois lignes d'assertion. À considérer si d'autres calculs de ce genre s'ajoutent.
+
+## Session du 22/09/2026 (suite) — consulter sans passer par le formulaire de modification
+
+Retour de Jérôme : le tableau de bord d'un membre n'était atteignable que depuis sa fiche, c'est-à-dire **depuis un écran d'édition**. Consulter obligeait à ouvrir un formulaire de modification — mauvaise porte d'entrée, et risque d'édition involontaire.
+
+Chaque ligne du registre `/membres` porte désormais **deux icônes** : un tableau de bord pour consulter, un crayon pour modifier. La consultation est ainsi au même niveau que l'édition, et non derrière elle. Les deux portent un `title` et un `aria-label`.
+
+Vérifié : les deux liens sont bien générés par ligne avec le bon identifiant, sans erreur de console.
+
+### Piste écartée pour l'instant, et pourquoi
+
+Le second endroit naturel serait la liste des joueurs de `/national-d2` → *Statistiques individuelles*. Deux obstacles, dont un de fond :
+
+- Cette liste est ouverte à la **commission sportive** (`est_membre_commission_sportive()`), qui est **plus large que le CA**, alors que `/membres/[id]/tableau-de-bord` est réservé au CA. Un lien y mènerait donc certains utilisateurs droit vers « Accès restreint ». Il faudrait soit conditionner le lien à `est_membre_ca()`, soit ouvrir la route à la commission sportive — mais le tableau de bord contient l'adhésion, les paiements et le bénévolat, bien au-delà du sportif. **Élargir serait exposer plus que des statistiques : à trancher par Jérôme, pas par défaut.**
+- La liste regroupe par **nom** (depuis `parties_d2`), pas par `personne_id` : il faudrait résoudre nom → identifiant via `licencies_saison()`.
