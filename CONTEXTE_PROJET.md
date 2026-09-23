@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 65 migrations, 100 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 67 migrations, 101 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -20,7 +20,7 @@ Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nex
 
 ### Les trois chantiers ouverts, par ordre d'utilité
 
-1. **Résultats Promotion 2026 — partiellement couverts depuis le 23/09.** La FLBP n'a publié que **2 feuilles de journée sur 10** (J6 et J10), insérées. Les huit autres ne sont connues qu'en points de club. Reste à décider s'il faut une table de classement Promotion (`promotion_resultats_club`) — détail en fin de fichier.
+1. **Résultats Promotion 2026 — couverts autant que la FLBP le permet depuis le 23/09.** Trios de Mondorf : **2 feuilles de journée sur 10** (J6 et J10), c'est tout ce qui est publié. Classement des clubs : **complet** (0066), J9 déduite. Reste le calendrier fédéral 2025, vide, qui prive la saison 2025 de son bandeau de couverture.
 2. **Convocations** — la table n'existe pas. Sans elle, pas de taux de présence réel ni de prochaines échéances ; le tableau de bord se rabat sur « journées jouées / rencontres disputées », exact mais différent. Structure proposée en fin de fichier. **Décision de fonctionnement du club avant d'être technique.**
 3. **Aucun harnais de test** — le défaut du 22/09, qui affichait le bilan d'un coéquipier, aurait été attrapé par trois lignes d'assertion.
 
@@ -1136,7 +1136,7 @@ Chaque ligne porte huit chiffres : quatre paires. **L'ordre n'est écrit nulle p
 
 Reconstitué, **non inséré** — aucune table ne le porte (voir « Reste ouvert ») :
 
-| J1 12/04 | J2 19/04 | J3 25/04 | J4 02/05 | J5 10/05 | J6 17/05 | J7 05/07 | J8 12/07 | J9 30/08 | J10 06/09 | **Total** |
+| J1 12/04 | J2 19/04 | J3 25/04 | J4 02/05 | J5 09/05 | J6 17/05 | J7 05/07 | J8 12/07 | J9 30/08 | J10 06/09 | **Total** |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 45 | 40 | 20 | 40 | 35 | 15 | 30 | 45 | *20* | 25 | **315** |
 
@@ -1166,7 +1166,7 @@ La liste des saisons vient de `saisons` (publique) et non de `promotion_equipes`
 
 ### Deux écarts relevés, non corrigés — à trancher par Jérôme
 
-- **J5 : 09/05 dans `calendrier_federation`, 10/05 dans le tableau fédéral.** Aucune ligne J5 n'est insérée, donc rien n'en dépend aujourd'hui. À vérifier auprès du club.
+- **J5 : 09/05 dans `calendrier_federation`, 10/05 dans le tableau fédéral.** ✅ **Tranché par Jérôme le 23/09 : on retient la date du calendrier, 09/05** (migration 0067).
 - **Registre : « WALTE Daniellé »** (id 116), là où la fédération écrit « Danielle ». L'accent final n'existe pas dans ce prénom, c'est très probablement une coquille. Sans effet sur les statistiques (`cleNomMajuscules` ignore les accents). Même principe qu'au 0063 pour BENNONI : on ne corrige pas le prénom de quelqu'un sans le lui demander.
 
 ### Livraison
@@ -1186,6 +1186,68 @@ Le port 3000 de l'entrée `carreau-mondorf-nextjs` de `carreau-mondorf-app/.clau
 ### Reste ouvert
 
 - **2025 n'a pas de bandeau** : `calendrier_federation` ne contient aucune journée de Promotion 2025, donc le total reste inconnu et le composant se tait, comme prévu. Le mécanisme couvrira 2025 le jour où ce calendrier sera renseigné — il manque la J5 dans `promotion_equipes` 2025.
-- **Pas de table de classement Promotion.** Le bilan par journée et le classement final ci-dessus n'ont pas de place en base : `promotion_equipes` ne porte que nos trios, et il n'existe pas d'équivalent de `division_d2_resultats`. Créer `promotion_resultats_club` (saison, journée, club, points) permettrait d'afficher le classement officiel et notre bilan complet. **Décision de Jérôme** — c'est un choix de périmètre, pas une correction.
+- ~~**Pas de table de classement Promotion.**~~ **Fait le même jour** (0066) — voir la section suivante.
 - **Les huit autres feuilles de journée** n'existent pas en ligne. Si le club conserve ses propres feuilles de journée, elles compléteraient `promotion_equipes` sans ambiguïté.
 - **Test réel non fait** : le bandeau et l'en-tête n'ont pas été vus dans une session de licencié connecté. Même limite que les jours précédents. Le plus simple : se connecter en production comme licencié présent en J6 ou J10 (MARION Stéphane, FLAMMANG Marie-Jean…) et ouvrir `/moncaro` → onglet Promotion, puis `/promotion`.
+
+## Session du 23/09/2026 (suite) — la table de classement Promotion
+
+Jérôme : « crée la table de classement Promotion ». C'était le point laissé ouvert plus haut.
+
+### Deux tables, parce que deux grains (migration 0066)
+
+| Table | Une ligne = | Source |
+|---|---|---|
+| `promotion_resultats_club` | un club à une journée : `jouee`, `points`, `deduit` | tableau « Total Journées » (J1-J8), feuilles J6 et J10, J9 déduite |
+| `promotion_classement` | un club dans un classement **publié** à l'issue d'une journée : position, rencontres, 4/4, points | `PROMO-Classement-6`, `-8`, `-10` |
+
+2026 : **140 résultats de journée** (14 clubs × 10) et **3 classements officiels** (42 lignes). Lecture réservée aux utilisateurs autorisés, comme tout le module Promotion (0007). Aucune policy d'écriture : alimentation par migration seulement, comme `division_d2_resultats`.
+
+`jouee` est distinct de « 0 point » : Lasauvage joue la J8 et n'y marque rien, Kayl ne la joue pas.
+
+### Pourquoi le classement est stocké tel que publié, et non recalculé
+
+Le départage à égalité de points se fait **au nombre de 4/4**, établi sur les documents : après J6, Mondorf (195, 2×4/4) devance KaBoule (195, 1) ; après J8, trois clubs à 280 sont rangés 4, 3, 2. Mais ce décompte n'est publié que **cumulé**, et sa règle exacte n'est écrite nulle part : en J10, une équipe du Clair-Chêne gagne ses quatre parties **sans que ce 4/4 soit compté** (le club, organisateur ce jour-là, reste à 4). Impossible à reconstituer. Même leçon qu'en D2 : s'aligner sur le classement officiel plutôt que le recalculer.
+
+### Règles lues sur les documents, à retenir
+
+- **Un club marque avec ses trois meilleures équipes** (parties gagnées × 5). Vérifié sur les treize clubs de chacune des deux feuilles : Boule d'Or aligne cinq équipes en J10 (2, 3, 2, 3, 1 victoires) et marque 8 × 5 = 40, pas 55. D'où **60 points au plus par journée**.
+- Le tableau fédéral date la J5 au **10/05** ; `calendrier_federation` dit 09/05. ✅ **Jérôme retient la date du calendrier** : les 14 lignes J5 passent au 09/05 (migration 0067, corrigée à part plutôt qu'en modifiant 0066 déjà appliquée). 0067 ajoute un garde-fou durable : **chaque journée de `promotion_resultats_club` doit porter la date de son entrée « (Jn) » dans le calendrier fédéral** — les dix concordent.
+
+### La J9, jamais publiée, déduite club par club
+
+Classement après J10 − classement après J8 − points de J10. Les quatorze valeurs tombent sur un multiple de 5 positif, ce qui aurait très probablement trahi une erreur de lecture. Marquées `deduit = true`, affichées en pointillés avec un astérisque et une note.
+
+### ⚠️ Écart dans les documents fédéraux, conservé tel quel
+
+Kayl a **4 rencontres** dans le classement après J6, puis **3** après J8 et J10 — un compteur qui baisse. Le « Total Journées », dont le fichier porte « Vérifié », dit 3 (J1, J2, J4). `promotion_resultats_club` suit ce 3 ; `promotion_classement` garde le 4 publié après J6, puisque cette table recopie la fédération sans la corriger. ✅ **Traitement validé par Jérôme le 23/09.**
+
+### Six garde-fous dans la migration (transaction annulée au moindre écart)
+
+1. Chaque journée couvre exactement 14 clubs.
+2. Chaque classement publié compte 14 clubs, positions 1 à 14.
+3. **Somme des points de journée = points du classement**, pour chaque club et chaque classement. Après J6 et J8, c'est une vérification **indépendante** : deux documents différents concordent sur les quatorze clubs.
+4. Rencontres jouées = journées marquées jouées (seule exception, nommée : Kayl après J6).
+5. L'ordre publié respecte « points, puis 4/4 ».
+6. Les points de Mondorf en J6 et J10 égalent la somme de ses trios dans `promotion_equipes` (0065).
+
+**Contre-épreuve faite** : une seule cellule faussée (Mondorf J3, 20 → 25) dans une transaction annulée est détectée dans les trois classements. Le contrôle ne passe pas à vide.
+
+### Affichage : onglet « Classement » sur `/promotion`
+
+`ClassementPromotion` : le classement officiel, avec un sélecteur J6 / J8 / J10 (J10 par défaut, titré « Classement final ») et des flèches d'évolution depuis le classement publié précédent. Ensuite, **Carreau Mondorf journée par journée** : barres sur 60 possibles, points au-dessus de chaque barre, place du club ce jour-là en dessous.
+
+L'onglet est ouvert à tout utilisateur autorisé, comme le calendrier — c'est un classement de clubs, pas une statistique individuelle. `Statistiques` reste réservé aux licenciés de la saison et au CA.
+
+Le bandeau de couverture disait « Tout ce qui suit ne porte que sur les journées connues » : ce n'est plus vrai pour le classement, qui couvre toute la saison. Le texte le précise désormais.
+
+**Bilan Promotion 2026 de Carreau Mondorf : 8e sur 14, 315 points.** Meilleures journées : J1 et J8 (45 pts, 2e du jour) ; plus difficile : J6 (15 pts, 12e).
+
+### Vérification
+
+- Vrai composant, vraies données (`getClassementPromotion`), rendu dans une **page d'aperçu locale temporaire** — la session était contournée par la clé serveur, faute de pouvoir se connecter à la place d'un licencié. Page supprimée avant le commit.
+- **375 px** : aucun élément ne déborde. Premier essai : les noms longs étaient tronqués (« Schierener Bulle… ») ; le détail « j. · 4/4 » passe désormais sous les points sur mobile, et les noms s'affichent en entier.
+- **Bureau** : 14 barres, aucun débordement, Mondorf en terracotta.
+- Anonyme : 0 ligne lue sur les deux tables.
+- ⚠️ **Piège d'outillage rencontré** : dans les commandes Bash de cette session, les doubles barres obliques inverses des heredocs sont réduites à une seule avant exécution. Un `'\\u00a0'` écrit par script Python est devenu un espace insécable brut, invisible, dans le source. Pour écrire une barre oblique inverse par script : `chr(92)`, ou passer par l'outil d'édition de fichier.
+- Un espace avant « : » disparaissait au rendu JSX (« J9: ») ; la phrase est désormais construite en chaîne, avec l'espace insécable de la typographie française.

@@ -247,6 +247,94 @@ export async function getNombreJourneesPromotion(saison: string): Promise<number
   return data && data.length > 0 ? data.length : null;
 }
 
+export type LigneClassementPromotion = {
+  position: number;
+  club: string;
+  rencontresJouees: number;
+  quatreQuatre: number;
+  points: number;
+};
+
+/** Un classement tel que la FLBP l'a publié à l'issue d'une journée. */
+export type ClassementPromotionPublie = {
+  apresJournee: number;
+  lignes: LigneClassementPromotion[];
+};
+
+export type ResultatJourneeClub = {
+  journee: number;
+  date: string;
+  club: string;
+  /** Distinct de « 0 point » : un club peut jouer et ne rien marquer. */
+  jouee: boolean;
+  points: number | null;
+  /** Valeur calculée par différence entre deux classements, non publiée. */
+  deduit: boolean;
+};
+
+export type ClassementPromotion = {
+  classements: ClassementPromotionPublie[];
+  resultats: ResultatJourneeClub[];
+};
+
+/** Classement des clubs en Promotion (migration 0066).
+ *
+ *  Les classements sont ceux que la fédération a publiés, pas un recalcul :
+ *  le départage au nombre de « 4/4 » n'est publié que cumulé et sa règle
+ *  exacte n'est écrite nulle part, on ne saurait pas le reconstituer.
+ *
+ *  Client injecté, comme `getEquipesPromotion` : les deux tables sont
+ *  réservées aux utilisateurs autorisés, une lecture anonyme reviendrait
+ *  vide. */
+export async function getClassementPromotion(
+  supabase: SupabaseClient,
+  saison: string
+): Promise<ClassementPromotion> {
+  const [classementsRes, resultatsRes] = await Promise.all([
+    supabase
+      .from('promotion_classement')
+      .select('apres_journee, position, club, rencontres_jouees, quatre_quatre, points')
+      .eq('saison', saison)
+      .order('apres_journee', { ascending: true })
+      .order('position', { ascending: true }),
+    supabase
+      .from('promotion_resultats_club')
+      .select('journee, date, club, jouee, points, deduit')
+      .eq('saison', saison)
+      .order('journee', { ascending: true }),
+  ]);
+  if (classementsRes.error) throw classementsRes.error;
+  if (resultatsRes.error) throw resultatsRes.error;
+
+  const parJournee = new Map<number, LigneClassementPromotion[]>();
+  for (const c of classementsRes.data ?? []) {
+    const j = c.apres_journee as number;
+    if (!parJournee.has(j)) parJournee.set(j, []);
+    parJournee.get(j)!.push({
+      position: c.position as number,
+      club: c.club as string,
+      rencontresJouees: c.rencontres_jouees as number,
+      quatreQuatre: c.quatre_quatre as number,
+      points: c.points as number,
+    });
+  }
+
+  return {
+    classements: Array.from(parJournee.entries()).map(([apresJournee, lignes]) => ({
+      apresJournee,
+      lignes,
+    })),
+    resultats: (resultatsRes.data ?? []).map((r) => ({
+      journee: r.journee as number,
+      date: r.date as string,
+      club: r.club as string,
+      jouee: r.jouee as boolean,
+      points: r.points as number | null,
+      deduit: r.deduit as boolean,
+    })),
+  };
+}
+
 export type EvenementFederation = {
   date: string;
   dateFin: string;
