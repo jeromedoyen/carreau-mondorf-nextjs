@@ -3,6 +3,7 @@ import { getPersonne } from './membres';
 import { getSaisons } from './saisons';
 import { getTableauDeBordBenevolePourNom } from './benevolat';
 import { getStatistiquesD2PourJoueur, getStatistiquesPromotion } from './stats';
+import { getNombreJourneesPromotion } from './data';
 import { construireBilanSportifD2, getRencontresJoueesSaison } from './tableauDeBord';
 import { cleNomJoueur } from './normalisationTexte';
 import type { BilanSportifD2 } from './tableauDeBord';
@@ -38,6 +39,9 @@ export type TableauDeBordMembre = {
   bilan: BilanSportifD2 | null;
   benevolat: TableauDeBordBenevole | null;
   entreePromotion: StatJoueurPromotion | null;
+  /** Journées que compte la saison de Promotion, pour donner au bilan son
+   *  dénominateur — `promotion_equipes` n'en contient qu'une partie. */
+  journeesPromotionSaison: number | null;
   /** Vrai si l'appelant a le droit de voir les remboursements de cette
    *  personne. Faux pour un membre du comité hors trésorerie. */
   concoursVisible: boolean;
@@ -66,11 +70,19 @@ export async function getTableauDeBordMembre(
   const saisons = await getSaisons();
   const bornes = saisons.find((s) => s.libelle === saison);
 
-  const [statsD2, rencontresEquipe, statsPromotion, benevolat, { data: tresorerie }, { data: concours }] =
-    await Promise.all([
+  const [
+    statsD2,
+    rencontresEquipe,
+    statsPromotion,
+    journeesPromotionSaison,
+    benevolat,
+    { data: tresorerie },
+    { data: concours },
+  ] = await Promise.all([
     getStatistiquesD2PourJoueur(supabase, saison, nomComplet).catch(() => null),
     getRencontresJoueesSaison(supabase, saison),
     getStatistiquesPromotion(supabase, saison).catch(() => null),
+    getNombreJourneesPromotion(saison).catch(() => null),
     (bornes
       ? getTableauDeBordBenevolePourNom(nomComplet, { debut: bornes.dateDebut, fin: bornes.dateFin })
       : getTableauDeBordBenevolePourNom(nomComplet)
@@ -115,6 +127,7 @@ export async function getTableauDeBordMembre(
     bilan: statsD2 ? construireBilanSportifD2(statsD2, rencontresEquipe) : null,
     benevolat,
     entreePromotion,
+    journeesPromotionSaison,
     concoursVisible: !!tresorerie,
     participationsConcours: (concours ?? []) as ParticipationConcoursMembre[],
   };

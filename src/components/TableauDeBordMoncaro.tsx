@@ -33,6 +33,7 @@ export function TableauDeBordMoncaro({
   statsPromotion,
   participationsConcours,
   entreePromotion,
+  journeesPromotionSaison = null,
   consultation = false,
 }: {
   saison: string;
@@ -48,6 +49,9 @@ export function TableauDeBordMoncaro({
   /** Entrée Promotion déjà résolue par l'appelant. La vue du comité la
    *  fournit directement ; /moncaro la laisse vide et on la déduit du nom. */
   entreePromotion?: StatJoueurPromotion | null;
+  /** Nombre de journées de Promotion de la saison, pour donner son
+   *  dénominateur au bilan — voir SectionPromotion. */
+  journeesPromotionSaison?: number | null;
   /** Vue du comité sur la fiche d'un membre : libellés à la troisième
    *  personne, et le nom complet en titre plutôt qu'une salutation. */
   consultation?: boolean;
@@ -101,6 +105,7 @@ export function TableauDeBordMoncaro({
               saison={saison}
               entree={monEntreePromotion}
               sorties={sortiesPromotion}
+              journeesSaison={journeesPromotionSaison}
               consultation={consultation}
             />
           ),

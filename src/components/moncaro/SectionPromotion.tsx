@@ -26,6 +26,7 @@ export function SectionPromotion({
   saison,
   entree,
   sorties,
+  journeesSaison = null,
   consultation = false,
 }: {
   saison: string;
@@ -34,6 +35,13 @@ export function SectionPromotion({
    *  Promotion enregistrés. */
   entree: StatJoueurPromotion | null;
   sorties: SortiePromotion[];
+  /** Nombre de journées que compte réellement la saison, quand on le sait
+   *  (`getNombreJourneesPromotion`). Indispensable ici : la FLBP ne publie
+   *  la composition des trios que pour certaines journées — deux sur dix en
+   *  2026 — si bien qu'un licencié présent presque toute la saison lit
+   *  « 2 journées » sous son propre nom. Le dénominateur lève l'ambiguïté
+   *  à l'endroit exact où elle naît. */
+  journeesSaison?: number | null;
 }) {
   if (!entree && sorties.length === 0) {
     return (
@@ -54,7 +62,11 @@ export function SectionPromotion({
         <Carte
           titre={consultation ? 'Son bilan en Promotion' : 'Mon bilan en Promotion'}
           icone={Medal}
-          enTeteSecondaire={`${entree.participations} ${entree.participations > 1 ? 'journées' : 'journée'}`}
+          enTeteSecondaire={
+            journeesSaison && entree.participations < journeesSaison
+              ? `${entree.participations} ${entree.participations > 1 ? 'journées' : 'journée'} sur ${journeesSaison}`
+              : `${entree.participations} ${entree.participations > 1 ? 'journées' : 'journée'}`
+          }
         >
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
@@ -85,6 +97,13 @@ export function SectionPromotion({
             En Promotion, le résultat est enregistré par équipe de trois, pas joueur par joueur : les
             parties gagnées du trio sont portées au crédit de chacun de ses membres.
           </p>
+          {journeesSaison && entree.participations < journeesSaison && (
+            <p className="mt-2 text-[11.5px] leading-relaxed text-encre-douce/80">
+              Ce bilan ne porte que sur les journées dont la fédération a publié la composition des
+              équipes — {entree.participations} sur {journeesSaison} cette saison. Les autres ne sont
+              connues qu&apos;au total du club, sans détail par trio.
+            </p>
+          )}
         </Carte>
       ) : (
         <Carte titre="Mon bilan en Promotion" icone={Medal}>

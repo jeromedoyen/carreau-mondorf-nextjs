@@ -224,6 +224,29 @@ export async function getSaisonsPromotionDisponibles(): Promise<string[]> {
   return Array.from(new Set((data ?? []).map((r) => r.saison as string))).sort();
 }
 
+/** Combien de journées de Promotion la saison compte-t-elle *réellement* —
+ *  à distinguer du nombre de journées présentes dans `promotion_equipes`,
+ *  qui ne contient que ce que la fédération a publié en détail.
+ *
+ *  L'écart entre les deux n'est pas un détail : en 2026 la FLBP n'a mis en
+ *  ligne la composition des trios que pour 2 journées sur 10 (feuilles J6 et
+ *  J10, cf. migration 0065), et en 2025 il en manquait déjà une. Sans ce
+ *  dénominateur, « 2 journées jouées » se lit comme une saison entière.
+ *
+ *  Renvoie `null` quand le calendrier fédéral ne couvre pas la saison — on
+ *  préfère taire le total plutôt que de le déduire du plus grand numéro de
+ *  journée connu, qui n'en serait qu'une borne basse. */
+export async function getNombreJourneesPromotion(saison: string): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('calendrier_federation')
+    .select('id')
+    .eq('saison', saison)
+    .eq('categorie', 'Promotion')
+    .eq('supprime', false);
+  if (error) throw error;
+  return data && data.length > 0 ? data.length : null;
+}
+
 export type EvenementFederation = {
   date: string;
   dateFin: string;

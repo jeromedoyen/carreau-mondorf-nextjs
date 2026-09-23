@@ -93,6 +93,7 @@ export default async function TableauDeBordMembrePage({
           bilan={tableau.bilan}
           statsPromotion={null}
           entreePromotion={tableau.entreePromotion}
+          journeesPromotionSaison={tableau.journeesPromotionSaison}
           participationsConcours={tableau.participationsConcours}
         />
       </div>

@@ -63,7 +63,7 @@
 - **Bandeau d'indicateurs** : parties jouées, gagnées, taux de victoire, points marqués au barème FLBP, présence en équipe (journées jouées sur rencontres disputées par l'équipe), créneaux bénévoles tenus. Un indicateur non calculable disparaît au lieu de s'afficher à zéro.
 - **Onglet « Ma saison »** : anneau victoires/défaites, meilleure série, points par journée (graphique doublé d'un tableau lisible au lecteur d'écran), répartition par format de jeu, bilan domicile/extérieur, partenaires les plus fréquents.
 - **Onglet « Championnat »** : chaque rencontre de National D2 disputée — journée, date, camp, adversaire, score collectif, parties gagnées — et le détail de ses propres parties. Chaque ligne mène à la feuille de match.
-- **Onglet « Promotion »** : bilan chiffré si les résultats de la saison sont enregistrés, sinon un état vide explicite ; et la liste des journées de Promotion déclarées.
+- **Onglet « Promotion »** : bilan chiffré si les résultats de la saison sont enregistrés, sinon un état vide explicite ; et la liste des journées de Promotion déclarées. Si la saison n'est couverte qu'en partie, le bilan l'indique (« 2 journées sur 10 ») avec une phrase d'explication.
 - **Onglet « Ma vie de club »** : bénévolat de la saison (créneaux, heures, à venir, par catégorie), concours et remboursements, puis les deux pastilles de statut de paiement (carte de membre, licence) — verte si payé, rouge sinon, sans jamais afficher de montant en euros.
 
 **Actions possibles** : changer de saison, ouvrir le détail d'une rencontre, accéder au bénévolat, déclarer un concours, accéder au renouvellement d'adhésion (`/moncaro/renouveler`) si applicable.
@@ -121,9 +121,9 @@
 **Description** : le CA arrive par défaut sur une vue de consultation (structure des parties par phase avec une colonne points, et un récap "qui a marqué le plus" pour la journée), avec un bouton "Modifier le résultat" pour basculer vers la feuille de match éditable (compositions, scores par partie) et la déclaration de forfait — une rencontre pas encore jouée démarre directement en édition. Un joueur non-CA qui a participé à cette rencontre (nom reconnu via `parties_rencontre_d2`, migration 0046) voit la même vue de consultation, sans les outils d'édition. Un visiteur non concerné voit "Accès restreint".
 
 ### `/promotion` — championnat Promotion
-**Accès** : public.
-**Objectif** : consulter les résultats du championnat Promotion.
-**Description** : saison 2025 uniquement — championnat clos, données historiques figées, pas de nouvelle saison possible sur ce module.
+**Accès** : licenciés connectés (calendrier) ; statistiques réservées aux licenciés de la saison et au CA. Un visiteur non connecté voit une invitation à se connecter.
+**Objectif** : consulter les équipes de Carreau Mondorf engagées à chaque journée de Promotion, leurs résultats, et le bilan individuel de chaque joueur.
+**Description** : sélecteur de saison, saison en cours par défaut. Deux onglets : « Calendrier » (chaque trio, journée par journée, avec ses parties gagnées sur 4) et « Statistiques » (classement individuel et par trio). Le résultat est enregistré par équipe de trois : les parties gagnées du trio comptent pour chacun de ses membres. Quand la saison n'est connue qu'en partie — la fédération ne publie pas toutes les feuilles de journée —, un bandeau l'indique en tête de page (« Saison partielle — 2 journées sur 10 ») : les chiffres affichés ne portent alors que sur les journées connues. En 2026, seules les journées 6 et 10 sont disponibles.
 
 ### `/concours` — mes concours & remboursements
 **Accès** : licencié connecté (tout compétiteur, pas seulement le CA).
