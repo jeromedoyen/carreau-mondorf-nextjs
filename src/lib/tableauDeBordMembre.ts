@@ -4,6 +4,7 @@ import { getSaisons } from './saisons';
 import { getTableauDeBordBenevolePourNom } from './benevolat';
 import { getStatistiquesD2PourJoueur, getStatistiquesPromotion } from './stats';
 import { getNombreJourneesPromotion } from './data';
+import { getRangClubNational, getRangClubPromotion, type RangClub } from './rangClub';
 import { construireBilanSportifD2, getRencontresJoueesSaison } from './tableauDeBord';
 import { cleNomJoueur } from './normalisationTexte';
 import type { BilanSportifD2 } from './tableauDeBord';
@@ -42,6 +43,8 @@ export type TableauDeBordMembre = {
   /** Journées que compte la saison de Promotion, pour donner au bilan son
    *  dénominateur — `promotion_equipes` n'en contient qu'une partie. */
   journeesPromotionSaison: number | null;
+  rangNational: RangClub | null;
+  rangPromotion: RangClub | null;
   /** Vrai si l'appelant a le droit de voir les remboursements de cette
    *  personne. Faux pour un membre du comité hors trésorerie. */
   concoursVisible: boolean;
@@ -75,6 +78,8 @@ export async function getTableauDeBordMembre(
     rencontresEquipe,
     statsPromotion,
     journeesPromotionSaison,
+    rangNational,
+    rangPromotion,
     benevolat,
     { data: tresorerie },
     { data: concours },
@@ -83,6 +88,8 @@ export async function getTableauDeBordMembre(
     getRencontresJoueesSaison(supabase, saison),
     getStatistiquesPromotion(supabase, saison).catch(() => null),
     getNombreJourneesPromotion(saison).catch(() => null),
+    getRangClubNational(saison).catch(() => null),
+    getRangClubPromotion(supabase, saison).catch(() => null),
     (bornes
       ? getTableauDeBordBenevolePourNom(nomComplet, { debut: bornes.dateDebut, fin: bornes.dateFin })
       : getTableauDeBordBenevolePourNom(nomComplet)
@@ -128,6 +135,8 @@ export async function getTableauDeBordMembre(
     benevolat,
     entreePromotion,
     journeesPromotionSaison,
+    rangNational,
+    rangPromotion,
     concoursVisible: !!tresorerie,
     participationsConcours: (concours ?? []) as ParticipationConcoursMembre[],
   };

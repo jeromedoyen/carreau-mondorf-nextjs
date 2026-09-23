@@ -1,8 +1,17 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import type { ClassementDivisionD2 } from '@/lib/types';
 import { CLUB_CARREAU_MONDORF } from '@/lib/types';
+
+/** Ce que le graphique a besoin de savoir, et rien de plus : les journées,
+ *  les clubs, et le rang de chacun à chaque journée. `ClassementDivisionD2`
+ *  (National) et `EvolutionPromotion` (Promotion) y répondent tous deux —
+ *  le graphique sert aux deux championnats sans dupliquer ses 200 lignes. */
+export type DonneesEvolutionRangs = {
+  journees: number[];
+  clubs: string[];
+  evolution: Record<string, { journee: number; rang: number }[]>;
+};
 
 /**
  * Graphique de classement en EMPHASE : Carreau Mondorf en terracotta épais
@@ -23,7 +32,7 @@ export function ClassementChart({
   data,
   onJourneeChange,
 }: {
-  data: ClassementDivisionD2;
+  data: DonneesEvolutionRangs;
   onJourneeChange?: (journee: number) => void;
 }) {
   const { journees, clubs, evolution } = data;
@@ -85,7 +94,13 @@ export function ClassementChart({
   }, [clubs, evolution, journeeAffichee]);
 
   return (
-    <div className="relative overflow-x-auto pb-1">
+    // `contain: inline-size` : sans lui, la largeur du tracé (plus de 600 px
+    // pour dix journées) remonte comme taille minimale à tout ancêtre flex ou
+    // grille, et c'est la page entière qui déborde sur téléphone (366 px de
+    // trop, constaté le 23/09/2026 sur la Promotion). Confinée, cette largeur
+    // ne compte plus pour les ancêtres : le tracé défile dans son cadre, comme
+    // prévu à l'origine.
+    <div className="relative overflow-x-auto pb-1 [contain:inline-size]">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${w} ${h}`}

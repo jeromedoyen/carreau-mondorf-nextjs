@@ -5,6 +5,7 @@ import type {
   StatEquipeD2,
   StatistiquesD2,
   StatistiquesPromotion,
+  PartieJoueurPromotion,
   StatJoueurD2,
   StatJoueurPromotion,
   StatTrioPromotion,
@@ -386,39 +387,85 @@ function reduireStatistiquesD2(
   return { joueurs, equipes, classementPoints };
 }
 
+/** Barème de la Promotion : 5 points par partie gagnée, comme `promotion_equipes.points`. */
+const POINTS_PARTIE_PROMOTION = 5;
+
 type LigneEquipePromotion = {
+  id: number;
   numero_equipe: number;
   journee: number;
+  date: string;
   joueur_1: string | null;
   joueur_2: string | null;
   joueur_3: string | null;
   parties_gagnees: number;
 };
 
-/** Pas de port direct côté Apps Script (le classement multi-clubs de la
- *  Promotion n'a jamais été affiché, cf. CONTEXTE_PROJET.md) — calcul propre
- *  à ce prototype, à partir des trios déjà importés (promotion_equipes),
- *  sans détail de partie individuelle (non transcrit à l'import, cf.
- *  scripts/import-csv.ts). Chaque partie du trio (sur 4) est comptée comme
- *  jouée par chacun des 3 joueurs ; victoire = partie gagnée par le trio,
- *  répartie de la même façon (on ne sait pas qui, dans le trio, a joué
- *  quelle partie individuellement). Client injecté pour la même raison que
- *  getStatistiquesJoueursD2 ci-dessus. */
+type LignePartiePromotion = {
+  equipe_id: number;
+  numero: number;
+  exempt: boolean;
+  adversaire_club: string | null;
+  adversaire_numero_equipe: number | null;
+  score_cm: number;
+  score_adverse: number | null;
+  gagnee: boolean;
+};
+
+/** Statistiques individuelles du championnat Promotion, à partir des trios
+ *  de Carreau Mondorf (`promotion_equipes`) et, depuis la migration 0068,
+ *  du détail de leurs parties (`promotion_parties`).
+ *
+ *  Le résultat est celui du trio, pas du joueur : chaque partie (sur 4) est
+ *  comptée comme jouée par chacun des trois, et la victoire leur est
+ *  portée de la même façon. C'est ce que le championnat enregistre — un
+ *  trio fixe joue ses quatre parties ensemble.
+ *
+ *  Les points suivent le barème de la Promotion (5 par partie gagnée) et
+ *  s'accumulent par journée, ce qui donne la même courbe que le National D2.
+ *
+ *  Une saison dont les feuilles n'ont pas été importées (2025) garde son
+ *  bilan par trio, avec `parties` vide et `detailDisponible = false` : le
+ *  composant le dit alors, plutôt que d'afficher une liste vide sans
+ *  explication. Client injecté, comme getStatistiquesJoueursD2. */
 export async function getStatistiquesPromotion(
   supabase: SupabaseClient,
   saison: string
 ): Promise<StatistiquesPromotion> {
-  const { data, error } = await supabase
+  const { data: equipesData, error } = await supabase
     .from('promotion_equipes')
-    .select('numero_equipe, journee, joueur_1, joueur_2, joueur_3, parties_gagnees')
-    .eq('saison', saison);
+    .select('id, numero_equipe, journee, date, joueur_1, joueur_2, joueur_3, parties_gagnees')
+    .eq('saison', saison)
+    .order('journee', { ascending: true })
+    .order('numero_equipe', { ascending: true });
   if (error) throw error;
-  const equipes = (data ?? []) as LigneEquipePromotion[];
+  const equipes = (equipesData ?? []) as LigneEquipePromotion[];
 
-  const statsParJoueur = new Map<
-    string,
-    { nomAffiche: string; participations: number; partiesGagnees: number }
-  >();
+  let parties: LignePartiePromotion[] = [];
+  if (equipes.length) {
+    const { data: partiesData, error: erreurParties } = await supabase
+      .from('promotion_parties')
+      .select('equipe_id, numero, exempt, adversaire_club, adversaire_numero_equipe, score_cm, score_adverse, gagnee')
+      .in('equipe_id', equipes.map((e) => e.id))
+      .order('numero', { ascending: true });
+    if (erreurParties) throw erreurParties;
+    parties = (partiesData ?? []) as LignePartiePromotion[];
+  }
+  const partiesParEquipe = new Map<number, LignePartiePromotion[]>();
+  parties.forEach((p) => {
+    if (!partiesParEquipe.has(p.equipe_id)) partiesParEquipe.set(p.equipe_id, []);
+    partiesParEquipe.get(p.equipe_id)!.push(p);
+  });
+
+  type AccJoueur = {
+    nomAffiche: string;
+    participations: number;
+    partiesGagnees: number;
+    pointsParJournee: Map<number, number>;
+    parties: PartieJoueurPromotion[];
+    partenaires: Map<string, { nom: string; journees: number }>;
+  };
+  const statsParJoueur = new Map<string, AccJoueur>();
   const statsParTrio = new Map<
     string,
     { joueurs: string[]; participations: number; partiesGagnees: number }
@@ -427,16 +474,50 @@ export async function getStatistiquesPromotion(
   equipes.forEach((e) => {
     const noms = [e.joueur_1, e.joueur_2, e.joueur_3].filter((n): n is string => !!n && n.trim().length > 0);
     if (!noms.length) return;
+    const detail = partiesParEquipe.get(e.id) ?? [];
 
     noms.forEach((nom) => {
       const cle = cleNomMajuscules(nom);
       if (!statsParJoueur.has(cle)) {
-        statsParJoueur.set(cle, { nomAffiche: nom, participations: 0, partiesGagnees: 0 });
+        statsParJoueur.set(cle, {
+          nomAffiche: nom,
+          participations: 0,
+          partiesGagnees: 0,
+          pointsParJournee: new Map(),
+          parties: [],
+          partenaires: new Map(),
+        });
       }
       const s = statsParJoueur.get(cle)!;
       s.nomAffiche = meilleurAffichage(s.nomAffiche, nom);
       s.participations++;
       s.partiesGagnees += e.parties_gagnees;
+      s.pointsParJournee.set(
+        e.journee,
+        (s.pointsParJournee.get(e.journee) ?? 0) + e.parties_gagnees * POINTS_PARTIE_PROMOTION
+      );
+      const coequipiers = noms.filter((n) => cleNomMajuscules(n) !== cle);
+      coequipiers.forEach((c) => {
+        const cleC = cleNomMajuscules(c);
+        const p = s.partenaires.get(cleC) ?? { nom: c, journees: 0 };
+        p.journees++;
+        s.partenaires.set(cleC, p);
+      });
+      detail.forEach((p) => {
+        s.parties.push({
+          journee: e.journee,
+          date: e.date,
+          numeroEquipe: e.numero_equipe,
+          numero: p.numero,
+          exempt: p.exempt,
+          adversaireClub: p.adversaire_club,
+          adversaireNumeroEquipe: p.adversaire_numero_equipe,
+          scoreCM: p.score_cm,
+          scoreAdverse: p.score_adverse,
+          gagnee: p.gagnee,
+          partenaires: coequipiers,
+        });
+      });
     });
 
     if (noms.length > 1) {
@@ -459,6 +540,12 @@ export async function getStatistiquesPromotion(
       partiesJouees,
       partiesGagnees: s.partiesGagnees,
       tauxVictoire: partiesJouees ? s.partiesGagnees / partiesJouees : 0,
+      pointsTotal: s.partiesGagnees * POINTS_PARTIE_PROMOTION,
+      pointsParJournee: Array.from(s.pointsParJournee.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([journee, points]) => ({ journee, points })),
+      parties: s.parties.sort((a, b) => a.journee - b.journee || a.numero - b.numero),
+      partenaires: Array.from(s.partenaires.values()).sort((a, b) => b.journees - a.journees || a.nom.localeCompare(b.nom)),
     };
   });
   joueurs.sort((a, b) => b.tauxVictoire - a.tauxVictoire || b.participations - a.participations);
@@ -475,5 +562,5 @@ export async function getStatistiquesPromotion(
   });
   trios.sort((a, b) => b.tauxVictoire - a.tauxVictoire || b.participations - a.participations);
 
-  return { joueurs, trios };
+  return { joueurs, trios, detailDisponible: parties.length > 0 };
 }

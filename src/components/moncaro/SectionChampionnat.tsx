@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { ChevronRight, Home, Plane, Swords } from 'lucide-react';
 import { Carte } from './Carte';
 import { EtatVide } from './EtatVide';
+import { RangClub } from './RangClub';
 import { IconeTypePartie } from '../StatsCharts';
 import type { BilanSportifD2, RencontreDuJoueur } from '@/lib/tableauDeBord';
+import type { RangClub as RangClubData } from '@/lib/rangClub';
 
 /** Même format court que le calendrier D2 (`CalendrierD2.tsx`), pour que
  *  les deux écrans se lisent pareil. */
@@ -83,39 +85,54 @@ function LigneRencontre({ r }: { r: RencontreDuJoueur }) {
 
 export function SectionChampionnat({
   bilan,
+  rangClub,
+  division = 'National D2',
   consultation = false,
 }: {
   bilan: BilanSportifD2 | null;
+  /** Place du club au classement de la division, en tête de l'onglet. */
+  rangClub?: RangClubData | null;
+  /** Libellé de la division du club cette saison-là (« National D2 »,
+   *  « National D1 » à partir de 2027). */
+  division?: string;
   consultation?: boolean;
 }) {
+  const rang = <RangClub championnat={division} rang={rangClub} href="/national-d2" />;
+
   if (!bilan || bilan.rencontres.length === 0) {
     return (
-      <Carte>
-        <EtatVide
-          icone={Swords}
-          titre="Aucune rencontre de championnat cette saison."
-          detail={
-            consultation
-              ? 'Cette page recense les rencontres de National D2 auxquelles ce membre a pris part.'
-              : 'Cette page recense les rencontres de National D2 auxquelles tu as pris part.'
-          }
-          action={{ libelle: 'Voir le calendrier', href: '/national-d2' }}
-        />
-      </Carte>
+      <div className="flex flex-col gap-4">
+        {rang}
+        <Carte>
+          <EtatVide
+            icone={Swords}
+            titre="Aucune rencontre de championnat cette saison."
+            detail={
+              consultation
+                ? `Cette page recense les rencontres de ${division} auxquelles ce membre a pris part.`
+                : `Cette page recense les rencontres de ${division} auxquelles tu as pris part.`
+            }
+            action={{ libelle: 'Voir le calendrier', href: '/national-d2' }}
+          />
+        </Carte>
+      </div>
     );
   }
 
   return (
-    <Carte
-      titre={consultation ? 'Ses rencontres de National D2' : 'Mes rencontres de National D2'}
-      icone={Swords}
-      enTeteSecondaire={`${bilan.rencontres.length} ${bilan.rencontres.length > 1 ? 'rencontres' : 'rencontre'} · ${bilan.victoires}/${bilan.joues} parties gagnées`}
-    >
-      <ul className="flex flex-col divide-y divide-ligne">
-        {bilan.rencontres.map((r) => (
-          <LigneRencontre key={r.idRencontre} r={r} />
-        ))}
-      </ul>
-    </Carte>
+    <div className="flex flex-col gap-4">
+      {rang}
+      <Carte
+        titre={consultation ? `Ses rencontres de ${division}` : `Mes rencontres de ${division}`}
+        icone={Swords}
+        enTeteSecondaire={`${bilan.rencontres.length} ${bilan.rencontres.length > 1 ? 'rencontres' : 'rencontre'} · ${bilan.victoires}/${bilan.joues} parties gagnées`}
+      >
+        <ul className="flex flex-col divide-y divide-ligne">
+          {bilan.rencontres.map((r) => (
+            <LigneRencontre key={r.idRencontre} r={r} />
+          ))}
+        </ul>
+      </Carte>
+    </div>
   );
 }

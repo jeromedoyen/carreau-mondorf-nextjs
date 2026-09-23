@@ -12,6 +12,7 @@ import type { ParametresClub } from '@/lib/paiements';
 import type { TableauDeBordBenevole } from '@/lib/benevolat';
 import type { StatistiquesPromotion, StatJoueurPromotion } from '@/lib/types';
 import type { BilanSportifD2 } from '@/lib/tableauDeBord';
+import type { RangClub } from '@/lib/rangClub';
 import { calculerDistinctions, resumeSaison } from '@/lib/tableauDeBord';
 import { cleNomJoueur } from '@/lib/normalisationTexte';
 
@@ -34,6 +35,8 @@ export function TableauDeBordMoncaro({
   participationsConcours,
   entreePromotion,
   journeesPromotionSaison = null,
+  rangNational = null,
+  rangPromotion = null,
   consultation = false,
 }: {
   saison: string;
@@ -52,6 +55,9 @@ export function TableauDeBordMoncaro({
   /** Nombre de journées de Promotion de la saison, pour donner son
    *  dénominateur au bilan — voir SectionPromotion. */
   journeesPromotionSaison?: number | null;
+  /** Place de Carreau Mondorf dans chaque championnat (`lib/rangClub.ts`). */
+  rangNational?: RangClub | null;
+  rangPromotion?: RangClub | null;
   /** Vue du comité sur la fiche d'un membre : libellés à la troisième
    *  personne, et le nom complet en titre plutôt qu'une salutation. */
   consultation?: boolean;
@@ -95,7 +101,14 @@ export function TableauDeBordMoncaro({
         },
         {
           label: 'Championnat',
-          contenu: <SectionChampionnat key="championnat" bilan={bilan} consultation={consultation} />,
+          contenu: (
+            <SectionChampionnat
+              key="championnat"
+              bilan={bilan}
+              rangClub={rangNational}
+              consultation={consultation}
+            />
+          ),
         },
         {
           label: 'Promotion',
@@ -106,6 +119,7 @@ export function TableauDeBordMoncaro({
               entree={monEntreePromotion}
               sorties={sortiesPromotion}
               journeesSaison={journeesPromotionSaison}
+              rangClub={rangPromotion}
               consultation={consultation}
             />
           ),

@@ -8,6 +8,7 @@ import { getMonAdhesion } from '@/lib/moncaro';
 import { getParametresClub } from '@/lib/paiements';
 import { getMesStatistiquesD2, getStatistiquesPromotion } from '@/lib/stats';
 import { getNombreJourneesPromotion } from '@/lib/data';
+import { getRangClubNational, getRangClubPromotion } from '@/lib/rangClub';
 import { construireBilanSportifD2, getRencontresJoueesSaison } from '@/lib/tableauDeBord';
 import { HeroAnimationMoncaro } from '@/components/HeroAnimationMoncaro';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
@@ -75,14 +76,17 @@ export default async function MoncaroPage({
   ]);
 
   const statsVisibles = !!ca || !!licencie;
-  const [mesStatsD2, statsPromotion, rencontresEquipe, journeesPromotionSaison] = statsVisibles
-    ? await Promise.all([
-        getMesStatistiquesD2(supabase, saison).catch(() => null),
-        getStatistiquesPromotion(supabase, saison).catch(() => null),
-        getRencontresJoueesSaison(supabase, saison),
-        getNombreJourneesPromotion(saison).catch(() => null),
-      ])
-    : [null, null, null, null];
+  const [mesStatsD2, statsPromotion, rencontresEquipe, journeesPromotionSaison, rangNational, rangPromotion] =
+    statsVisibles
+      ? await Promise.all([
+          getMesStatistiquesD2(supabase, saison).catch(() => null),
+          getStatistiquesPromotion(supabase, saison).catch(() => null),
+          getRencontresJoueesSaison(supabase, saison),
+          getNombreJourneesPromotion(saison).catch(() => null),
+          getRangClubNational(saison).catch(() => null),
+          getRangClubPromotion(supabase, saison).catch(() => null),
+        ])
+      : [null, null, null, null, null, null];
 
   const bilan = mesStatsD2 ? construireBilanSportifD2(mesStatsD2, rencontresEquipe) : null;
 
@@ -108,6 +112,8 @@ export default async function MoncaroPage({
           bilan={bilan}
           statsPromotion={statsPromotion}
           journeesPromotionSaison={journeesPromotionSaison}
+          rangNational={rangNational}
+          rangPromotion={rangPromotion}
           participationsConcours={participationsConcours ?? []}
         />
       </div>

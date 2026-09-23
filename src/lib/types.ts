@@ -113,12 +113,46 @@ export type StatistiquesD2 = {
 // (seul le bilan du trio par journée a été importé), donc pas de "parType"
 // ni d'historique de parties par joueur, contrairement au National D2.
 
+/** Une partie d'un trio de Carreau Mondorf, telle que lue sur la feuille de
+ *  journée de la FLBP (`promotion_parties`, migration 0068). Le trio joue
+ *  ensemble : la partie est portée à chacun de ses membres. */
+export type PartieJoueurPromotion = {
+  journee: number;
+  date: string;
+  numeroEquipe: number;
+  /** Rang de la partie dans la journée, 1 à 4. */
+  numero: number;
+  exempt: boolean;
+  adversaireClub: string | null;
+  adversaireNumeroEquipe: number | null;
+  scoreCM: number;
+  /** Nul quand le trio était exempt : il n'y a pas eu d'adversaire. */
+  scoreAdverse: number | null;
+  gagnee: boolean;
+  partenaires: string[];
+};
+
+export type PointsJourneePromotion = {
+  journee: number;
+  /** 5 points par partie gagnée du trio ce jour-là. */
+  points: number;
+};
+
 export type StatJoueurPromotion = {
   nom: string;
   participations: number;
   partiesJouees: number;
   partiesGagnees: number;
   tauxVictoire: number;
+  /** partiesGagnees × 5 — le barème de la Promotion, crédité à chaque
+   *  membre du trio. */
+  pointsTotal: number;
+  pointsParJournee: PointsJourneePromotion[];
+  /** Détail partie par partie. Vide pour une saison dont les feuilles de
+   *  journée n'ont pas été importées (2025) : le bilan du trio existe alors
+   *  sans son détail. */
+  parties: PartieJoueurPromotion[];
+  partenaires: { nom: string; journees: number }[];
 };
 
 export type StatTrioPromotion = {
@@ -132,6 +166,8 @@ export type StatTrioPromotion = {
 export type StatistiquesPromotion = {
   joueurs: StatJoueurPromotion[];
   trios: StatTrioPromotion[];
+  /** Vrai dès qu'au moins une partie détaillée existe pour la saison. */
+  detailDisponible: boolean;
 };
 
 // Registre membres/licenciés (Phase 4) — réservé au CA, lu via le client
