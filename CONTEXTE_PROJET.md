@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2. Et la **saison 2027 préparée : le club monte en National D1** — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **23/09/2026** — **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -18,8 +18,9 @@ Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nex
 
 **Saison D2 2026 close.** Les 14 journées sont en base, 12 rencontres détaillées partie par partie, 18 joueurs.
 
-### Les trois chantiers ouverts, par ordre d'utilité
+### Les chantiers ouverts, par ordre d'utilité
 
+0. **Saison 2027 en National D1 — l'application est prête, les données pas encore.** La division se lit sur la saison (0069), `/national` titre « National D1 » pour 2027. Restent : le calendrier fédéral 2027 (à l'insertion des rencontres, `division = 'National D1'`), la composition de la poule D1, les éventuelles exigences propres à la D1 au règlement FLBP, et l'activation de la saison 2027 dans `/saisons` le moment venu.
 1. **Résultats Promotion 2026 — 8 journées sur 10 depuis le 23/09.** Trios de Mondorf : J1, J2, J3, J4, J6, J7, J9, J10 (0065, 0070). **Manquent J5 et J8** — la feuille J8 n'existe qu'à l'état d'une ligne isolée, non insérée. Classement des clubs : **complet** (0066), J9 confirmée par sa feuille. Deux joueurs à rattacher au registre (DUBLIN Jos, SZCZUCKI Bernard). Reste le calendrier fédéral 2025, vide, qui prive la saison 2025 de son bandeau de couverture.
 2. **Convocations** — la table n'existe pas. Sans elle, pas de taux de présence réel ni de prochaines échéances ; le tableau de bord se rabat sur « journées jouées / rencontres disputées », exact mais différent. Structure proposée en fin de fichier. **Décision de fonctionnement du club avant d'être technique.**
 3. **Aucun harnais de test** — le défaut du 22/09, qui affichait le bilan d'un coéquipier, aurait été attrapé par trois lignes d'assertion.
@@ -1365,9 +1366,30 @@ Lint : deux messages sur `CalendrierConges` et `CalendrierManifestations` — **
 
 ⚠️ `/saisons` (réservé au CA) et `/moncaro` n'ont pas été vus connecté : le sélecteur de division et l'onglet Championnat en D1 sont vérifiés par le typage et le build, pas à l'écran.
 
-### Ordre des PR
+### Livraison des PR #27 et #28
 
-Cette branche part de celle de la PR #27 (Promotion) : elle en contient le commit. **Fusionner #27 d'abord** ; le diff de celle-ci se réduira alors à ses propres changements.
+La branche de #28 partait de celle de #27 et en contenait le commit : **#27 fusionnée d'abord**, puis vérification que #28 ne portait plus que son propre commit (41 fichiers — GitHub en affichait encore 51 juste après, un reste de cache), puis #28. Aperçus Vercel au vert pour les deux avant fusion. `main` = `bd322be`, déploiement de production en `success`, branches conservées.
+
+Ordre code/données respecté : 0068 et 0069 appliquées avant la fusion, mais aucun code en production ne lisait `promotion_parties` ni `saisons.division_nationale` — rien n'a changé pour personne avant le déploiement.
+
+Contrôle en production, sans connexion :
+
+| Adresse | Résultat |
+|---|---|
+| `/national` | 200, titre « National D2 » (saison active 2026) |
+| `/national?saison=2027` | 200, titre « National D1 » |
+| `/national-d2`, `/national-d2?saison=2027` | 308 vers `/national`, saison conservée |
+| `/national-d2/rencontres/12` | 308 vers `/national/rencontres/12` |
+| `/promotion`, `/calendrier`, accueil | 200 |
+| `promotion_parties`, `promotion_classement`, `promotion_resultats_club` | 0 ligne en anonyme |
+
+`/moncaro` et `/national/rencontres/12` répondent « Accès restreint » sans session — le comportement attendu.
+
+### Reste ouvert
+
+- **Rien de cette journée n'a été vu en session connectée.** Trois écrans à regarder en premier : le rang du club en tête des onglets Championnat et Promotion de `/moncaro` ; le panneau dépliable sous un joueur dans `/promotion` → Statistiques ; le choix de la division dans `/saisons` (CA).
+- **`StatistiquesD2` a très probablement le même dépassement sur téléphone** que celui corrigé en Promotion (même grille de colonnes fixes, 332 px). Visible surtout du CA et de la commission sportive, seuls à voir la liste complète. À vérifier et corriger de la même façon.
+- **Piège d'outillage toujours d'actualité** : les commandes Bash de cette session réduisent les doubles barres obliques inverses des heredocs. Les modifications de fichiers passent par des scripts Python écrits avec l'outil d'écriture, puis exécutés — ce qui a bien fonctionné pour les quarante fichiers de #28.
 
 ## Session du 23/09/2026 (suite) — six feuilles de journée Promotion de plus : 8 journées sur 10
 
