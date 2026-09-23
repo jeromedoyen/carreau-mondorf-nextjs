@@ -1,6 +1,8 @@
 import { CalendarDays, MapPin, Medal } from 'lucide-react';
 import { Carte } from './Carte';
 import { EtatVide } from './EtatVide';
+import { RangClub } from './RangClub';
+import type { RangClub as RangClubData } from '@/lib/rangClub';
 import { BarreProportion } from '../StatsCharts';
 import type { StatJoueurPromotion } from '@/lib/types';
 
@@ -27,6 +29,7 @@ export function SectionPromotion({
   entree,
   sorties,
   journeesSaison = null,
+  rangClub = null,
   consultation = false,
 }: {
   saison: string;
@@ -42,22 +45,31 @@ export function SectionPromotion({
    *  « 2 journées » sous son propre nom. Le dénominateur lève l'ambiguïté
    *  à l'endroit exact où elle naît. */
   journeesSaison?: number | null;
+  /** Place du club au dernier classement publié par la FLBP, en tête de
+   *  l'onglet — le bilan personnel prend son sens à côté de celui du club. */
+  rangClub?: RangClubData | null;
 }) {
+  const rang = <RangClub championnat="Promotion" rang={rangClub} href="/promotion" />;
+
   if (!entree && sorties.length === 0) {
     return (
-      <Carte>
-        <EtatVide
-          icone={Medal}
-          titre={`Aucune participation en Promotion pour la saison ${saison}.`}
-          detail="Les journées de Promotion apparaissent ici dès qu'une participation est déclarée."
-          action={{ libelle: 'Voir la Promotion', href: '/promotion' }}
-        />
-      </Carte>
+      <div className="flex flex-col gap-4">
+        {rang}
+        <Carte>
+          <EtatVide
+            icone={Medal}
+            titre={`Aucune participation en Promotion pour la saison ${saison}.`}
+            detail="Les journées de Promotion apparaissent ici dès qu'une participation est déclarée."
+            action={{ libelle: 'Voir la Promotion', href: '/promotion' }}
+          />
+        </Carte>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
+      {rang}
       {entree ? (
         <Carte
           titre={consultation ? 'Son bilan en Promotion' : 'Mon bilan en Promotion'}

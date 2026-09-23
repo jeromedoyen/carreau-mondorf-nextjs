@@ -94,6 +94,8 @@ export default async function TableauDeBordMembrePage({
           statsPromotion={null}
           entreePromotion={tableau.entreePromotion}
           journeesPromotionSaison={tableau.journeesPromotionSaison}
+          rangNational={tableau.rangNational}
+          rangPromotion={tableau.rangPromotion}
           participationsConcours={tableau.participationsConcours}
         />
       </div>

@@ -138,7 +138,7 @@ export function PromotionContent({ saison }: { saison: string }) {
       <Tabs labels={['Calendrier', 'Classement', 'Statistiques']}>
         <CalendrierPromotion key="calendrier" equipes={equipes} />
         <ClassementPromotion key="classement" data={classement} />
-        <StatistiquesPromotion key="stats" stats={stats!} monNom={monNom} />
+        <StatistiquesPromotion key="stats" stats={stats!} monNom={monNom} saison={saison} />
       </Tabs>
     </div>
   );

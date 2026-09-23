@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 67 migrations, 101 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 68 migrations, 102 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -1270,3 +1270,40 @@ Contrôle en production, sans connexion : `/promotion` (2026 et `?saison=2025`),
 - **L'onglet « Classement » n'a pas été vu dans une session de licencié.** Il n'apparaît qu'une fois connecté. À vérifier : `/promotion` → Classement, Carreau Mondorf 8e avec 315 points, puis le graphique de ses dix journées.
 - **Saisons suivantes** : ces tables ne s'alimentent que par migration, à partir des documents FLBP. Pour une nouvelle journée publiée, inventorier d'abord la médiathèque (`/wp-json/wp/v2/media?search=PROMO`), puis ajouter les lignes et le classement publié en réutilisant les six garde-fous de 0066. Si la saisie devient fréquente, un écran CA de saisie serait à envisager — pas avant.
 - **Idée non faite, à proposer** : afficher le rang du club (« 8e sur 14 ») dans l'onglet Promotion de `/moncaro`.
+
+## Session du 23/09/2026 (suite) — la Promotion au niveau du National : rang du club, statistiques individuelles, tableau de bord
+
+Quatre demandes de Jérôme en une : « ajoute le rang du club dans /moncaro », « crée les statistiques individuelles », « construis un tableau de bord comme pour les résultats de la division 2 », et « regarde ce qui va se passer pour la saison prochaine, sachant que le club jouera en 1ère division ». Les trois premières tiennent dans cette PR ; la quatrième fait l'objet de la section suivante.
+
+### Le rang du club, dans les deux onglets de `/moncaro`
+
+`src/lib/rangClub.ts` : `getRangClubNational()` (classement recalculé de `division_d2_resultats`, à la dernière journée connue) et `getRangClubPromotion()` (dernier classement **publié** par la FLBP, jamais recalculé). Le composant `moncaro/RangClub` ouvre chaque onglet : « Carreau Mondorf en National D2 — 1er sur 7 · 22 pts · après la journée 14 », « en Promotion — 8e sur 14 · 315 pts · classement final ». Toute la ligne mène au classement. La précision (« classement final », « après la journée N ») est toujours écrite : un rang sans sa date se lit comme définitif.
+
+Détail typographique : le chiffre est en police de score, le suffixe en texte courant — cette police est en capitales, « 1ER » et « 8E » se lisaient comme des fautes.
+
+`SectionChampionnat` reçoit une prop `division` (défaut « National D2 »), prête pour la section suivante.
+
+### Statistiques individuelles : le détail des parties (migration 0068)
+
+Ce qui manquait à la Promotion, dit noir sur blanc dans le commentaire de l'ancien composant : « pas de drill-down par partie, contrairement au National D2 ». Les feuilles de journée de la FLBP le permettent — pour chaque partie d'un trio, l'équipe adverse et le score.
+
+Nouvelle table **`promotion_parties`** : une ligne par partie d'un trio de Mondorf (numéro 1 à 4, club adverse, numéro d'équipe adverse, nos points, les leurs, `gagnee` calculée, `exempt`). **Jamais le nom des joueurs adverses** — même règle qu'en 0064. Vingt parties pour 2026 (J6 et J10), **relevées des deux côtés** : la ligne adverse cite notre numéro d'équipe à la même partie, et l'un des deux camps est à 13. Le garde-fou recompte les parties gagnées trio par trio et exige l'égalité avec le bilan de 0065, lui-même contrôlé contre les totaux fédéraux.
+
+`getStatistiquesPromotion()` enrichit chaque joueur : `pointsTotal` et `pointsParJournee` (5 points par partie gagnée du trio, portés à chacun de ses membres), `parties` (le détail), `partenaires` (coéquipiers et nombre de journées ensemble). `detailDisponible` distingue une saison sans feuille importée (2025) : le panneau le dit alors en clair au lieu d'afficher une liste vide.
+
+`StatistiquesPromotion` est réécrit sur le modèle exact de `StatistiquesD2` : tri par taux, journées ou points ; courbe miniature ; sous chaque joueur un panneau dépliable — points par journée, toutes ses parties avec adversaire et score, partenaires de trio, et pour le comité le lien vers le tableau de bord du joueur.
+
+### Tableau de bord : le classement Promotion comme celui du National
+
+`ClassementChart`, le graphique d'évolution des rangs du National, ne demandait au fond que trois choses — journées, clubs, rang par journée. Son type d'entrée est devenu ce minimum (`DonneesEvolutionRangs`) : il sert désormais aux deux championnats sans avoir été dupliqué.
+
+`src/lib/promotionEvolution.ts` reconstitue le classement à chaque journée. Aux journées où la FLBP a publié un classement (J6, J8, J10), ce sont ses positions ; aux autres, le rang est **estimé** aux points cumulés, à égalité l'ordre de la journée précédente est conservé — approximation dite à l'écran (badge « Estimé aux points » contre « Classement officiel FLBP », et « —×4/4 » quand le décompte n'est pas publié). L'onglet Classement suit maintenant la disposition de `/national-d2` : graphique, classement à la journée pointée (survol ou toucher), puis Carreau Mondorf journée par journée.
+
+### Deux débordements sur téléphone, trouvés parce qu'on a regardé
+
+- **366 px de trop** : la largeur du tracé (plus de 600 px pour dix journées) remontait comme taille minimale à tous les ancêtres flex ou grille, et c'est la page entière qui s'élargissait. `contain: inline-size` sur le cadre du graphique confine cette largeur : le tracé défile dans son cadre, comme prévu à l'origine. **Le même graphique en D2 en profite.**
+- **46 px de trop** : les colonnes fixes de la grille des joueurs (332 px) plus les marges. Sur téléphone, la courbe miniature disparaît et les colonnes se resserrent. ⚠️ `StatistiquesD2` porte la même grille et très probablement le même dépassement — pas touché ici, à vérifier.
+
+### Vérification
+
+Vrais composants, vraies données, dans une page d'aperçu locale temporaire (supprimée avant le commit) : rangs, graphique (14 tracés), classement final, barres de journées, classement individuel, panneau déplié de MARION Stéphane (8 parties, 3 gagnées, deux partenaires par journée). Aucun débordement à 375 px ni en bureau après les deux corrections. Anonyme : 0 ligne sur `promotion_parties`. ⚠️ Toujours rien vu dans une session de licencié.
