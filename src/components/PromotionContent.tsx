@@ -5,8 +5,13 @@ import Link from 'next/link';
 import { Tabs } from './Tabs';
 import { CalendrierPromotion } from './CalendrierPromotion';
 import { StatistiquesPromotion } from './StatistiquesPromotion';
+import { CouvertureSaisonPromotion } from './CouvertureSaisonPromotion';
 import { createClient } from '@/lib/supabase/client';
-import { getEquipesPromotion, type EquipePromotion } from '@/lib/data';
+import {
+  getEquipesPromotion,
+  getNombreJourneesPromotion,
+  type EquipePromotion,
+} from '@/lib/data';
 import { getStatistiquesPromotion } from '@/lib/stats';
 import type { StatistiquesPromotion as StatistiquesPromotionData } from '@/lib/types';
 
@@ -23,6 +28,7 @@ export function PromotionContent({ saison }: { saison: string }) {
   const [stats, setStats] = useState<StatistiquesPromotionData | null>(null);
   const [monNom, setMonNom] = useState<string | null>(null);
   const [statsVisibles, setStatsVisibles] = useState(false);
+  const [journeesSaison, setJourneesSaison] = useState<number | null>(null);
 
   /** Le calendrier reste ouvert à tout licencié/membre autorisé, mais les
    *  statistiques de championnat sont réservées aux licenciés (ou au CA) —
@@ -38,9 +44,17 @@ export function PromotionContent({ saison }: { saison: string }) {
         return;
       }
       setEtat('chargement');
-      const [equipesData, statsData, { data: nomData }, { data: estCA }, { data: licencie }] = await Promise.all([
+      const [
+        equipesData,
+        statsData,
+        journeesData,
+        { data: nomData },
+        { data: estCA },
+        { data: licencie },
+      ] = await Promise.all([
         getEquipesPromotion(supabase, saison),
         getStatistiquesPromotion(supabase, saison),
+        getNombreJourneesPromotion(saison),
         supabase.rpc('mon_nom_benevole'),
         supabase.rpc('est_membre_ca'),
         supabase.rpc('est_licencie', { p_saison: saison }),
@@ -48,6 +62,7 @@ export function PromotionContent({ saison }: { saison: string }) {
       if (annule) return;
       setEquipes(equipesData);
       setStats(statsData);
+      setJourneesSaison(journeesData);
       setMonNom(nomData ?? null);
       setStatsVisibles(!!estCA || !!licencie);
       setEtat('pret');
@@ -82,14 +97,32 @@ export function PromotionContent({ saison }: { saison: string }) {
     );
   }
 
+  // L'avertissement de couverture coiffe les deux onglets plutôt que d'être
+  // répété dans chacun : il vaut pour le calendrier comme pour les
+  // statistiques, et il doit être lu avant les chiffres, pas après.
+  const couverture = (
+    <CouvertureSaisonPromotion
+      journeesCouvertes={equipes.map((e) => e.journee)}
+      journeesSaison={journeesSaison}
+    />
+  );
+
   if (!statsVisibles) {
-    return <CalendrierPromotion equipes={equipes} />;
+    return (
+      <div className="flex flex-col gap-4">
+        {couverture}
+        <CalendrierPromotion equipes={equipes} />
+      </div>
+    );
   }
 
   return (
-    <Tabs labels={['Calendrier', 'Statistiques']}>
-      <CalendrierPromotion key="calendrier" equipes={equipes} />
-      <StatistiquesPromotion key="stats" stats={stats!} monNom={monNom} />
-    </Tabs>
+    <div className="flex flex-col gap-4">
+      {couverture}
+      <Tabs labels={['Calendrier', 'Statistiques']}>
+        <CalendrierPromotion key="calendrier" equipes={equipes} />
+        <StatistiquesPromotion key="stats" stats={stats!} monNom={monNom} />
+      </Tabs>
+    </div>
   );
 }
