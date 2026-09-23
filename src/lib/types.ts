@@ -136,6 +136,9 @@ export type PartieJoueurPromotion = {
   scoreCM: number;
   /** Nul quand le trio était exempt : il n'y a pas eu d'adversaire. */
   scoreAdverse: number | null;
+  /** Partie arrêtée au temps : le vainqueur n'a pas 13 (« 11(g) » sur la
+   *  feuille). `gagnee` en tient déjà compte (migration 0070). */
+  auTemps: boolean;
   gagnee: boolean;
   partenaires: string[];
 };

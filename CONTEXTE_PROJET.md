@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2. Et la **saison 2027 préparée : le club monte en National D1** — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **23/09/2026** — **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 69 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 70 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -18,9 +18,10 @@ Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nex
 
 **Saison D2 2026 close.** Les 14 journées sont en base, 12 rencontres détaillées partie par partie, 18 joueurs.
 
-### Les trois chantiers ouverts, par ordre d'utilité
+### Les chantiers ouverts, par ordre d'utilité
 
-1. **Résultats Promotion 2026 — couverts autant que la FLBP le permet depuis le 23/09.** Trios de Mondorf : **2 feuilles de journée sur 10** (J6 et J10), c'est tout ce qui est publié. Classement des clubs : **complet** (0066), J9 déduite. Reste le calendrier fédéral 2025, vide, qui prive la saison 2025 de son bandeau de couverture.
+0. **Saison 2027 en National D1 — l'application est prête, les données pas encore.** La division se lit sur la saison (0069), `/national` titre « National D1 » pour 2027. Restent : le calendrier fédéral 2027 (à l'insertion des rencontres, `division = 'National D1'`), la composition de la poule D1, les éventuelles exigences propres à la D1 au règlement FLBP, et l'activation de la saison 2027 dans `/saisons` le moment venu.
+1. **Résultats Promotion 2026 — 8 journées sur 10 depuis le 23/09.** Trios de Mondorf : J1, J2, J3, J4, J6, J7, J9, J10 (0065, 0070). **Manquent J5 et J8** — la feuille J8 n'existe qu'à l'état d'une ligne isolée, non insérée. Classement des clubs : **complet** (0066), J9 confirmée par sa feuille. Deux joueurs à rattacher au registre (DUBLIN Jos, SZCZUCKI Bernard). Reste le calendrier fédéral 2025, vide, qui prive la saison 2025 de son bandeau de couverture.
 2. **Convocations** — la table n'existe pas. Sans elle, pas de taux de présence réel ni de prochaines échéances ; le tableau de bord se rabat sur « journées jouées / rencontres disputées », exact mais différent. Structure proposée en fin de fichier. **Décision de fonctionnement du club avant d'être technique.**
 3. **Aucun harnais de test** — le défaut du 22/09, qui affichait le bilan d'un coéquipier, aurait été attrapé par trois lignes d'assertion.
 
@@ -1211,7 +1212,7 @@ Le départage à égalité de points se fait **au nombre de 4/4**, établi sur l
 
 ### Règles lues sur les documents, à retenir
 
-- **Un club marque avec ses trois meilleures équipes** (parties gagnées × 5). Vérifié sur les treize clubs de chacune des deux feuilles : Boule d'Or aligne cinq équipes en J10 (2, 3, 2, 3, 1 victoires) et marque 8 × 5 = 40, pas 55. D'où **60 points au plus par journée**.
+- ~~**Un club marque avec ses trois meilleures équipes**~~ ⚠️ **Faux en général, corrigé en 0070 : trois équipes dont au moins une mixte.** (parties gagnées × 5). Vérifié sur les treize clubs de chacune des deux feuilles : Boule d'Or aligne cinq équipes en J10 (2, 3, 2, 3, 1 victoires) et marque 8 × 5 = 40, pas 55. D'où **60 points au plus par journée**.
 - Le tableau fédéral date la J5 au **10/05** ; `calendrier_federation` dit 09/05. ✅ **Jérôme retient la date du calendrier** : les 14 lignes J5 passent au 09/05 (migration 0067, corrigée à part plutôt qu'en modifiant 0066 déjà appliquée). 0067 ajoute un garde-fou durable : **chaque journée de `promotion_resultats_club` doit porter la date de son entrée « (Jn) » dans le calendrier fédéral** — les dix concordent.
 
 ### La J9, jamais publiée, déduite club par club
@@ -1365,6 +1366,91 @@ Lint : deux messages sur `CalendrierConges` et `CalendrierManifestations` — **
 
 ⚠️ `/saisons` (réservé au CA) et `/moncaro` n'ont pas été vus connecté : le sélecteur de division et l'onglet Championnat en D1 sont vérifiés par le typage et le build, pas à l'écran.
 
-### Ordre des PR
+### Livraison des PR #27 et #28
 
-Cette branche part de celle de la PR #27 (Promotion) : elle en contient le commit. **Fusionner #27 d'abord** ; le diff de celle-ci se réduira alors à ses propres changements.
+La branche de #28 partait de celle de #27 et en contenait le commit : **#27 fusionnée d'abord**, puis vérification que #28 ne portait plus que son propre commit (41 fichiers — GitHub en affichait encore 51 juste après, un reste de cache), puis #28. Aperçus Vercel au vert pour les deux avant fusion. `main` = `bd322be`, déploiement de production en `success`, branches conservées.
+
+Ordre code/données respecté : 0068 et 0069 appliquées avant la fusion, mais aucun code en production ne lisait `promotion_parties` ni `saisons.division_nationale` — rien n'a changé pour personne avant le déploiement.
+
+Contrôle en production, sans connexion :
+
+| Adresse | Résultat |
+|---|---|
+| `/national` | 200, titre « National D2 » (saison active 2026) |
+| `/national?saison=2027` | 200, titre « National D1 » |
+| `/national-d2`, `/national-d2?saison=2027` | 308 vers `/national`, saison conservée |
+| `/national-d2/rencontres/12` | 308 vers `/national/rencontres/12` |
+| `/promotion`, `/calendrier`, accueil | 200 |
+| `promotion_parties`, `promotion_classement`, `promotion_resultats_club` | 0 ligne en anonyme |
+
+`/moncaro` et `/national/rencontres/12` répondent « Accès restreint » sans session — le comportement attendu.
+
+### Reste ouvert
+
+- **Rien de cette journée n'a été vu en session connectée.** Trois écrans à regarder en premier : le rang du club en tête des onglets Championnat et Promotion de `/moncaro` ; le panneau dépliable sous un joueur dans `/promotion` → Statistiques ; le choix de la division dans `/saisons` (CA).
+- **`StatistiquesD2` a très probablement le même dépassement sur téléphone** que celui corrigé en Promotion (même grille de colonnes fixes, 332 px). Visible surtout du CA et de la commission sportive, seuls à voir la liste complète. À vérifier et corriger de la même façon.
+- **Piège d'outillage toujours d'actualité** : les commandes Bash de cette session réduisent les doubles barres obliques inverses des heredocs. Les modifications de fichiers passent par des scripts Python écrits avec l'outil d'écriture, puis exécutés — ce qui a bien fonctionné pour les quarante fichiers de #28.
+
+## Session du 23/09/2026 (suite) — six feuilles de journée Promotion de plus : 8 journées sur 10
+
+Jérôme transmet les feuilles des journées **1, 2, 3, 4, 7 et 9** : « adapte les données, les statistiques, les résultats de tous ». Avec J6 et J10, la saison 2026 est connue équipe par équipe sur **8 journées sur 10** (manquent J5 et J8). Migration **0070**.
+
+### Relevé et vérification
+
+Les **368 équipes** des six feuilles ont été relevées, tous clubs confondus, dans un fichier de travail. Seuls les trios de Mondorf entrent en base — **27 trios, 108 parties** — et jamais le nom d'un joueur adverse. Les autres équipes ont servi à vérifier, par un script :
+
+- **réciprocité** : chaque partie A→B au tour t doit retrouver B→A au même tour, avec un seul vainqueur ;
+- **parties gagnées recomptées** = colonne de la feuille ;
+- **total de chaque club** = points déjà en base (tableau fédéral et classements) : **81 totaux de club sur 81**.
+
+Sept incohérences subsistent, **toutes sur les feuilles**, vérifiées au zoom sur l'image :
+
+| Journée | Équipe | Défaut |
+|---|---|---|
+| J3 | Faubourgs 34, T1 | adversaire écrit 27 (c'est 13) |
+| J3 | Schieren 50, T1 | adversaire écrit 17 (c'est 22) |
+| J3 | Clair-Chêne 24 – Schifflange 58, T1 | 12-11, comptée perdue par les deux camps |
+| J4 | KaBoule 41, T3 | se désigne lui-même comme adversaire (c'est 4) |
+| J4 | Schifflange 23, T3 | adversaire écrit 51 (c'est 54) |
+| J9 | **Mondorf 1, T4** | adversaire écrit 24 (c'est **25**, Riganelli — corrigé en base) |
+| J9 | Schieren 36, T1 | adversaire écrit 47 (c'est 45) |
+
+Aucune ne change un total de club. La seule qui touche Mondorf ne change ni le club adverse ni le score (1-13) : seul le numéro d'équipe adverse est corrigé.
+
+**Méthode à réutiliser** pour la prochaine feuille : découper l'image en tranches agrandies, relever toutes les équipes, puis faire tourner les trois contrôles avant d'écrire la moindre ligne. Les scripts sont reproductibles à partir du relevé ; la réciprocité attrape à elle seule une coquille de feuille comme une erreur de lecture.
+
+### ⚠️ La règle de score était fausse
+
+0066 affirmait « un club marque avec ses trois meilleures équipes », établi sur J6 et J10. Faux en général : **un club marque avec trois équipes dont au moins une mixte (M)** — la meilleure mixte, puis les deux meilleures parmi les autres. Les deux règles ne divergent que deux fois sur les six feuilles, et la seconde tombe juste les deux fois (Schifflange J1 : 40 et non 45 ; J4 : 50 et non 60 — la fédération dit 40 et 50). Corrigé dans le texte de l'onglet Classement ; la migration 0066 garde son commentaire, puisqu'elle a été exécutée telle quelle.
+
+### La J9 n'est plus déduite
+
+La feuille J9 porte les totaux de club : **les quatorze valeurs déduites en 0066 étaient exactes**. Elles passent `deduit = false`, après comparaison une à une ; l'astérisque disparaît du graphique.
+
+### Parties gagnées au temps
+
+Une partie peut s'arrêter au temps, le vainqueur sans 13 (« 11(g) » sur les feuilles). `promotion_parties.gagnee` était calculée `score_cm = 13` et la contrainte exigeait un camp à 13 : le 11-8 gagné par Mondorf en J4 (BACK, BERTEMES, MATHIS) était impossible à enregistrer. Nouvelle colonne **`au_temps`**, `gagnee` et la contrainte revues. L'écran écrit « 11-8 au temps (+5) » : sans la mention, un vainqueur à 11 se lirait comme une erreur de saisie.
+
+### Noms
+
+Graphie déjà en base quand le joueur y figure, sinon celle du registre. **Deux joueurs absents du registre** : DUBLIN Jos (J3) et SZCZUCKI Bernard (J7, déjà dans les données 2025). À rattacher par Jérôme s'ils sont licenciés du club. **DOYEN Jérôme** a joué la J4.
+
+⚠️ La feuille J9 porte en tête une ligne de **J8** pour Mondorf (BERTEMES, FLAMMANG, MARTINS Tun, 3 parties gagnées). **Non insérée** : une seule équipe sur celles du club ce jour-là ferait passer la J8 pour connue, et ses adversaires ne sont vérifiables sur aucune feuille.
+
+### Un défaut révélé par le volume
+
+**Le bandeau de couverture avait disparu**, alors que J5 et J8 manquent. `CouvertureSaisonPromotion` comparait le nombre d'**équipes** (32) au nombre de journées de la saison (10), au lieu du nombre de **journées couvertes** (8) : le dédoublonnage venait une ligne trop tard. Avec cinq équipes en base, le calcul tombait juste par hasard. Corrigé, et vérifié sur les données réelles et deux cas limites.
+
+Relu au passage : la phrase « ne portent que sur ces journées-là » suivait « la composition n'est pas connue pour les journées 5 et 8 » — elle désignait donc les journées *manquantes*. Réécrite. Les libellés ne disent plus « la fédération n'a pas publié » : ces six feuilles viennent de Jérôme, le texte dit ce qui manque, pas qui ne l'a pas fourni.
+
+### ⚠️ Ordre code/données, encore
+
+0070 a été appliquée avant le déploiement du code, contre la règle notée plus haut. Ici, le code dépendait de la nouvelle colonne `au_temps` : déployé d'abord, il aurait cassé. Mais la conséquence est réelle : **jusqu'à la fusion, la production n'affiche plus le bandeau de couverture** (le défaut ci-dessus, déclenché par les nouvelles lignes). Les chiffres affichés sont justes, seul le contexte manque. La bonne manœuvre aurait été une migration de schéma d'abord, puis le code, puis les données — à retenir quand une migration mêle les deux.
+
+### Résultat
+
+29 joueurs, 25 trios distincts, 32 trios sur la saison. Le détail des parties recoupe le bilan de chaque joueur (contrôlé par les vraies fonctions de l'application). En tête au taux de victoire, sur au moins six journées : **FLAMMANG Marie-Jean et BERTEMES Marco, 16 parties gagnées sur 24 (67 %)** ; le plus présent : **PORCU Bruno, 8 journées**.
+
+### Vérification
+
+`tsc`, lint, build. Vrais composants et vraies données dans une page d'aperçu locale temporaire (supprimée) : bandeau « 8 journées sur 10 », panneau de BACK Yves avec ses 28 parties et le 11-8 au temps, aucun débordement à 375 px — les seuls éléments qui dépassent sont dans le cadre défilant du graphique d'évolution, comme prévu. ⚠️ Toujours pas vu en session connectée.

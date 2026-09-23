@@ -409,6 +409,7 @@ type LignePartiePromotion = {
   adversaire_numero_equipe: number | null;
   score_cm: number;
   score_adverse: number | null;
+  au_temps: boolean;
   gagnee: boolean;
 };
 
@@ -445,7 +446,7 @@ export async function getStatistiquesPromotion(
   if (equipes.length) {
     const { data: partiesData, error: erreurParties } = await supabase
       .from('promotion_parties')
-      .select('equipe_id, numero, exempt, adversaire_club, adversaire_numero_equipe, score_cm, score_adverse, gagnee')
+      .select('equipe_id, numero, exempt, adversaire_club, adversaire_numero_equipe, score_cm, score_adverse, au_temps, gagnee')
       .in('equipe_id', equipes.map((e) => e.id))
       .order('numero', { ascending: true });
     if (erreurParties) throw erreurParties;
@@ -514,6 +515,7 @@ export async function getStatistiquesPromotion(
           adversaireNumeroEquipe: p.adversaire_numero_equipe,
           scoreCM: p.score_cm,
           scoreAdverse: p.score_adverse,
+          auTemps: p.au_temps,
           gagnee: p.gagnee,
           partenaires: coequipiers,
         });

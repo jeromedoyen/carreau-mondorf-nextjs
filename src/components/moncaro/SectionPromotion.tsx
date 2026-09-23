@@ -111,9 +111,9 @@ export function SectionPromotion({
           </p>
           {journeesSaison && entree.participations < journeesSaison && (
             <p className="mt-2 text-[11.5px] leading-relaxed text-encre-douce/80">
-              Ce bilan ne porte que sur les journées dont la fédération a publié la composition des
-              équipes — {entree.participations} sur {journeesSaison} cette saison. Les autres ne sont
-              connues qu&apos;au total du club, sans détail par trio.
+              Ce bilan ne porte que sur les journées dont la composition des équipes est connue —{' '}
+              {entree.participations} sur {journeesSaison} cette saison. Les autres ne sont connues
+              qu&apos;au total du club, sans détail par trio.
             </p>
           )}
         </Carte>
