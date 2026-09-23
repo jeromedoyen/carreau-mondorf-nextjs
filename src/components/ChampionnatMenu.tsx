@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 
 const SOUS_MENU = [
-  { href: '/national-d2', label: 'National D2' },
+  { href: '/national', label: 'Championnat national' },
   { href: '/promotion', label: 'Promotion' },
 ];
 

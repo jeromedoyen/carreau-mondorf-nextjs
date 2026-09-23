@@ -35,7 +35,7 @@ export default async function CalendrierPage({
           <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">SAISON {saison}</p>
           <h1 className="font-display mt-1 text-4xl italic">Calendrier</h1>
           <p className="mt-2 max-w-xl text-[13.5px] text-encre-douce">
-            National D2, journées Promotion, tournois, Coupe de Luxembourg, manifestations du club et
+            Championnat national, journées Promotion, tournois, Coupe de Luxembourg, manifestations du club et
             congés du comité — tout ce qui rythme la saison, en un coup d&apos;œil.
           </p>
         </div>

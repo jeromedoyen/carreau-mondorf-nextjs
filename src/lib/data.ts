@@ -133,6 +133,9 @@ export type RencontreD2 = {
   id: number;
   journee: number;
   date: string;
+  /** « National D2 », « National D1 » — la division de la rencontre
+   *  (`rencontres_d2.division`), catégorie du calendrier unifié. */
+  division: string;
   domicile: boolean | null;
   adversaire: string | null;
   scoreCM: number | null;
@@ -146,7 +149,7 @@ export type RencontreD2 = {
 export async function getRencontreD2ParId(id: number): Promise<RencontreD2 | null> {
   const { data, error } = await supabase
     .from('rencontres_d2')
-    .select('id, journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
+    .select('id, journee, date, division, domicile, club_adverse, score_cm, score_adverse, statut')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -155,6 +158,7 @@ export async function getRencontreD2ParId(id: number): Promise<RencontreD2 | nul
     id: data.id as number,
     journee: data.journee as number,
     date: data.date as string,
+    division: (data.division as string | null) ?? 'National D2',
     domicile: data.domicile as boolean | null,
     adversaire: data.club_adverse as string | null,
     scoreCM: data.score_cm as number | null,
@@ -166,7 +170,7 @@ export async function getRencontreD2ParId(id: number): Promise<RencontreD2 | nul
 export async function getRencontresD2(saison: string): Promise<RencontreD2[]> {
   const { data, error } = await supabase
     .from('rencontres_d2')
-    .select('id, journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
+    .select('id, journee, date, division, domicile, club_adverse, score_cm, score_adverse, statut')
     .eq('saison', saison)
     .order('journee', { ascending: true });
   if (error) throw error;
@@ -174,6 +178,7 @@ export async function getRencontresD2(saison: string): Promise<RencontreD2[]> {
     id: r.id as number,
     journee: r.journee as number,
     date: r.date as string,
+    division: (r.division as string | null) ?? 'National D2',
     domicile: r.domicile as boolean | null,
     adversaire: r.club_adverse as string | null,
     scoreCM: r.score_cm as number | null,
@@ -430,7 +435,10 @@ export function fusionnerCalendrier(
         date: r.date,
         dateFin: r.date,
         titre,
-        categorie: 'National D2',
+        // La division de la rencontre, pas une constante : en 2027 ce sera
+        // « National D1 », et les filtres du calendrier reconnaissent
+        // toute catégorie « National D… » (voir estChampionnatNational).
+        categorie: r.division,
         lieu: null,
         domicile: r.domicile,
       });

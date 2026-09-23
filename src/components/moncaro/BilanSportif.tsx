@@ -23,7 +23,7 @@ export function BilanSportif({
           icone={PieChart}
           titre="Aucune partie enregistrée pour cette saison."
           detail="Le bilan se remplit au fil des feuilles de match saisies par le comité, après chaque journée de championnat."
-          action={{ libelle: 'Voir le championnat', href: '/national-d2' }}
+          action={{ libelle: 'Voir le championnat', href: '/national' }}
         />
       </Carte>
     );

@@ -33,7 +33,7 @@ export async function getRencontreDetail(id: number): Promise<RencontreDetail | 
 
   const { data: rencontre, error: errR } = await supabase
     .from('rencontres_d2')
-    .select('id, journee, date, domicile, club_adverse, score_cm, score_adverse, statut')
+    .select('id, journee, date, division, domicile, club_adverse, score_cm, score_adverse, statut')
     .eq('id', id)
     .maybeSingle();
   if (errR) throw errR;
@@ -52,6 +52,7 @@ export async function getRencontreDetail(id: number): Promise<RencontreDetail | 
     id: rencontre.id as number,
     journee: rencontre.journee as number,
     date: rencontre.date as string,
+    division: (rencontre.division as string | null) ?? 'National D2',
     domicile: rencontre.domicile as boolean | null,
     adversaire: rencontre.club_adverse as string | null,
     scoreCM: rencontre.score_cm as number | null,

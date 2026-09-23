@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
-import { creerSaison } from '@/lib/actions/saisons';
+import { creerSaison, DIVISIONS_NATIONALES } from '@/lib/actions/saisons';
 
 export function NouvelleSaisonForm() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export function NouvelleSaisonForm() {
       libelle: String(fd.get('libelle') || ''),
       dateDebut: String(fd.get('dateDebut') || ''),
       dateFin: String(fd.get('dateFin') || ''),
+      divisionNationale: String(fd.get('divisionNationale') || ''),
     });
     setEnCours(false);
     if (!resultat.ok) {
@@ -86,6 +87,30 @@ export function NouvelleSaisonForm() {
             className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
           />
         </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-[11.5px] text-encre-douce">
+          Division du club au championnat national
+        </label>
+        {/* Pas de choix présélectionné : la division change d'une saison à
+            l'autre (D2 jusqu'en 2026, D1 en 2027), elle se décide en
+            connaissance de cause. */}
+        <select
+          name="divisionNationale"
+          required
+          defaultValue=""
+          className="w-full rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta"
+        >
+          <option value="" disabled>
+            Choisir…
+          </option>
+          {DIVISIONS_NATIONALES.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
       </div>
 
       {erreur && <p className="text-[12.5px] text-danger">{erreur}</p>}

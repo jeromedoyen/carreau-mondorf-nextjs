@@ -27,7 +27,7 @@ export function ForfaitPanel({ rencontreId, adversaire }: { rencontreId: number;
       setErreur(resultat.error);
       return;
     }
-    router.push('/national-d2');
+    router.push('/national');
     router.refresh();
   }
 

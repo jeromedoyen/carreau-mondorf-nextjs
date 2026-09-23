@@ -64,7 +64,7 @@ export function FeuilleDeMatch({ rencontre }: { rencontre: RencontreDetail }) {
       setErreur(resultat.error);
       return;
     }
-    router.push('/national-d2');
+    router.push('/national');
     router.refresh();
   }
 

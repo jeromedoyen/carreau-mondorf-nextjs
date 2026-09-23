@@ -33,7 +33,7 @@ const OUTILS = [
   { href: '/saisons', label: 'Saisons', description: 'Gérer les saisons du club', Icon: CalendarRange },
   { href: '/federation', label: 'Contrôle fédération', description: 'Écarts avec les données fédérales', Icon: ShieldCheck },
   { href: '/federation/calendrier', label: 'Calendrier fédération', description: 'Tournois et matchs à venir', Icon: CalendarClock },
-  { href: '/national-d2', label: 'Résultats D2', description: 'Saisir les résultats de la journée', Icon: Swords },
+  { href: '/national', label: 'Résultats du championnat national', description: 'Saisir les résultats de la journée', Icon: Swords },
   { href: '/outils/tournoi', label: 'Tournois du club', description: 'Conduire un concours : équipes, tirages, scores, classement', Icon: Dices },
   { href: '/outils/parametres', label: 'Paramètres cotisation & licence', description: 'Montants et coordonnées bancaires du club', Icon: Landmark },
   { href: '/outils/paiements', label: 'Appel à cotisation', description: 'Créer et envoyer un appel de paiement', Icon: Euro },

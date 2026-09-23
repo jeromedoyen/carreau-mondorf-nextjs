@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { estUtilisateurAutorise } from '@/lib/manifestations';
-import { getSaisonActive, getSaisons } from '@/lib/saisons';
+import { getSaisonActive, getSaisons, divisionDeSaison } from '@/lib/saisons';
 import { getMonNomBenevole, getMonTableauDeBordBenevole } from '@/lib/benevolat';
 import { getMonAdhesion } from '@/lib/moncaro';
 import { getParametresClub } from '@/lib/paiements';
@@ -114,6 +114,7 @@ export default async function MoncaroPage({
           journeesPromotionSaison={journeesPromotionSaison}
           rangNational={rangNational}
           rangPromotion={rangPromotion}
+          division={divisionDeSaison(saisons, saison)}
           participationsConcours={participationsConcours ?? []}
         />
       </div>

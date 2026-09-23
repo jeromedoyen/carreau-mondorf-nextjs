@@ -22,7 +22,7 @@ function LigneRencontre({ r }: { r: RencontreDuJoueur }) {
   return (
     <li>
       <Link
-        href={`/national-d2/rencontres/${r.idRencontre}`}
+        href={`/national/rencontres/${r.idRencontre}`}
         className="group flex flex-col gap-2.5 rounded-xl px-2 py-3 transition-colors hover:bg-sable focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta sm:flex-row sm:items-center sm:gap-4"
       >
         <span className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -97,7 +97,7 @@ export function SectionChampionnat({
   division?: string;
   consultation?: boolean;
 }) {
-  const rang = <RangClub championnat={division} rang={rangClub} href="/national-d2" />;
+  const rang = <RangClub championnat={division} rang={rangClub} href="/national" />;
 
   if (!bilan || bilan.rencontres.length === 0) {
     return (
@@ -112,7 +112,7 @@ export function SectionChampionnat({
                 ? `Cette page recense les rencontres de ${division} auxquelles ce membre a pris part.`
                 : `Cette page recense les rencontres de ${division} auxquelles tu as pris part.`
             }
-            action={{ libelle: 'Voir le calendrier', href: '/national-d2' }}
+            action={{ libelle: 'Voir le calendrier', href: '/national' }}
           />
         </Carte>
       </div>
