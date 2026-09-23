@@ -36,6 +36,9 @@ function LignePartie({ p }: { p: PartieJoueurPromotion }) {
       </span>
       <span className={p.gagnee ? 'shrink-0 text-pin' : 'shrink-0 text-danger'}>
         {p.exempt ? '13-0' : `${p.scoreCM}-${p.scoreAdverse}`}
+        {/* Sans cette mention, un 11-8 gagné se lirait comme une erreur de
+            saisie : le vainqueur d'une partie de pétanque a d'ordinaire 13. */}
+        {p.auTemps ? ' au temps' : ''}
         {p.gagnee ? ' (+5)' : ''}
       </span>
     </div>

@@ -7,8 +7,10 @@ import { construireEvolutionPromotion } from '@/lib/promotionEvolution';
 import { ClassementChart } from './ClassementChart';
 import { CLUB_CARREAU_MONDORF } from '@/lib/types';
 
-/** Un club marque avec ses trois meilleures équipes, quatre parties chacune,
- *  5 points la partie gagnée : 60 points au plus par journée. C'est l'échelle
+/** Un club marque avec trois équipes, dont au moins une mixte (règle établie
+ *  sur huit feuilles de journée, migration 0070 — et non « ses trois
+ *  meilleures », comme le croyait 0066), quatre parties chacune, 5 points la
+ *  partie gagnée : 60 points au plus par journée. C'est l'échelle
  *  des barres — absolue, pour qu'une barre à moitié pleine veuille dire
  *  « la moitié du possible », pas « la moitié du meilleur ». */
 const POINTS_MAX_JOURNEE = 60;
@@ -165,7 +167,8 @@ export function ClassementPromotion({ data }: { data: ClassementPromotionData })
           <h3 className="font-display m-0 mb-1 text-xl">{CLUB_CARREAU_MONDORF}, journée par journée</h3>
           <p className="m-0 mb-5 text-[12.5px] text-encre-douce">
             Points marqués par le club à chaque journée, sur {POINTS_MAX_JOURNEE} possibles : un club
-            marque avec ses trois meilleures équipes. Sous chaque barre, la place du club ce jour-là.
+            marque avec trois de ses équipes, dont au moins une mixte — les meilleures possibles. Sous
+            chaque barre, la place du club ce jour-là.
           </p>
           {/* Hauteurs en pixels, pas en pourcentage : la colonne porte aussi la
               valeur et les libellés, une barre à 100 % de la colonne les
