@@ -1,6 +1,6 @@
 import { createClient } from './supabase/server';
 import { getPersonne } from './membres';
-import { getSaisons } from './saisons';
+import { getSaisons, divisionDeSaison } from './saisons';
 import { getTableauDeBordBenevolePourNom } from './benevolat';
 import { getStatistiquesD2PourJoueur, getStatistiquesPromotion } from './stats';
 import { getNombreJourneesPromotion } from './data';
@@ -45,6 +45,8 @@ export type TableauDeBordMembre = {
   journeesPromotionSaison: number | null;
   rangNational: RangClub | null;
   rangPromotion: RangClub | null;
+  /** Division du club cette saison-là. */
+  division: string;
   /** Vrai si l'appelant a le droit de voir les remboursements de cette
    *  personne. Faux pour un membre du comité hors trésorerie. */
   concoursVisible: boolean;
@@ -137,6 +139,7 @@ export async function getTableauDeBordMembre(
     journeesPromotionSaison,
     rangNational,
     rangPromotion,
+    division: divisionDeSaison(saisons, saison),
     concoursVisible: !!tresorerie,
     participationsConcours: (concours ?? []) as ParticipationConcoursMembre[],
   };

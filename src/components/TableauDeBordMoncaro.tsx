@@ -37,6 +37,7 @@ export function TableauDeBordMoncaro({
   journeesPromotionSaison = null,
   rangNational = null,
   rangPromotion = null,
+  division = 'National D2',
   consultation = false,
 }: {
   saison: string;
@@ -58,6 +59,8 @@ export function TableauDeBordMoncaro({
   /** Place de Carreau Mondorf dans chaque championnat (`lib/rangClub.ts`). */
   rangNational?: RangClub | null;
   rangPromotion?: RangClub | null;
+  /** Division du club cette saison-là (`saisons.division_nationale`). */
+  division?: string;
   /** Vue du comité sur la fiche d'un membre : libellés à la troisième
    *  personne, et le nom complet en titre plutôt qu'une salutation. */
   consultation?: boolean;
@@ -106,6 +109,7 @@ export function TableauDeBordMoncaro({
               key="championnat"
               bilan={bilan}
               rangClub={rangNational}
+              division={division}
               consultation={consultation}
             />
           ),

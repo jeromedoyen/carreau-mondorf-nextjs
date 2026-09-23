@@ -18,7 +18,7 @@ import { createClient } from '@/lib/supabase/client';
  *  fédération, famille) sans exposer le reste de l'appli — le contenu de
  *  la page est déjà public (lecture anonyme autorisée), seul le menu
  *  invitait à explorer les pages réservées. */
-const PAGES_SANS_NAV_SI_ANONYME = ['/', '/club', '/national-d2'];
+const PAGES_SANS_NAV_SI_ANONYME = ['/', '/club', '/national'];
 const PAGES_TOUJOURS_SANS_NAV = ['/connexion'];
 
 /** Client Component pour lire usePathname/session sans forcer tout

@@ -6,9 +6,30 @@ import { ClassementChart } from './ClassementChart';
 import { ClassementBars } from './ClassementBars';
 import { CLUB_CARREAU_MONDORF } from '@/lib/types';
 
-export function ClassementView({ data }: { data: ClassementDivisionD2 }) {
+export function ClassementView({
+  data,
+  division,
+}: {
+  data: ClassementDivisionD2;
+  /** « National D2 », « National D1 »… — la division de la saison affichée. */
+  division: string;
+}) {
   const derniereJournee = data.journees[data.journees.length - 1] ?? 1;
   const [journee, setJournee] = useState(derniereJournee);
+
+  // Sans aucun résultat de poule, le graphique n'aurait qu'un axe vide sous
+  // un titre « à l'issue de la journée 1 » qui n'a jamais eu lieu.
+  if (data.journees.length === 0) {
+    return (
+      <div className="rounded-2xl border border-ligne bg-sable-carte p-6 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+        <h3 className="font-display m-0 mb-1 text-xl">Classement de la poule</h3>
+        <p className="m-0 text-[13px] leading-relaxed text-encre-douce">
+          Aucun résultat de {division} pour cette saison. Le classement se construira journée après
+          journée, à partir des résultats publiés par la fédération.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -17,7 +38,7 @@ export function ClassementView({ data }: { data: ClassementDivisionD2 }) {
           Situation à l&apos;issue de la journée {journee}
         </h3>
         <p className="m-0 mb-3 text-[12.5px] text-encre-douce">
-          Résultats officiels FLBP, poule National D2 complète (pas seulement Carreau Mondorf).
+          Résultats officiels FLBP, poule {division} complète (pas seulement Carreau Mondorf).
         </p>
         <ClassementChart data={data} onJourneeChange={setJournee} />
         <div className="mt-3 flex flex-wrap gap-4 text-[11.5px] text-encre-douce">
@@ -27,7 +48,8 @@ export function ClassementView({ data }: { data: ClassementDivisionD2 }) {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-[3px] w-3.5 rounded-sm bg-ligne" />
-            Les 6 autres clubs
+            {/* Sept clubs en D2, six en D1 : le nombre suit les données. */}
+            Les {data.clubs.length - 1} autres clubs
           </span>
         </div>
         <p className="m-0 mt-2 text-center text-[11.5px] text-encre-douce/60">

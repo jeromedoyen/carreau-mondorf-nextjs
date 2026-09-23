@@ -96,6 +96,7 @@ export default async function TableauDeBordMembrePage({
           journeesPromotionSaison={tableau.journeesPromotionSaison}
           rangNational={tableau.rangNational}
           rangPromotion={tableau.rangPromotion}
+          division={tableau.division}
           participationsConcours={tableau.participationsConcours}
         />
       </div>

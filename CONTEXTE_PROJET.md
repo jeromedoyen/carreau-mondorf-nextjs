@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2. Et la **saison 2027 préparée : le club monte en National D1** — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 68 migrations, 102 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 69 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -1307,3 +1307,64 @@ Nouvelle table **`promotion_parties`** : une ligne par partie d'un trio de Mondo
 ### Vérification
 
 Vrais composants, vraies données, dans une page d'aperçu locale temporaire (supprimée avant le commit) : rangs, graphique (14 tracés), classement final, barres de journées, classement individuel, panneau déplié de MARION Stéphane (8 parties, 3 gagnées, deux partenaires par journée). Aucun débordement à 375 px ni en bureau après les deux corrections. Anonyme : 0 ligne sur `promotion_parties`. ⚠️ Toujours rien vu dans une session de licencié.
+
+## Session du 23/09/2026 (suite) — saison 2027 : le club monte en National D1, l'application s'organise
+
+Jérôme : « commence à regarder ce qui va se passer pour la saison prochaine, et organise l'application en conséquence, sachant que le club jouera en 1ère division ».
+
+### Ce que la D1 change, lu sur les documents fédéraux
+
+Les fichiers FLBP de la saison 2026 (`Resultats-J-13.png`, `Classement-J-13.png`) présentent D1 et D2 côte à côte. La D1 :
+
+- **même format de rencontre** — club contre club, score sur 63 points (49-14, 60-3, 34-29…), donc les mêmes 20 parties en quatre phases que notre feuille de match ;
+- **même barème** — 2 points par victoire, 1 par défaite (Riganelli 10 v. = 20 ; Schifflange 6 v. 4 d. = 16) ;
+- **six clubs** au lieu de sept en 2026 (Riganelli Esch, Péta-Boules Schifflange, Boule d'Or Esch, USBP Dudelange, B.P. Clair-Chêne Esch, P.B. Kayl), dix journées, **aucun exempt**.
+
+Tout le module National — rencontres, feuille de match, parties, statistiques, classement de la poule — s'applique donc tel quel. Ce qui change est un libellé, et il était écrit en dur, « National D2 », dans une quarantaine d'endroits (route, navigation, titres, calendrier, remboursements, prompt de l'IA).
+
+Qui monte, qui descend, et donc la composition de la D1 2027 : rien de publié. Mondorf champion de D2 monte ; le reste est à confirmer par la fédération.
+
+### Le choix : la division est une propriété de la saison (migration 0069)
+
+`saisons.division_nationale` — « National D2 » pour 2025 et 2026, « National D1 » pour 2027. Une seule source de vérité, lue partout où le libellé était en dur (`divisionDeSaison()` et `getDivisionNationale()` dans `lib/saisons.ts`). `rencontres_d2.division` existait déjà (0001) : il reste le libellé de la rencontre elle-même, et devra valoir « National D1 » pour les rencontres 2027 à leur insertion.
+
+**Les tables `*_d2` et les fonctions `mes_parties_d2`, `parties_rencontre_d2` gardent leur nom.** Elles portent le championnat national du club, quelle que soit sa division. Les renommer toucherait cinq tables, trois fonctions, leurs policies et une cinquantaine de fichiers, sans harnais de test pour attraper la casse. Le nom est un héritage, documenté ici et dans le commentaire de la colonne ; ce n'est pas un mensonge sur le contenu tant que la division est lue sur la saison. Même logique pour les composants `CalendrierD2`, `StatistiquesD2`, `ClassementDivisionD2`.
+
+### La route `/national-d2` devient `/national`
+
+Un lien `/national-d2/rencontres/123` pour une rencontre de D1 aurait été faux dans l'adresse même. La page vit sous `/national` ; `next.config.ts` redirige définitivement l'ancienne route et ses sous-pages — les liens déjà partagés à l'extérieur du club (AppChrome, 28/07) continuent d'arriver au bon endroit.
+
+Libellés devenus dynamiques ou neutres : titre de la page National (« National D2 » / « National D1 » selon la saison affichée), sous-titre et légende du classement (« Les 6 autres clubs » était écrit en dur — c'est le nombre de clubs de la poule moins un), onglet mobile « National », menu « Championnat national », retour depuis une rencontre, description du site, page Calendrier, outils CA, prompt de l'assistant et de la proposition d'équipe.
+
+Calendrier : la catégorie d'une rencontre est désormais sa division (`rencontres_d2.division`), et tous les filtres qui comparaient à « National D2 » passent par `estChampionnatNational()` (`lib/types.ts`), qui reconnaît toute catégorie « National D… ». La couleur est la même pour D1 et D2 — la charte veut une couleur par catégorie, et la catégorie est « le championnat national du club ».
+
+Remboursements : le type `Championnat_D2` garde sa clé (contrainte en base, 0047) ; son libellé devient « Championnat national », vrai pour toute division.
+
+`/moncaro` : l'onglet Championnat et le rang du club reçoivent la division de la saison affichée.
+
+### L'écran `/saisons` sait maintenant la division
+
+Créer une saison demande de choisir sa division (National D1 ou D2, sans présélection : elle change d'une saison à l'autre et se décide en connaissance de cause). La liste l'affiche et permet de la corriger — la policy « modification CA » (0016) l'autorise déjà.
+
+### Ce que 2027 demandera encore, et qui n'est pas de la technique
+
+- **Le calendrier fédéral 2027** n'est pas publié : `calendrier_federation`, `rencontres_d2` et `division_d2_resultats` sont vides pour 2027. À l'insertion des rencontres, `division = 'National D1'`.
+- **La D1 se joue peut-être avec des exigences propres** (arbitre, terrains, tenue…) : rien de tel dans les documents de résultats ; à vérifier au règlement FLBP.
+- **La poule de D1 2027** (six clubs, dont Mondorf) reste à confirmer par la fédération.
+- La saison 2027 existe déjà dans `saisons` (inactive). L'activer en fin de saison, depuis `/saisons`, comme prévu.
+
+### Une saison sans données doit le dire
+
+Choisir 2027 sur `/national` affichait « Situation à l'issue de la journée 1 », un graphique réduit à un axe, et un calendrier vide sans un mot. C'est ce que tout le monde verra entre aujourd'hui et la publication du calendrier fédéral. `CalendrierD2` dit désormais que le calendrier n'est pas encore connu ; `ClassementView` remplace le graphique par une phrase (« Aucun résultat de National D1 pour cette saison… »).
+
+### Vérification
+
+Serveur local : `/national` titre « National D2 » (saison active 2026), `?saison=2027` titre « National D1 », `?saison=2025` « National D2 ». `/national-d2`, `/national-d2?saison=2027` et `/national-d2/rencontres/1` répondent **308** vers leur équivalent sous `/national`, paramètre de saison compris ; une vraie rencontre (J14, id 12) s'ouvre sous `/national/rencontres/12` avec son lien de retour vers `/national`. Classement 2026 inchangé : 7 courbes, « Les 6 autres clubs » désormais calculé. Saison 2027 à 375 px : les deux états vides, aucun débordement.
+
+Lint : deux messages sur `CalendrierConges` et `CalendrierManifestations` — **présents à l'identique sur `main`**, simplement décalés d'une ligne par l'import ajouté. Aucun introduit.
+
+⚠️ `/saisons` (réservé au CA) et `/moncaro` n'ont pas été vus connecté : le sélecteur de division et l'onglet Championnat en D1 sont vérifiés par le typage et le build, pas à l'écran.
+
+### Ordre des PR
+
+Cette branche part de celle de la PR #27 (Promotion) : elle en contient le commit. **Fusionner #27 d'abord** ; le diff de celle-ci se réduira alors à ses propres changements.

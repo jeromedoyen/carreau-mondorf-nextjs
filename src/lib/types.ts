@@ -37,6 +37,14 @@ export type ClassementDivisionD2 = {
 
 export const CLUB_CARREAU_MONDORF = 'Carreau Mondorf';
 
+/** Une catégorie de calendrier désigne-t-elle le championnat national du
+ *  club, quelle que soit la division ? « National D2 » jusqu'en 2026,
+ *  « National D1 » dès 2027 (migration 0069). À utiliser partout où l'on
+ *  comparait à la chaîne « National D2 ». */
+export function estChampionnatNational(categorie: string | null | undefined): boolean {
+  return !!categorie && categorie.startsWith('National D');
+}
+
 // Statistiques individuelles National D2 — mêmes champs que renvoyait
 // calculerStatistiquesJoueurs_() côté Apps Script (ChampionnatBackend.gs).
 

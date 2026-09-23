@@ -1,6 +1,7 @@
 'use server';
 
 import { generateObject } from 'ai';
+import { getDivisionNationale } from '@/lib/saisons';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
@@ -180,7 +181,8 @@ export async function proposerCompositionEquipe(
       resultat: `${e.victoires}/${e.joues} victoires (${Math.round(e.tauxVictoire * 100)}%)`,
     }));
 
-  const prompt = `Tu es à la fois un technicien de pétanque confirmé (tu connais les rapports de force triplette/doublette/tête à tête) et un statisticien sportif rigoureux (tu analyses les tendances de forme, pas seulement une moyenne brute). Ta mission : composer la meilleure équipe possible pour une rencontre de championnat National D2 (Carreau Boules et Pétanque Mondorf), saison ${saison}, à partir des 9 joueurs déjà sélectionnés ci-dessous — tu ne dois RIEN changer à cette liste de 9, seulement décider qui joue où.
+  const division = await getDivisionNationale(saison);
+  const prompt = `Tu es à la fois un technicien de pétanque confirmé (tu connais les rapports de force triplette/doublette/tête à tête) et un statisticien sportif rigoureux (tu analyses les tendances de forme, pas seulement une moyenne brute). Ta mission : composer la meilleure équipe possible pour une rencontre de championnat ${division} (Carreau Boules et Pétanque Mondorf), saison ${saison}, à partir des 9 joueurs déjà sélectionnés ci-dessous — tu ne dois RIEN changer à cette liste de 9, seulement décider qui joue où.
 
 JOUEURS SÉLECTIONNÉS (9, dont au moins une féminine — voir contrainte plus bas) :
 ${joueursSelectionnes.map((n) => `- ${n}${feminines.has(n) ? ' (féminine)' : ''}`).join('\n')}

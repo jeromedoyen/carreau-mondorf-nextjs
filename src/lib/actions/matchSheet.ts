@@ -101,7 +101,7 @@ export async function enregistrerResultatRencontre(
     .eq('id', rencontreId);
   if (errUpdate) return { ok: false, error: errUpdate.message };
 
-  revalidatePath('/national-d2');
+  revalidatePath('/national');
   return { ok: true, scoreCM, scoreAdverse, resultat };
 }
 
@@ -149,6 +149,6 @@ export async function declarerForfaitRencontre(
     .eq('id', rencontreId);
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath('/national-d2');
+  revalidatePath('/national');
   return { ok: true };
 }

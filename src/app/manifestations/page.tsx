@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { estChampionnatNational } from '@/lib/types';
 import Link from 'next/link';
 import { CalendarDays, MapPin, ClipboardList, ArrowRight } from 'lucide-react';
 import { SaisonSwitcher } from '@/components/SaisonSwitcher';
@@ -57,7 +58,7 @@ export default async function ManifestationsPage({
     estMembreCA(),
   ]);
   const evenementsChampionnat = fusionnerCalendrier(rencontres, federation).filter(
-    (e) => e.categorie === 'National D2' || e.categorie === 'Promotion'
+    (e) => estChampionnatNational(e.categorie) || e.categorie === 'Promotion'
   );
 
   /** Même réordonnancement que CalendrierUnifie.tsx (pense-bête #13) :

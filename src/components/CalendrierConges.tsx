@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { estChampionnatNational } from '@/lib/types';
 import { MEMBRES_CA } from '@/lib/membresCA';
 import type { Conge } from '@/lib/conges';
 import type { ItemCalendrier } from '@/lib/data';
@@ -98,7 +99,7 @@ export function CalendrierConges({
                             className="h-[4px] w-[4px] rounded-full"
                             style={{
                               background:
-                                e.categorie === 'National D2'
+                                estChampionnatNational(e.categorie)
                                   ? 'var(--marine)'
                                   : e.categorie === 'Promotion'
                                     ? 'var(--pin)'
@@ -153,7 +154,7 @@ export function CalendrierConges({
           <i className="inline-block h-[6px] w-[6px] rounded-full" style={{ background: 'var(--terracotta)' }} />
           Manifestation/fédération
           <i className="ml-2 inline-block h-[6px] w-[6px] rounded-full" style={{ background: 'var(--marine)' }} />
-          National D2
+          Championnat national
           <i className="ml-2 inline-block h-[6px] w-[6px] rounded-full" style={{ background: 'var(--pin)' }} />
           Promotion
         </span>

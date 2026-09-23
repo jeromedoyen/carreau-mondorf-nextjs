@@ -14,7 +14,9 @@ import { createClient } from '@/lib/supabase/client';
  *  l'accueil. */
 const ONGLETS = [
   { href: '/', label: 'Accueil', Icon: Home },
-  { href: '/national-d2', label: 'D2', Icon: Trophy },
+  // « National » et non « D2 » : le club change de division en 2027, le
+  // libellé ne doit pas.
+  { href: '/national', label: 'National', Icon: Trophy },
   { href: '/calendrier', label: 'Calendrier', Icon: CalendarDays },
   { href: '/benevole', label: 'Bénévole', Icon: HeartHandshake },
   { href: '/membres', label: 'Membres', Icon: Users },

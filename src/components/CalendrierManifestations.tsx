@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { estChampionnatNational } from '@/lib/types';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Manifestation } from '@/lib/manifestations';
@@ -142,7 +143,7 @@ export function CalendrierManifestations({
                     key={k}
                     title={e.titre}
                     className={`truncate rounded px-1 py-0.5 text-[10px] font-medium ${
-                      e.categorie === 'National D2' ? 'bg-marine/10 text-marine' : 'bg-pin/10 text-pin'
+                      estChampionnatNational(e.categorie) ? 'bg-marine/10 text-marine' : 'bg-pin/10 text-pin'
                     }`}
                   >
                     {e.titre}

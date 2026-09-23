@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     default: "Carreau Mondorf — Compétition",
     template: "%s — Carreau Mondorf",
   },
-  description: "Carreau Boules et Pétanque Mondorf a.s.b.l. — National D2 & Promotion",
+  description: "Carreau Boules et Pétanque Mondorf a.s.b.l. — Championnat national & Promotion",
 };
 
 // viewportFit: 'cover' — la barre de navigation mobile en bas d'écran

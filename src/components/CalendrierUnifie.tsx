@@ -5,7 +5,11 @@ import { Home, Plane, MapPin, RotateCcw, ChevronLeft, ChevronRight } from 'lucid
 import type { ItemCalendrier } from '@/lib/data';
 
 const COULEUR_CATEGORIE: Record<string, string> = {
+  // Une même couleur pour le championnat national quelle que soit la
+  // division (charte : une catégorie = une couleur) — D2 jusqu'en 2026,
+  // D1 dès 2027.
   'National D2': 'var(--terracotta)',
+  'National D1': 'var(--terracotta)',
   Promotion: 'var(--pin)',
   Tournoi: 'var(--laiton)',
   'Coupe de Luxembourg': 'var(--marine)',

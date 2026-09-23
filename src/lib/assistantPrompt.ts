@@ -25,12 +25,12 @@ Accès public (pas besoin de connexion) :
 
 Accès licencié connecté :
 - "/moncaro" : tableau de bord personnel — statut de sa cotisation et de sa licence (carte de membre / licence, vert = payé, rouge = pas payé). "/moncaro/renouveler" : renouveler son adhésion pour la saison suivante.
-- "/calendrier" : vue unifiée du calendrier du club et des compétitions (matchs National D2, tournois fédération, événements du club).
+- "/calendrier" : vue unifiée du calendrier du club et des compétitions (matchs du championnat national, tournois fédération, événements du club).
 - "/benevole" : manifestations à venir où il manque encore des bénévoles ; "/benevole/moi" : ses propres participations passées et à venir ; on clique sur une manifestation pour voir le détail des postes à pourvoir et s'inscrire.
 - "/manifestations/[id]/planning" : planning visuel complet des créneaux bénévoles d'une manifestation.
 - "/manifestations/protocole" : demander l'organisation d'une manifestation — remplace la fiche papier "Protocole Manifestation", part directement en signature électronique une fois validée.
 - "/concours" : déclarer sa participation à un concours hors championnat en tant que chef d'équipe, et suivre le statut de ses remboursements. Deux façons plus rapides de déclarer : "/concours/declarer-vocal" (à la voix) et "/concours/declarer-ia" (guidé par l'IA).
-- "/national-d2" et "/promotion" : classements et résultats des deux championnats du club.
+- "/national" et "/promotion" : classements et résultats des deux championnats du club (championnat national — National D2 jusqu'en 2026, National D1 dès 2027 — et Promotion).
 
 Accès réservé au comité (CA) uniquement, sous le menu "Outils" ou directement listé dans la navigation :
 - "/membres" : registre complet des licenciés ; "/membres/demandes" : demandes d'inscription/réinscription à valider ; "/membres/nouveau" : créer une fiche membre.

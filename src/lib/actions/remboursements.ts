@@ -181,7 +181,7 @@ async function envoyerNotificationsPaiement(
 
     const libelleConcours = `${
       participation.type === 'Championnat_D2'
-        ? 'National D2'
+        ? 'championnat national'
         : participation.type === 'Promotion'
           ? 'Promotion'
           : participation.type === 'Concours_National'

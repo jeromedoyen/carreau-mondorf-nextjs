@@ -26,6 +26,15 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
   return (
     <div className="rounded-2xl border border-ligne bg-sable-carte p-6 shadow-[0_1px_3px_rgba(36,27,18,.04)]">
       <h3 className="font-display m-0 mb-5 text-xl">Calendrier &amp; résultats</h3>
+      {/* Une saison sans rencontre, c'est une saison dont la fédération n'a
+          pas encore publié le calendrier (2027 au moment où ces lignes sont
+          écrites) — pas une erreur, et ça se dit. */}
+      {rencontres.length === 0 && (
+        <p className="m-0 text-[13px] leading-relaxed text-encre-douce">
+          Le calendrier de cette saison n&apos;est pas encore connu. Les rencontres apparaîtront ici
+          dès que la fédération l&apos;aura publié.
+        </p>
+      )}
       <div className="flex flex-col">
         {rencontres.map((r) => {
           const forfait = r.statut === 'ForfaitCM' || r.statut === 'ForfaitAdverse';
@@ -78,7 +87,7 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
                 ) : null}
                 {joue && !forfait && (
                   <Link
-                    href={`/national-d2/rencontres/${r.id}`}
+                    href={`/national/rencontres/${r.id}`}
                     aria-label="Voir le détail de la rencontre"
                     className="text-encre-douce/60 hover:text-terracotta"
                   >
@@ -87,7 +96,7 @@ export function CalendrierD2({ rencontres }: { rencontres: RencontreD2[] }) {
                 )}
                 {estCA && !exempt && (
                   <Link
-                    href={`/national-d2/rencontres/${r.id}`}
+                    href={`/national/rencontres/${r.id}`}
                     aria-label={joue ? 'Modifier le résultat' : 'Saisir le résultat'}
                     className="text-encre-douce/60 hover:text-terracotta"
                   >

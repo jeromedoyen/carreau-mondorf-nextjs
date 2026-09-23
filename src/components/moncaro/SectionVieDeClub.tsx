@@ -17,7 +17,9 @@ export type MaParticipationConcours = {
 };
 
 const LIBELLE_TYPE_CONCOURS: Record<string, string> = {
-  Championnat_D2: 'National D2',
+  // La clé reste « Championnat_D2 » (contrainte en base, 0047) ; le
+  // libellé vaut pour toute division — le club est en D1 dès 2027.
+  Championnat_D2: 'Championnat national',
   Promotion: 'Promotion',
   Concours_National: 'Championnat national',
   Concours: 'Concours',
