@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les neuf sections datées des 21 et 22/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -1169,9 +1169,23 @@ La liste des saisons vient de `saisons` (publique) et non de `promotion_equipes`
 - **J5 : 09/05 dans `calendrier_federation`, 10/05 dans le tableau fédéral.** Aucune ligne J5 n'est insérée, donc rien n'en dépend aujourd'hui. À vérifier auprès du club.
 - **Registre : « WALTE Daniellé »** (id 116), là où la fédération écrit « Danielle ». L'accent final n'existe pas dans ce prénom, c'est très probablement une coquille. Sans effet sur les statistiques (`cleNomMajuscules` ignore les accents). Même principe qu'au 0063 pour BENNONI : on ne corrige pas le prénom de quelqu'un sans le lui demander.
 
+### Livraison
+
+[PR #23](https://github.com/jeromedoyen/carreau-mondorf-nextjs/pull/23) fusionnée le 23/09 (`main` = `b874c74`), branche conservée. Déploiement Vercel en `success`. Contrôle en production, sans connexion : `/promotion` s'ouvre sur **la saison 2026**, sélecteur 2027 / 2026 / 2025 présent, plus aucune mention « Championnat clos ».
+
+### ⚠️ Leçon : dans ce projet, les données partent en production avant le code
+
+`npm run db:migrer` écrit dans **l'unique base**, celle de la production. La migration 0065 a donc été active **dès son application**, alors que le code qui l'accompagne n'a été déployé qu'à la fusion de la PR. Entre les deux, `/moncaro` a montré aux onze joueurs concernés un bilan Promotion « 2 journées », **sans le « sur 10 »** — précisément l'affichage trompeur que la PR venait corriger. La fenêtre a duré le temps de la revue, puis s'est refermée.
+
+**Réflexe à garder** : quand une insertion de données change ce qu'affiche un écran, et que le code qui la rend lisible n'est pas encore en production, **déployer le code d'abord, appliquer la migration ensuite** — ou prévenir Jérôme que la fusion est urgente. Une migration de pure structure, ou une donnée qu'aucun écran n'affiche encore, n'est pas concernée.
+
+### Aperçu local
+
+Le port 3000 de l'entrée `carreau-mondorf-nextjs` de `carreau-mondorf-app/.claude/launch.json` est pris par un autre projet local (plateforme Tanja). Une seconde entrée, **`carreau-mondorf-nextjs-3100`**, lance le serveur de dev sur le port 3100 (commit `742851f` dans `carreau-mondorf-app`). C'est elle qu'utilise l'outil d'aperçu.
+
 ### Reste ouvert
 
 - **2025 n'a pas de bandeau** : `calendrier_federation` ne contient aucune journée de Promotion 2025, donc le total reste inconnu et le composant se tait, comme prévu. Le mécanisme couvrira 2025 le jour où ce calendrier sera renseigné — il manque la J5 dans `promotion_equipes` 2025.
 - **Pas de table de classement Promotion.** Le bilan par journée et le classement final ci-dessus n'ont pas de place en base : `promotion_equipes` ne porte que nos trios, et il n'existe pas d'équivalent de `division_d2_resultats`. Créer `promotion_resultats_club` (saison, journée, club, points) permettrait d'afficher le classement officiel et notre bilan complet. **Décision de Jérôme** — c'est un choix de périmètre, pas une correction.
 - **Les huit autres feuilles de journée** n'existent pas en ligne. Si le club conserve ses propres feuilles de journée, elles compléteraient `promotion_equipes` sans ambiguïté.
-- **Test réel non fait** : le bandeau et l'en-tête n'ont pas été vus dans une session de licencié connecté. Même limite que les jours précédents.
+- **Test réel non fait** : le bandeau et l'en-tête n'ont pas été vus dans une session de licencié connecté. Même limite que les jours précédents. Le plus simple : se connecter en production comme licencié présent en J6 ou J10 (MARION Stéphane, FLAMMANG Marie-Jean…) et ouvrir `/moncaro` → onglet Promotion, puis `/promotion`.
