@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 66 migrations, 101 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 67 migrations, 101 composants.** Parmi les routes : `/national-d2` et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -1136,7 +1136,7 @@ Chaque ligne porte huit chiffres : quatre paires. **L'ordre n'est écrit nulle p
 
 Reconstitué, **non inséré** — aucune table ne le porte (voir « Reste ouvert ») :
 
-| J1 12/04 | J2 19/04 | J3 25/04 | J4 02/05 | J5 10/05 | J6 17/05 | J7 05/07 | J8 12/07 | J9 30/08 | J10 06/09 | **Total** |
+| J1 12/04 | J2 19/04 | J3 25/04 | J4 02/05 | J5 09/05 | J6 17/05 | J7 05/07 | J8 12/07 | J9 30/08 | J10 06/09 | **Total** |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 45 | 40 | 20 | 40 | 35 | 15 | 30 | 45 | *20* | 25 | **315** |
 
@@ -1166,7 +1166,7 @@ La liste des saisons vient de `saisons` (publique) et non de `promotion_equipes`
 
 ### Deux écarts relevés, non corrigés — à trancher par Jérôme
 
-- **J5 : 09/05 dans `calendrier_federation`, 10/05 dans le tableau fédéral.** Aucune ligne J5 n'est insérée, donc rien n'en dépend aujourd'hui. À vérifier auprès du club.
+- **J5 : 09/05 dans `calendrier_federation`, 10/05 dans le tableau fédéral.** ✅ **Tranché par Jérôme le 23/09 : on retient la date du calendrier, 09/05** (migration 0067).
 - **Registre : « WALTE Daniellé »** (id 116), là où la fédération écrit « Danielle ». L'accent final n'existe pas dans ce prénom, c'est très probablement une coquille. Sans effet sur les statistiques (`cleNomMajuscules` ignore les accents). Même principe qu'au 0063 pour BENNONI : on ne corrige pas le prénom de quelqu'un sans le lui demander.
 
 ### Livraison
@@ -1212,7 +1212,7 @@ Le départage à égalité de points se fait **au nombre de 4/4**, établi sur l
 ### Règles lues sur les documents, à retenir
 
 - **Un club marque avec ses trois meilleures équipes** (parties gagnées × 5). Vérifié sur les treize clubs de chacune des deux feuilles : Boule d'Or aligne cinq équipes en J10 (2, 3, 2, 3, 1 victoires) et marque 8 × 5 = 40, pas 55. D'où **60 points au plus par journée**.
-- Le tableau fédéral date la J5 au **10/05** ; `calendrier_federation` dit 09/05. La table suit sa source. Toujours à trancher.
+- Le tableau fédéral date la J5 au **10/05** ; `calendrier_federation` dit 09/05. ✅ **Jérôme retient la date du calendrier** : les 14 lignes J5 passent au 09/05 (migration 0067, corrigée à part plutôt qu'en modifiant 0066 déjà appliquée). 0067 ajoute un garde-fou durable : **chaque journée de `promotion_resultats_club` doit porter la date de son entrée « (Jn) » dans le calendrier fédéral** — les dix concordent.
 
 ### La J9, jamais publiée, déduite club par club
 
@@ -1220,7 +1220,7 @@ Classement après J10 − classement après J8 − points de J10. Les quatorze v
 
 ### ⚠️ Écart dans les documents fédéraux, conservé tel quel
 
-Kayl a **4 rencontres** dans le classement après J6, puis **3** après J8 et J10 — un compteur qui baisse. Le « Total Journées », dont le fichier porte « Vérifié », dit 3 (J1, J2, J4). `promotion_resultats_club` suit ce 3 ; `promotion_classement` garde le 4 publié après J6, puisque cette table recopie la fédération sans la corriger.
+Kayl a **4 rencontres** dans le classement après J6, puis **3** après J8 et J10 — un compteur qui baisse. Le « Total Journées », dont le fichier porte « Vérifié », dit 3 (J1, J2, J4). `promotion_resultats_club` suit ce 3 ; `promotion_classement` garde le 4 publié après J6, puisque cette table recopie la fédération sans la corriger. ✅ **Traitement validé par Jérôme le 23/09.**
 
 ### Six garde-fous dans la migration (transaction annulée au moindre écart)
 
