@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14. La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **23/09/2026** — **Promotion 2026** : les deux seules feuilles de journée publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -1251,3 +1251,22 @@ Le bandeau de couverture disait « Tout ce qui suit ne porte que sur les journé
 - Anonyme : 0 ligne lue sur les deux tables.
 - ⚠️ **Piège d'outillage rencontré** : dans les commandes Bash de cette session, les doubles barres obliques inverses des heredocs sont réduites à une seule avant exécution. Un `'\\u00a0'` écrit par script Python est devenu un espace insécable brut, invisible, dans le source. Pour écrire une barre oblique inverse par script : `chr(92)`, ou passer par l'outil d'édition de fichier.
 - Un espace avant « : » disparaissait au rendu JSX (« J9: ») ; la phrase est désormais construite en chaîne, avec l'espace insécable de la typographie française.
+
+### Décisions de Jérôme, même jour
+
+- **Date de la J5 : celle du calendrier, 09/05.** Les 14 lignes J5 de `promotion_resultats_club` passent du 10/05 au 09/05 par une migration à part, **0067**, plutôt qu'en modifiant 0066 déjà appliquée : le dépôt doit refléter exactement ce qui a tourné sur la base. 0067 ajoute un garde-fou durable — chaque journée doit porter la date de son entrée « (Jn) » dans le calendrier fédéral. Les dix concordent.
+- **Kayl : traitement validé tel quel** (3 rencontres dans les résultats de journée, 4 conservé dans le classement publié après J6).
+
+### Livraison
+
+[PR #25](https://github.com/jeromedoyen/carreau-mondorf-nextjs/pull/25) fusionnée le 23/09 (`main` = `ae0c2b0`), branche conservée, déploiement Vercel en `success`. **La fusion a attendu que l'aperçu Vercel du dernier commit passe** : la PR portait du code, et un build cassé serait parti droit en production.
+
+Ordre code/données respecté, conformément à la leçon notée plus haut : 0066 et 0067 ont été appliquées avant la fusion, mais aucun code en production ne lisait ces tables — personne n'a rien vu changer avant le déploiement.
+
+Contrôle en production, sans connexion : `/promotion` (2026 et `?saison=2025`), `/moncaro` et `/national-d2` répondent ; les deux nouvelles tables renvoient **0 ligne** à un visiteur anonyme.
+
+### Reste ouvert
+
+- **L'onglet « Classement » n'a pas été vu dans une session de licencié.** Il n'apparaît qu'une fois connecté. À vérifier : `/promotion` → Classement, Carreau Mondorf 8e avec 315 points, puis le graphique de ses dix journées.
+- **Saisons suivantes** : ces tables ne s'alimentent que par migration, à partir des documents FLBP. Pour une nouvelle journée publiée, inventorier d'abord la médiathèque (`/wp-json/wp/v2/media?search=PROMO`), puis ajouter les lignes et le classement publié en réutilisant les six garde-fous de 0066. Si la saisie devient fréquente, un écran CA de saisie serait à envisager — pas avant.
+- **Idée non faite, à proposer** : afficher le rang du club (« 8e sur 14 ») dans l'onglet Promotion de `/moncaro`.
