@@ -52,8 +52,9 @@ export function CouvertureSaisonPromotion({
         {citerManquantes
           ? `La fédération n'a pas publié la composition des équipes pour ${enumeration}.`
           : `La fédération n'a publié la composition des équipes que pour ${enumeration}.`}{' '}
-        Tout ce qui suit ne porte que sur les journées connues : « journées jouées »
-        compte celles-là, pas la saison entière.
+        Les équipes et les statistiques individuelles ne portent que sur ces journées-là :
+        « journées jouées » compte les journées connues, pas la saison entière. Le classement
+        des clubs, lui, couvre toute la saison.
       </p>
     </div>
   );

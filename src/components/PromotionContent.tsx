@@ -6,10 +6,13 @@ import { Tabs } from './Tabs';
 import { CalendrierPromotion } from './CalendrierPromotion';
 import { StatistiquesPromotion } from './StatistiquesPromotion';
 import { CouvertureSaisonPromotion } from './CouvertureSaisonPromotion';
+import { ClassementPromotion } from './ClassementPromotion';
 import { createClient } from '@/lib/supabase/client';
 import {
+  getClassementPromotion,
   getEquipesPromotion,
   getNombreJourneesPromotion,
+  type ClassementPromotion as ClassementPromotionData,
   type EquipePromotion,
 } from '@/lib/data';
 import { getStatistiquesPromotion } from '@/lib/stats';
@@ -29,6 +32,10 @@ export function PromotionContent({ saison }: { saison: string }) {
   const [monNom, setMonNom] = useState<string | null>(null);
   const [statsVisibles, setStatsVisibles] = useState(false);
   const [journeesSaison, setJourneesSaison] = useState<number | null>(null);
+  const [classement, setClassement] = useState<ClassementPromotionData>({
+    classements: [],
+    resultats: [],
+  });
 
   /** Le calendrier reste ouvert à tout licencié/membre autorisé, mais les
    *  statistiques de championnat sont réservées aux licenciés (ou au CA) —
@@ -48,6 +55,7 @@ export function PromotionContent({ saison }: { saison: string }) {
         equipesData,
         statsData,
         journeesData,
+        classementData,
         { data: nomData },
         { data: estCA },
         { data: licencie },
@@ -55,6 +63,7 @@ export function PromotionContent({ saison }: { saison: string }) {
         getEquipesPromotion(supabase, saison),
         getStatistiquesPromotion(supabase, saison),
         getNombreJourneesPromotion(saison),
+        getClassementPromotion(supabase, saison),
         supabase.rpc('mon_nom_benevole'),
         supabase.rpc('est_membre_ca'),
         supabase.rpc('est_licencie', { p_saison: saison }),
@@ -63,6 +72,7 @@ export function PromotionContent({ saison }: { saison: string }) {
       setEquipes(equipesData);
       setStats(statsData);
       setJourneesSaison(journeesData);
+      setClassement(classementData);
       setMonNom(nomData ?? null);
       setStatsVisibles(!!estCA || !!licencie);
       setEtat('pret');
@@ -107,11 +117,17 @@ export function PromotionContent({ saison }: { saison: string }) {
     />
   );
 
+  // Le classement des clubs n'est pas une statistique individuelle : comme
+  // le calendrier, il est ouvert à tout utilisateur autorisé. Seul l'onglet
+  // « Statistiques » reste réservé aux licenciés de la saison et au CA.
   if (!statsVisibles) {
     return (
       <div className="flex flex-col gap-4">
         {couverture}
-        <CalendrierPromotion equipes={equipes} />
+        <Tabs labels={['Calendrier', 'Classement']}>
+          <CalendrierPromotion key="calendrier" equipes={equipes} />
+          <ClassementPromotion key="classement" data={classement} />
+        </Tabs>
       </div>
     );
   }
@@ -119,8 +135,9 @@ export function PromotionContent({ saison }: { saison: string }) {
   return (
     <div className="flex flex-col gap-4">
       {couverture}
-      <Tabs labels={['Calendrier', 'Statistiques']}>
+      <Tabs labels={['Calendrier', 'Classement', 'Statistiques']}>
         <CalendrierPromotion key="calendrier" equipes={equipes} />
+        <ClassementPromotion key="classement" data={classement} />
         <StatistiquesPromotion key="stats" stats={stats!} monNom={monNom} />
       </Tabs>
     </div>
