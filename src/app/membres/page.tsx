@@ -64,7 +64,7 @@ export default async function MembresPage({
         </Link>
       </div>
 
-      <RegistreMembres personnes={personnes} />
+      <RegistreMembres personnes={personnes} saison={saison} />
     </main>
   );
 }

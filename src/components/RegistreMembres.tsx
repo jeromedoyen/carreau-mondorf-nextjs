@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, MessageSquareText, Pencil, Trash2 } from 'lucide-react';
+import { Download, LayoutDashboard, MessageSquareText, Pencil, Trash2 } from 'lucide-react';
 import { supprimerMembre } from '@/lib/actions/membres';
+import { construireClasseurMembres, nomFichierExport } from '@/lib/exportMembres';
 import type { PersonneAvecAdhesion } from '@/lib/types';
 
 function formatDate(iso: string | null) {
@@ -37,8 +38,18 @@ const CLASSE_SELECT = 'rounded-lg border border-ligne bg-sable px-2.5 py-1.5 tex
  *  chargées côté serveur donc filtrage purement local, pas de round-trip).
  *  La RLS ("lecture CA uniquement") continue de protéger les données, ce
  *  composant ne fait qu'afficher ce que le serveur lui a déjà transmis. */
-export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion[] }) {
+export function RegistreMembres({
+  personnes,
+  saison,
+}: {
+  personnes: PersonneAvecAdhesion[];
+  /** Saison affichée — reprise dans le nom et la feuille « Critères » du
+   *  fichier Excel exporté. */
+  saison: string;
+}) {
   const router = useRouter();
+  const [exportEnCours, setExportEnCours] = useState(false);
+  const [erreurExport, setErreurExport] = useState<string | null>(null);
 
   const [recherche, setRecherche] = useState('');
   const [type, setType] = useState('');
@@ -108,6 +119,50 @@ export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion
   }
 
   const filtresActifs = !!(recherche || type || categorie || classe || nationalite || droitImage || paiement);
+
+  /** Les filtres en clair, pour la feuille « Critères » du fichier. */
+  function criteresEnClair(): string[] {
+    const c: string[] = [];
+    if (recherche.trim()) c.push(`Recherche : « ${recherche.trim()} »`);
+    if (type) c.push(`Type : ${type}`);
+    if (categorie) c.push(`Catégorie : ${categorie}`);
+    if (classe) c.push(`Classe : ${classe}`);
+    if (nationalite) c.push(`Nationalité : ${nationalite}`);
+    if (droitImage) c.push(`Droit à l'image : ${droitImage === 'oui' ? 'accordé' : 'non accordé'}`);
+    if (paiement) c.push(`Paiement : ${PAIEMENT_OPTIONS.find((o) => o.value === paiement)?.label ?? paiement}`);
+    return c;
+  }
+
+  /** Télécharge la liste telle qu'affichée : les personnes filtrées, dans
+   *  l'ordre de l'écran. Le fichier est construit dans le navigateur, à
+   *  partir des données déjà reçues — aucun appel serveur. */
+  async function telechargerExcel() {
+    setErreurExport(null);
+    setExportEnCours(true);
+    try {
+      const contenu = await construireClasseurMembres(filtrees, {
+        saison,
+        criteres: criteresEnClair(),
+        total: personnes.length,
+      });
+      const blob = new Blob([contenu], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const lien = document.createElement('a');
+      lien.href = url;
+      lien.download = nomFichierExport(saison);
+      document.body.appendChild(lien);
+      lien.click();
+      lien.remove();
+      // Révocation différée : certains navigateurs lisent l'URL après le clic.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setErreurExport(e instanceof Error ? e.message : 'Export impossible.');
+    } finally {
+      setExportEnCours(false);
+    }
+  }
 
   async function supprimer(id: number, nomComplet: string) {
     if (!window.confirm(`Retirer ${nomComplet} du registre ?`)) return;
@@ -212,14 +267,39 @@ export function RegistreMembres({ personnes }: { personnes: PersonneAvecAdhesion
         <span className="ml-auto text-[12px] text-encre-douce">
           {filtrees.length} / {personnes.length}
         </span>
+        <button
+          type="button"
+          onClick={telechargerExcel}
+          disabled={exportEnCours || filtrees.length === 0}
+          title={
+            filtresActifs
+              ? `Télécharger les ${filtrees.length} personnes affichées, filtres compris`
+              : `Télécharger la liste complète (${filtrees.length} personnes)`
+          }
+          className="inline-flex items-center gap-1.5 rounded-full bg-terracotta px-3.5 py-1.5 text-[12.5px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Download size={14} aria-hidden="true" />
+          {exportEnCours ? 'Préparation…' : 'Télécharger (Excel)'}
+        </button>
       </div>
+      {erreurExport && (
+        <p role="alert" className="-mt-3 text-[12.5px] text-danger">
+          Le fichier n&apos;a pas pu être préparé : {erreurExport}
+        </p>
+      )}
 
       {filtrees.length === 0 ? (
         <div className="rounded-2xl border border-ligne bg-sable-carte p-6 text-[13.5px] text-encre-douce">
           Aucun membre ne correspond à ces filtres.
         </div>
       ) : (
-      <div className="overflow-x-auto rounded-2xl border border-ligne bg-sable-carte shadow-[0_1px_3px_rgba(36,27,18,.04)]">
+      <div className="overflow-x-auto rounded-2xl border border-ligne bg-sable-carte shadow-[0_1px_3px_rgba(36,27,18,.04)] [contain:inline-size]">
+      {/* `contain: inline-size` : sans lui, la largeur du tableau (plus de
+          800 px) remontait comme taille minimale jusqu'à la page, qui
+          débordait de 500 px sur téléphone — statistiques coupées, bouton
+          d'export hors écran (constaté le 25/09/2026). Confinée, cette
+          largeur ne compte plus pour les ancêtres : le tableau défile dans
+          son cadre. Même correctif que ClassementChart (23/09). */}
       <table className="w-full border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-ligne text-left text-[11px] uppercase tracking-wide text-encre-douce/60">

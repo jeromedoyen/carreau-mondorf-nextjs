@@ -159,8 +159,8 @@ Toutes les pages ci-dessous affichent "Réservé au comité" avec un bouton "Se 
 
 ### `/membres` — registre des licenciés
 **Objectif** : vue d'ensemble et gestion de tous les membres du club.
-**Description** : liste complète des personnes enregistrées avec leur adhésion pour la saison affichée.
-**Actions possibles** : ouvrir la fiche d'une personne, créer un nouveau membre.
+**Description** : liste complète des personnes enregistrées avec leur adhésion pour la saison affichée, avec des indicateurs (licenciés, cotisations et licences payées) et une barre de filtres : recherche (nom, prénom, e-mail, ville), type, catégorie, classe, nationalité, droit à l'image, état des paiements. Le compteur « x / y » indique combien de personnes restent affichées.
+**Actions possibles** : ouvrir la fiche d'une personne, voir son tableau de bord, créer un nouveau membre, et **télécharger la liste affichée en fichier Excel** (bouton « Télécharger (Excel) » dans la barre de filtres). Le fichier contient exactement les personnes visibles, filtres compris, dans le même ordre : nom, prénom, type, catégorie, classe, n° de licence, sexe, date de naissance, nationalité, adresse, code postal et ville, téléphone, e-mail, droit à l'image, cotisation, licence. Les notes internes du comité n'y figurent pas. Une seconde feuille, « Critères », rappelle la saison, les filtres appliqués, le nombre de personnes et la date d'export. Nom du fichier : `membres-<saison>_<date>.xlsx`.
 
 ### `/membres/[id]` — fiche membre
 **Objectif** : consulter et modifier les informations d'une personne.
