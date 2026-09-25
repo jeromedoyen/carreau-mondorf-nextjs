@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **25/09/2026** — **National D2 2026 bouclée** : la J14 de la poule est en base et les quatorze journées concordent avec le tableau fédéral (0071) — Carreau Mondorf champion, 22 pts ; composition de la phase 4 de la J12 corrigée d'après la feuille officielle (0072, signalement de Jérôme sur Michel PRYBYLA). Le 23/09 : **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP — PR #30, fusionnée et déployée) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **25/09/2026** — type d'adhésion « non-licencié » ramené à une seule orthographe (0073), contrainte en base ; **Export Excel de la liste des membres** depuis `/membres` (liste filtrée telle qu'affichée, feuille « Critères »), et débordement de la page sur téléphone corrigé. Plus tôt le même jour : **National D2 2026 bouclée** : la J14 de la poule est en base et les quatorze journées concordent avec le tableau fédéral (0071) — Carreau Mondorf champion, 22 pts ; composition de la phase 4 de la J12 corrigée d'après la feuille officielle (0072, signalement de Jérôme sur Michel PRYBYLA). **PR #32 fusionnée et déployée.** Le 23/09 : **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP — PR #30, fusionnée et déployée) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 72 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 73 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -1509,3 +1509,58 @@ Laissé tel quel : le tête-à-tête de MARION en phase 3. Le manuscrit semble p
 ### Ordre code/données
 
 Aucune modification de code : les statistiques et `/moncaro` lisent `parties_d2` et `division_d2_resultats` en direct. **Les corrections sont visibles en production dès l'application des migrations** ; la PR ne porte que les fichiers de migration et ce journal.
+
+### Livraison
+
+[PR #32](https://github.com/jeromedoyen/carreau-mondorf-nextjs/pull/32) fusionnée le 25/09 après succès de l'aperçu Vercel (`main` = `b6dbb8b`), déploiement de production en `success`, branche conservée. Aucune PR ouverte.
+
+### Reste ouvert (National)
+
+- **Rien vu en session connectée** : l'effet de la correction sur `/moncaro` de Michel PRYBYLA (partenaire HONGROIS en phase 4) et sur les statistiques de BEGUE et HONGROIS. Le plus simple : que Michel ouvre `/moncaro` → onglet Championnat, rencontre du 29/08.
+- **Les autres rencontres 2026 ont-elles été saisies depuis une feuille recopiée plutôt que depuis la feuille officielle ?** L'écart de la J12 était une permutation de joueurs à scores constants — invisible à tous les contrôles automatiques. Seule une relecture contre les feuilles manuscrites signées le dirait. À proposer à Jérôme s'il dispose des scans.
+- **Saison 2027 en National D1** : le tableau du 25/09 donne la National D1 2026 (Riganelli, Schifflange, Boule d'Or, Dudelange, Clair-Chêne, Kayl) — de quoi connaître les futurs adversaires, en attendant la composition officielle de la poule 2027.
+
+## Session du 25/09/2026 (suite) — exporter la liste des membres en Excel
+
+Demande de Jérôme : filtrer la liste de l'onglet Membres, puis la télécharger en fichier Excel.
+
+### Ce qui existe
+
+`/membres` (réservé au CA) avait déjà sept filtres — recherche, type, catégorie, classe, nationalité, droit à l'image, paiement — appliqués côté navigateur sur les données déjà reçues. Il manquait la sortie. `xlsx` (SheetJS 0.18.5) était déjà une dépendance, chargée à la demande dans `TournoiImport`.
+
+### Ce qui est ajouté
+
+- **`src/lib/exportMembres.ts`** : `lignesExportMembres()` (pure, une ligne par personne, dans l'ordre reçu), `construireClasseurMembres()` (classeur en mémoire, `xlsx` importé à la demande), `nomFichierExport()` → `membres-<saison>_<AAAA-MM-JJ>.xlsx`.
+- **Bouton « Télécharger (Excel) »** dans la barre de filtres de `RegistreMembres`, à côté du compteur. Il exporte **exactement les personnes affichées**, filtres compris. Infobulle : « Télécharger les N personnes affichées, filtres compris » ou « la liste complète ». Désactivé quand le filtre ne laisse personne. Construit dans le navigateur, sans appel serveur : aucune donnée ne sort par un autre chemin que celui déjà autorisé par la RLS.
+- **Feuille « Membres »** : 16 colonnes (identité, adhésion, contact, droit à l'image, cotisation, licence). Dates de naissance en **vraies dates Excel** (`jj/mm/aaaa`, triables), calculées en UTC pour ne pas décaler d'un jour ; n° de licence en texte ; largeurs de colonnes ; filtre automatique sur l'en-tête. Licence « Sans objet » pour un non-licencié, même règle que le filtre de l'écran.
+- **Feuille « Critères »** : saison, date et heure d'export, « N sur M » personnes, filtres en clair. Un fichier circule ; six semaines plus tard, il doit encore dire ce qu'il contient.
+- **Les notes internes du comité sont exclues** — elles n'ont pas vocation à sortir de l'application avec une liste d'adresses. À réintroduire seulement si Jérôme le demande.
+
+### Débordement sur téléphone corrigé au passage
+
+À 375 px, la page `/membres` débordait de **506 px** : statistiques coupées, et le nouveau bouton hors écran. Défaut **antérieur** (mesuré avec et sans le bouton : identique) : la largeur du tableau (plus de 800 px) remontait comme taille minimale jusqu'à la page. Corrigé comme `ClassementChart` le 23/09 : `contain: inline-size` sur le cadre défilant du tableau. Après : 0 px de débordement, filtres repliés sur plusieurs lignes, tableau défilant dans son cadre ; rien ne change en bureau.
+
+⚠️ Ce motif — un tableau ou un graphique large dans un cadre `overflow-x-auto`, à l'intérieur d'une mise en page flex — a maintenant été rencontré trois fois (graphique Promotion, grille des statistiques, registre). D'autres écrans ont très probablement le même défaut (`StatistiquesD2`, déjà signalé). Une vérification systématique à 375 px de toutes les pages CA serait utile.
+
+### Vérification
+
+- **Sur les vraies données du registre**, fichier relu avec `xlsx` sans afficher aucune donnée personnelle : 124 lignes sur 124, en-têtes conformes, ordre de l'écran conservé, **68 dates de naissance sur 68 exactes au jour près** et en vraie date, n° de licence en texte, 16 largeurs, filtre automatique, aucune note interne retrouvée ; filtre « Licenciés » : 62 lignes, feuille Critères correcte.
+- **Dans le navigateur**, sur une page d'aperçu temporaire avec des membres **fictifs** (supprimée) : filtre Type = Licencié → 3/4, clic → fichier `.xlsx` de 21 Ko nommé `membres-2026_2026-09-25.xlsx` (téléchargement intercepté, aucun fichier écrit) ; contenu vérifié : les trois licenciés présents, le membre exclu absent, la note fictive absente, le critère inscrit.
+- `tsc`, lint (fichiers touchés), build.
+- ⚠️ `/membres` réelle non vue en session CA.
+
+## Session du 25/09/2026 (suite) — une seule orthographe pour « Membre (non-licencié) » (migration 0073)
+
+Signalement de Jérôme : quatre nouveaux membres non-licenciés apparaissaient sous un autre choix du filtre « Type » que les autres — « une histoire de parenthèse ».
+
+**Constat** : deux valeurs pour le même type. « Membre non-licencié » (60 adhésions 2026, toutes issues de l'import V1, `source_id` A-…) et « Membre (non-licencié) » (14, écrites par l'application). Parmi les personnes affichées : 58 d'un côté, **4** de l'autre — les membres créés depuis l'application.
+
+**Valeur retenue : « Membre (non-licencié) »**, celle qu'écrivent les trois formulaires (`MembreForm`, `InscriptionForm`, `ReinscriptionForm`), les demandes d'adhésion, et que documente 0004. Garder l'autre aurait fait recréer l'écart par chaque nouveau membre. Les 60 adhésions importées sont converties.
+
+**Aucun traitement ne dépend du libellé** : partout, le code distingue `type = 'Licencié'` du reste (cotisation, licence, `est_licencie()`, contrôle fédération, statistiques). Vérifié par recherche dans `src`, `scripts` et les migrations avant d'écrire.
+
+**Contraintes ajoutées** : `adhesions.type` ∈ {Licencié, Membre (non-licencié)} ; `demandes_adhesion.type_adhesion_souhaite` idem ou vide. **Éprouvée** : une tentative d'écrire l'ancienne orthographe, dans une transaction annulée, est refusée par `adhesions_type_check`.
+
+Résultat 2026 : 74 « Licencié », 74 « Membre (non-licencié) » ; 62 non-licenciés affichés, tous sous la même valeur. Visible en production dès l'application de la migration, aucun code modifié.
+
+⚠️ Si un futur import (fichier fédéral, reprise d'ancien registre) écrit « Membre non-licencié », il échouera désormais sur la contrainte au lieu de créer silencieusement une troisième catégorie. C'est voulu : le message d'erreur nomme la contrainte.
