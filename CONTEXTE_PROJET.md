@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **23/09/2026** — **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP — PR #30, fusionnée et déployée) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **25/09/2026** — **National D2 2026 bouclée** : la J14 de la poule est en base et les quatorze journées concordent avec le tableau fédéral (0071) — Carreau Mondorf champion, 22 pts ; composition de la phase 4 de la J12 corrigée d'après la feuille officielle (0072, signalement de Jérôme sur Michel PRYBYLA). Le 23/09 : **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP — PR #30, fusionnée et déployée) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 70 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 72 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -25,7 +25,7 @@ Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nex
 2. **Convocations** — la table n'existe pas. Sans elle, pas de taux de présence réel ni de prochaines échéances ; le tableau de bord se rabat sur « journées jouées / rencontres disputées », exact mais différent. Structure proposée en fin de fichier. **Décision de fonctionnement du club avant d'être technique.**
 3. **Aucun harnais de test** — le défaut du 22/09, qui affichait le bilan d'un coéquipier, aurait été attrapé par trois lignes d'assertion.
 
-Reliquat de données : les **trois lignes de poule de la J14** (Lasauvage–Schieren, Belvaux–Steinfort, exempt Steinheim). Revérifié le 23/09 **sur la page elle-même** (et via la médiathèque WordPress) : la FLBP n'a toujours publié que jusqu'à la J13. Le titre n'en dépend pas, c'est démontré en fin de fichier.
+~~Reliquat de données : les trois lignes de poule de la J14~~ — **fait le 25/09** (0071), depuis le tableau fédéral transmis par Jérôme ; la saison entière y a été recoupée.
 
 ## Session du 24/07/2026 — Phases 0 à D de la feuille de route
 
@@ -1469,3 +1469,43 @@ Contrôle en production, sans connexion : `/promotion`, `/moncaro`, `/national`,
 - **Registre** : DUBLIN Jos (J3) et SZCZUCKI Bernard (J7) n'y figurent pas — à ajouter s'ils sont licenciés du club. Leurs lignes de Promotion existent déjà ; le rapprochement se fera par le nom.
 - **Le départage au 4/4** reste non reconstitué. Avec huit feuilles sur dix, il devient testable : compter les 4/4 par club et les comparer aux classements publiés après J6 et J8 dirait si seuls les trios qui marquent comptent — ce qui expliquerait le 4/4 du Clair-Chêne ignoré en J10. Pas fait : J5 manque pour le classement après J6.
 - **Toujours rien vu en session connectée** : bandeau, panneau d'un joueur avec la mention « au temps », rang du club dans `/moncaro`.
+
+## Session du 25/09/2026 — National D2 : la J14 de la poule, et la phase 4 de la J12
+
+### La J14, et toute la saison recoupée (migration 0071)
+
+Jérôme transmet le tableau fédéral « Résultats Championnat National - Division 1 / Division 2 » de toute la saison. Ajouté : **Lasauvage 29-34 Schieren**, **Belvaux 34-29 Steinfort**, exempt **Steinheim**. La ligne « exempt » est coupée au bas de l'image : Steinheim est le seul club absent des trois rencontres, et l'exempt de la J7, que la J14 rejoue en miroir — déduit, et écrit comme tel dans la migration.
+
+Le garde-fou ne vérifie pas que la J14 : il confronte **les quatorze journées** de `division_d2_resultats` au tableau (chaque rencontre avec sa date et ses deux scores, chaque exempt, 56 lignes, sept clubs par journée). Les J1-J10 venaient de l'import V1, les J11-J13 de trois documents différents : **tout concorde**.
+
+**Classement final, calculé par l'application** : Carreau Mondorf **champion, 22 pts** (10 V, 2 D, 472-284) ; KaBoule 20 ; Schieren 18 ; Steinheim 17 ; Belvaux 17 ; Lasauvage 16 ; Steinfort 16. Le « 472 » attendu depuis le 21/09 est retrouvé.
+
+Le tableau porte aussi la **National D1 2026** (six clubs, dix journées) : non stocké — le club n'y jouait pas ; utile pour connaître les adversaires de 2027.
+
+### J12 : la composition de la phase 4 était fausse (migration 0072)
+
+Signalement de Jérôme : la composition enregistrée pour **Michel PRYBYLA** n'est pas la bonne. Trois documents pour Mondorf 44 – Schieren 19 (29/08) :
+
+- **v1**, feuille dactylographiée (Téléchargements, 31/08) — celle qui avait servi à la saisie ;
+- la **feuille de match officielle manuscrite**, signée des capitaines et de l'arbitre (scan de 3 pages, même dossier) ;
+- **v2**, version dactylographiée corrigée par Jérôme (`C:\Temp\version 2 Mondorf - Schieren.pdf`).
+
+v1 et v2, comparées **mot à mot** (texte extrait par position), ne diffèrent qu'en trois cases, toutes en phase 4 — et v2 concorde avec le manuscrit :
+
+| Phase 4 | v1 (en base jusque-là) | v2 et manuscrit |
+|---|---|---|
+| Triplette 1 (11-13) | SCHMIT · COLPIN · HONGROIS | SCHMIT · COLPIN · **BEGUE** |
+| Triplette 2 (13-9) | ROUSSET · BEGUE · MARION | ROUSSET · **OCHEM** · MARION |
+| Triplette 3 (13-7) | LE BERRE · PRYBYLA · OCHEM | LE BERRE · PRYBYLA · **HONGROIS** |
+
+Sur le manuscrit, le nom de la triplette 1 est raturé : il avait été **déduit BEGUE par élimination** (chacun joue une fois par phase) et soumis à Jérôme avant toute écriture ; v2 l'a confirmé.
+
+Effet mesuré par la vraie `getStatistiquesJoueursD2()`, avant/après : **BEGUE 19 → 18 victoires** (71 → 66 pts), **HONGROIS 26 → 27** (102 → 107 pts), OCHEM et PRYBYLA inchangés ; Michel est désormais associé à HONGROIS en triplette. La migration refuse d'écrire si la base ne porte plus exactement la v1, et vérifie après coup les neuf joueurs une fois par phase et le 44 reconstitué.
+
+Laissé tel quel : le tête-à-tête de MARION en phase 3. Le manuscrit semble porter **13-11**, v1 et v2 disent 13-12 ; sans effet sur les points. On suit v2.
+
+**Leçon** : une feuille dactylographiée recopiée par le club n'est pas la feuille officielle. Quand les deux existent, la saisie doit partir de la manuscrite signée, ou au moins les confronter — ici, la v1 avait permuté trois joueurs d'une même phase sans changer un seul score, ce qu'aucun contrôle de total ne pouvait voir. Le contrôle « neuf joueurs, une fois par phase » ne l'aurait pas vu non plus : la permutation le respecte.
+
+### Ordre code/données
+
+Aucune modification de code : les statistiques et `/moncaro` lisent `parties_d2` et `division_d2_resultats` en direct. **Les corrections sont visibles en production dès l'application des migrations** ; la PR ne porte que les fichiers de migration et ce journal.
