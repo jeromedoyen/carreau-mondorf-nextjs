@@ -235,7 +235,8 @@ export async function getSaisonsPromotionDisponibles(): Promise<string[]> {
  *
  *  L'écart entre les deux n'est pas un détail : en 2026 la FLBP n'a mis en
  *  ligne la composition des trios que pour 2 journées sur 10 (feuilles J6 et
- *  J10, cf. migration 0065), et en 2025 il en manquait déjà une. Sans ce
+ *  J10, cf. migration 0065), puis 8 (0070) et enfin les 10 (0074, 08/10/2026) ;
+ *  en 2025 il en manque une. Sans ce
  *  dénominateur, « 2 journées jouées » se lit comme une saison entière.
  *
  *  Renvoie `null` quand le calendrier fédéral ne couvre pas la saison — on

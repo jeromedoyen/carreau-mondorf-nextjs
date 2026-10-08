@@ -3,7 +3,8 @@
  *  Pourquoi il existe : `promotion_equipes` ne contient que les journées
  *  dont on a la feuille, avec la composition des trios. En 2026 : J6 et J10
  *  publiées par la FLBP (0065), puis J1, J2, J3, J4, J7 et J9 transmises par
- *  Jérôme (0070) — 8 sur 10 ; en 2025 il en manquait déjà une. Le texte ne
+ *  Jérôme (0070) — 8 sur 10, puis J5 et J8 (0074, 08/10/2026) : 10 sur 10, et le
+ *  bandeau se tait ; en 2025 il en manque une. Le texte ne
  *  dit donc pas qui n'a pas publié : il dit ce qui manque. Or `StatistiquesPromotion` affiche une colonne
  *  « Journées jouées » : sans dénominateur, un licencié qui a fait presque
  *  toute la saison y lit « 2 » et croit à une erreur — ou pire, n'y voit
