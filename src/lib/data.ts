@@ -276,6 +276,10 @@ export type ResultatJourneeClub = {
   points: number | null;
   /** Valeur calculée par différence entre deux classements, non publiée. */
   deduit: boolean;
+  /** Équipes du club ayant gagné leurs quatre parties ET comptant dans ses points
+   *  ce jour-là (0 à 3). Reconstitué sur les feuilles de journée (0075), pas publié
+   *  par la FLBP ; `null` si le club n'a pas joué ou si la saison n'a pas ce détail. */
+  quatreQuatre: number | null;
 };
 
 export type ClassementPromotion = {
@@ -291,7 +295,9 @@ export type ClassementPromotion = {
  *  gagne ses quatre parties ET dont le résultat compte dans les points du
  *  club. Elle explique les trois égalités publiées, mais deux compteurs
  *  fédéraux s'en écartent (Boule d'Or, Clair-Chêne en J10) : on garde donc le
- *  classement tel que publié, sans le recalculer.
+ *  classement tel que publié, sans le recalculer. Le décompte par journée
+ *  (`quatreQuatre`, migration 0075) ne sert qu'aux journées SANS classement
+ *  publié, pour départager leurs égalités de points.
  *
  *  Client injecté, comme `getEquipesPromotion` : les deux tables sont
  *  réservées aux utilisateurs autorisés, une lecture anonyme reviendrait
@@ -309,7 +315,7 @@ export async function getClassementPromotion(
       .order('position', { ascending: true }),
     supabase
       .from('promotion_resultats_club')
-      .select('journee, date, club, jouee, points, deduit')
+      .select('journee, date, club, jouee, points, deduit, quatre_quatre')
       .eq('saison', saison)
       .order('journee', { ascending: true }),
   ]);
@@ -341,6 +347,7 @@ export async function getClassementPromotion(
       jouee: r.jouee as boolean,
       points: r.points as number | null,
       deduit: r.deduit as boolean,
+      quatreQuatre: r.quatre_quatre as number | null,
     })),
   };
 }

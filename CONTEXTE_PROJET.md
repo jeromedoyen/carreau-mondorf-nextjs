@@ -2,7 +2,7 @@
 
 Ce fichier résume l'état complet de ce projet pour reprendre le travail sans perdre le contexte accumulé. **À lire en entier avant toute modification.** Écrit pour amorcer une nouvelle conversation à contexte léger — voir aussi `carreau-mondorf-app/CLAUDE.md` et `carreau-mondorf-app/CONTEXTE_PROJET.md` pour le projet frère (l'application de référence, en production).
 
-Dernière mise à jour : **08/10/2026** — **Promotion 2026 : les feuilles J5 et J8 sont insérées (0074), la saison est connue équipe par équipe sur 10 journées sur 10** ; le 25/09 : type d'adhésion « non-licencié » ramené à une seule orthographe (0073), contrainte en base ; **PR #33, #34 et #35 fusionnées et déployées** (`b923db2`) ; **Export Excel de la liste des membres** depuis `/membres` (liste filtrée telle qu'affichée, feuille « Critères »), et débordement de la page sur téléphone corrigé. Plus tôt le même jour : **National D2 2026 bouclée** : la J14 de la poule est en base et les quatorze journées concordent avec le tableau fédéral (0071) — Carreau Mondorf champion, 22 pts ; composition de la phase 4 de la J12 corrigée d'après la feuille officielle (0072, signalement de Jérôme sur Michel PRYBYLA). **PR #32 fusionnée et déployée.** Le 23/09 : **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP — PR #30, fusionnée et déployée) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
+Dernière mise à jour : **08/10/2026** — **le 4/4 est stocké par club et par journée (0075) et départage les journées sans classement publié** ; **Promotion 2026 : les feuilles J5 et J8 sont insérées (0074), la saison est connue équipe par équipe sur 10 journées sur 10** ; le 25/09 : type d'adhésion « non-licencié » ramené à une seule orthographe (0073), contrainte en base ; **PR #33, #34 et #35 fusionnées et déployées** (`b923db2`) ; **Export Excel de la liste des membres** depuis `/membres` (liste filtrée telle qu'affichée, feuille « Critères »), et débordement de la page sur téléphone corrigé. Plus tôt le même jour : **National D2 2026 bouclée** : la J14 de la poule est en base et les quatorze journées concordent avec le tableau fédéral (0071) — Carreau Mondorf champion, 22 pts ; composition de la phase 4 de la J12 corrigée d'après la feuille officielle (0072, signalement de Jérôme sur Michel PRYBYLA). **PR #32 fusionnée et déployée.** Le 23/09 : **Promotion 2026 connue sur 8 journées sur 10** (six feuilles transmises par Jérôme, 0070, après J6 et J10 publiées par la FLBP — PR #30, fusionnée et déployée) ; règle de score corrigée — trois équipes dont au moins une mixte. Plus tôt : les deux feuilles publiées par la FLBP (J6 et J10) sont en base, et l'application dit désormais clairement qu'il s'agit de 2 journées sur 10 ; `/promotion` n'est plus figée sur 2025. **Fusionné et déployé** (PR #23), vérifié en production. Puis **table de classement Promotion** (0066) : classements officiels J6/J8/J10 et points des quatorze clubs à chaque journée, affichés dans un onglet « Classement » — Carreau Mondorf finit 8e sur 14 ; J5 datée du 09/05 comme le calendrier (0067). **Fusionné et déployé** (PR #25). Puis la **Promotion mise au niveau du National** : rang du club dans `/moncaro`, détail des parties (0068) et statistiques individuelles dépliables, classement avec le même graphique d'évolution que la D2 (PR #27). Et la **saison 2027 préparée : le club monte en National D1** (PR #28) — la division devient une propriété de la saison (0069), `/national-d2` devient `/national` (anciennes adresses redirigées), plus aucun libellé « National D2 » en dur. **Les deux fusionnées et déployées, vérifiées en production.** La J14 de National D2 n'est toujours pas publiée. Le 22/09 : **tableau de bord individuel du licencié** livré sur `/moncaro`, avec sa vue comité depuis une fiche membre. Deux correctifs de fond au passage : un rapprochement de noms qui ne rapprochait rien, et un bilan qui affichait celui d'un coéquipier. La veille : journée 14 saisie, **Carreau Mondorf champion de National D2 2026**. Les sections datées des 21, 22 et 23/09, en fin de fichier, détaillent tout.
 
 Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magique a eu lieu entre le 27/07 et le 01/08/2026 et a été intégralement annulé par Jérôme, voir section dédiée.
 
@@ -10,7 +10,7 @@ Connexion : **OTP à 6 chiffres saisi manuellement** — un essai de lien magiqu
 
 ⚠️ **Les sections « Feuille de route » et « Périmètre non couvert » ci-dessous datent du 22/07/2026 et sont largement dépassées.** Elles restent en place parce qu'elles gardent trace des décisions prises ce jour-là, mais **ne pas s'y fier pour savoir ce qui existe** — s'en tenir à ce qui suit, et aux sessions datées en fin de fichier.
 
-Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 74 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
+Ce n'est plus un prototype en lecture seule : l'application est **authentifiée** (OTP), écrit en base, et couvre bien au-delà du module Compétition. **44 routes, 75 migrations, 102 composants.** Parmi les routes : `/national` (ex-`/national-d2`, redirigée) et `/promotion` (compétition), `/membres` (registre licenciés), `/manifestations` et `/benevole` (événements et bénévolat), `/conges`, `/concours` (déclaration de participation, dont vocale et assistée par IA), `/moncaro` (espace personnel du licencié), `/federation`, et quatorze écrans `/outils` réservés au CA — paiements, remboursements, renouvellements, signatures Documenso, tournoi, statistiques.
 
 **`/moncaro` est un vrai tableau de bord depuis le 21/09** : en-tête avec distinctions méritées, bandeau d'indicateurs, et quatre onglets (Ma saison, Championnat, Promotion, Ma vie de club), avec sélecteur de saison. Le comité peut consulter celui de n'importe quel membre par trois chemins : l'icône sur une ligne du registre, le bouton sur sa fiche, ou le lien au bas de son panneau dans le classement individuel.
 
@@ -1659,7 +1659,7 @@ Puis on compare aux trois classements publiés (J6, J8, J10 : 14 clubs chacun).
 
 Sept journées n'ont pas de classement publié (J1 à J5, J7, J9) : l'application les **estime aux points**, et à égalité garde l'ordre de la journée précédente. Avec la règle, on pourrait départager certaines de ces égalités (J7 : KaBoule 1 devant Steinheim 0 à 220 ; J3 : Mondorf 2 devant KaBoule 0 à 105). Mais **plusieurs égalités restent à 4/4 aussi égaux** (J1 : quatre groupes ; J2 : trois ; J3, J4, J5 : un à deux) : le critère suivant n'est écrit nulle part. L'estimation actuelle reste donc la plus honnête.
 
-Pour l'implémenter il faudrait une colonne `quatre_quatre` dans `promotion_resultats_club` (133 valeurs, une par club et par journée) et un tri « points, puis 4/4 » dans `construireEvolutionPromotion`. **Non fait** : à décider par Jérôme.
+**Fait ensuite, à la demande de Jérôme** : colonne `quatre_quatre` dans `promotion_resultats_club` (133 valeurs) et tri « points, puis 4/4 » dans `construireEvolutionPromotion` — voir la section suivante (0075).
 
 ### Ce qui a changé dans l'application
 
@@ -1668,5 +1668,41 @@ Le texte de l'onglet Classement précise désormais ce qu'est un 4/4 (« … et 
 ### Reste ouvert
 
 - Les écarts Boule d'Or et Clair-Chêne, si Jérôme veut un jour les soulever auprès de la fédération.
-- Décision : stocker le 4/4 par club et par journée (voir ci-dessus).
+- ~~Décision : stocker le 4/4 par club et par journée.~~ **Fait le même jour** (0075), voir la section suivante.
 - Les relevés (`quatre_quatre.py`, 589 équipes) vivaient dans le répertoire de travail de la session ; ils ne sont pas dans le dépôt. Les feuilles sources sont dans `Téléchargements\PROMO-Resultats-1-10-2.pdf`.
+
+## Session du 08/10/2026 (suite 2) — le 4/4 par club et par journée (migration 0075)
+
+Jérôme : « stocke le 4/4 par club et par journée ». La règle reconstituée plus haut sert maintenant à départager les journées sans classement publié.
+
+### Base (0075)
+
+Colonne **`promotion_resultats_club.quatre_quatre`** : équipes du club ayant gagné leurs quatre parties **et comptant dans ses points** ce jour-là. Contrainte : de 0 à 3 (trois équipes marquent au plus) et vide si le club n'a pas joué. **133 valeurs** pour 2026, **36 « 4/4 » au total** ; Kayl, qui n'a joué que J1, J2 et J4, est à 0 partout.
+
+Garde-fous (transaction annulée au moindre écart) : chaque journée jouée porte sa valeur ; le cumul retrouve les compteurs publiés **sauf exactement les quatre écarts nommés** (Boule d'Or −2 à J6, J8 et J10 ; Clair-Chêne +1 à J10) — un cinquième écart, ou la disparition d'un des quatre, annule tout ; et à chaque classement publié l'ordre est bien « points, puis 4/4 ». Répétition à blanc avant application.
+
+### Code
+
+- `getClassementPromotion` lit la colonne ; `ResultatJourneeClub.quatreQuatre`.
+- `construireEvolutionPromotion` : aux journées **estimées**, tri « points, puis 4/4, puis ordre de la veille ». Le décompte **repart du dernier classement publié** : l'écart fédéral (Boule d'Or, Clair-Chêne) est reporté tel quel sur les journées suivantes, pour que le compteur affiché ne recule jamais. Aux journées publiées, rien ne change : rang et compteur de la FLBP.
+- Une saison sans cette colonne renseignée (2025) retombe sur l'ancien comportement : aux points seuls, « —×4/4 ».
+- `ClassementPromotion` : la phrase et la légende disent, selon le cas, « décompte publié par la FLBP » ou « reconstitué d'après les feuilles de journée ».
+
+### Ce que ça change, mesuré sur les données réelles
+
+Rangs modifiés par rapport à l'estimation aux seuls points : **J1** (Boule d'Or 3ᵉ au lieu de 4ᵉ, Lasauvage 4ᵉ), **J2** (Clair-Chêne 3ᵉ, Boule d'Or 4ᵉ), **J4** (Schifflange 1ᵉ devant Dudelange, à 185 points chacun : 4 « 4/4 » contre 2), **J5** (Clair-Chêne 4ᵉ au lieu de 6ᵉ). Aucun changement à J3, J7 et J9. Les trois journées publiées sont **identiques à la FLBP** : 0 écart de rang ou de compteur sur les 42 lignes.
+
+### Ce qui reste approximatif
+
+Plusieurs égalités restent à 4/4 égaux (J1 : quatre groupes ; J2 : trois ; J3, J4, J5 : un ou deux). Le critère suivant n'est écrit nulle part : on garde l'ordre de la journée précédente, et l'écran continue de dire « estimé ».
+
+**Saut visible de Boule d'Or à J6** : son compteur passe de 1 (J5) à 5 (J6, publié), alors que deux équipes seulement ont fait 4/4 ce jour-là. C'est l'écart fédéral de 2, qui apparaît à la première journée publiée — il n'est pas possible de le dater plus tôt.
+
+### Ordre code/données
+
+0075 ajoute une colonne nullable que l'ancien code ne lit pas : appliquée **avant** le déploiement, sans effet visible. Le code qui la lit ne peut être déployé qu'après la migration — c'est le sens inverse du piège du 23/09, et c'est celui-ci qui était obligatoire.
+
+### Reste ouvert
+
+- Rien vu en session connectée : `/promotion` → Classement, journées J1, J2, J4 et J5 dans le graphique.
+- Les écarts Boule d'Or et Clair-Chêne, si Jérôme veut les soulever auprès de la fédération.
