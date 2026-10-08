@@ -54,6 +54,7 @@ export function ClassementPromotion({ data }: { data: ClassementPromotionData })
     .sort((a, b) => a.pt.rang - b.pt.rang);
   const officiel = entrees.some((e) => e.pt.officiel);
   const estFinal = journeeAffichee === derniereJournee && officiel;
+  const sansDecompte = entrees.some((e) => e.pt.quatreQuatre === null);
   const pointsMax = Math.max(...entrees.map((e) => e.pt.points), 1);
 
   const journeesMondorf = data.resultats
@@ -103,7 +104,9 @@ export function ClassementPromotion({ data }: { data: ClassementPromotionData })
         <p className="m-0 mb-4 text-[12.5px] text-encre-douce">
           {officiel
             ? 'À égalité de points, le départage se fait au nombre de 4/4 — les équipes qui ont gagné leurs quatre parties et dont le résultat compte dans les points du club.'
-            : 'La fédération n’a pas publié de classement après cette journée : les clubs sont rangés aux points, sans le départage au 4/4.'}
+            : sansDecompte
+              ? 'La fédération n’a pas publié de classement après cette journée : les clubs sont rangés aux points, sans le départage au 4/4.'
+              : 'La fédération n’a pas publié de classement après cette journée : les clubs sont rangés aux points, puis au nombre de 4/4 reconstitué d’après les feuilles de journée.'}
         </p>
 
         <div className="flex flex-col">
@@ -158,7 +161,12 @@ export function ClassementPromotion({ data }: { data: ClassementPromotionData })
         </div>
         <p className="m-0 mt-3 text-[11.5px] text-encre-douce/70">
           {(journeePrecedente !== null ? `Flèches : évolution depuis la journée ${journeePrecedente}. ` : '') +
-            '« j. » : journées jouées · « —×4/4 » : décompte non publié à cette journée.'}
+            '« j. » : journées jouées · ' +
+            (sansDecompte
+              ? '« —×4/4 » : décompte non publié à cette journée.'
+              : officiel
+                ? '« ×4/4 » : décompte publié par la FLBP.'
+                : '« ×4/4 » : décompte reconstitué d’après les feuilles de journée.')}
         </p>
       </div>
 
