@@ -28,8 +28,9 @@ export type EvolutionPromotion = {
  *
  *  - celles où la FLBP a **publié** un classement (`promotion_classement`) :
  *    on reprend ses positions telles quelles. Elles départagent les égalités
- *    au nombre de 4/4, un décompte que nous ne pouvons pas reconstituer
- *    (voir migration 0066) ;
+ *    au nombre de 4/4. La règle est reconstituée (journal du 08/10/2026), mais
+ *    le décompte fédéral s'en écarte deux fois : positions reprises telles
+ *    quelles (voir migration 0066) ;
  *  - les autres : rang **estimé** aux points cumulés. À égalité, l'ordre de
  *    la journée précédente est conservé — un club ne bouge que s'il a une
  *    raison de bouger. C'est une approximation, et elle est signalée comme

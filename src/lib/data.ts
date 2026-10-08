@@ -286,8 +286,12 @@ export type ClassementPromotion = {
 /** Classement des clubs en Promotion (migration 0066).
  *
  *  Les classements sont ceux que la fédération a publiés, pas un recalcul :
- *  le départage au nombre de « 4/4 » n'est publié que cumulé et sa règle
- *  exacte n'est écrite nulle part, on ne saurait pas le reconstituer.
+ *  le départage au nombre de « 4/4 » n'est publié que cumulé. Sa règle a été
+ *  reconstituée sur les dix feuilles (journal du 08/10/2026) : une équipe qui
+ *  gagne ses quatre parties ET dont le résultat compte dans les points du
+ *  club. Elle explique les trois égalités publiées, mais deux compteurs
+ *  fédéraux s'en écartent (Boule d'Or, Clair-Chêne en J10) : on garde donc le
+ *  classement tel que publié, sans le recalculer.
  *
  *  Client injecté, comme `getEquipesPromotion` : les deux tables sont
  *  réservées aux utilisateurs autorisés, une lecture anonyme reviendrait

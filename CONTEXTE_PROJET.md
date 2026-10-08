@@ -21,7 +21,7 @@ Déploiement : push sur `main` → build Vercel → `https://carreau-mondorf-nex
 ### Les chantiers ouverts, par ordre d'utilité
 
 0. **Saison 2027 en National D1 — l'application est prête, les données pas encore.** La division se lit sur la saison (0069), `/national` titre « National D1 » pour 2027. Restent : le calendrier fédéral 2027 (à l'insertion des rencontres, `division = 'National D1'`), la composition de la poule D1, les éventuelles exigences propres à la D1 au règlement FLBP, et l'activation de la saison 2027 dans `/saisons` le moment venu.
-1. ~~**Résultats Promotion 2026 — 8 journées sur 10.**~~ **Complets depuis le 08/10** : les feuilles J5 et J8 sont insérées (0074), 10 journées sur 10 (0065, 0070, 0074), classement des clubs complet (0066). Restent : deux joueurs à rattacher au registre (DUBLIN Jos, SZCZUCKI Bernard), le départage au 4/4 non reconstitué, et le calendrier fédéral 2025, vide, qui prive la saison 2025 de son bandeau de couverture.
+1. ~~**Résultats Promotion 2026 — 8 journées sur 10.**~~ **Complets depuis le 08/10** : les feuilles J5 et J8 sont insérées (0074), 10 journées sur 10 (0065, 0070, 0074), classement des clubs complet (0066). Restent : deux joueurs à rattacher au registre (DUBLIN Jos, SZCZUCKI Bernard), (le départage au 4/4 est reconstitué depuis le 08/10), et le calendrier fédéral 2025, vide, qui prive la saison 2025 de son bandeau de couverture.
 2. **Convocations** — la table n'existe pas. Sans elle, pas de taux de présence réel ni de prochaines échéances ; le tableau de bord se rabat sur « journées jouées / rencontres disputées », exact mais différent. Structure proposée en fin de fichier. **Décision de fonctionnement du club avant d'être technique.**
 3. **Aucun harnais de test** — le défaut du 22/09, qui affichait le bilan d'un coéquipier, aurait été attrapé par trois lignes d'assertion.
 
@@ -1622,6 +1622,51 @@ Respecté sans effort : le code qui lit ces tables était déjà en production, 
 ### Reste ouvert (Promotion 2026)
 
 - **DUBLIN Jos** (J3) et **SZCZUCKI Bernard** (J7) ne sont toujours pas au registre — à ajouter s'ils sont licenciés du club.
-- **Départage au 4/4** : toujours non reconstitué. Les dix feuilles existent maintenant, mais seules J5 et J8 sont à portée de main dans cette session ; le test (compter les 4/4 par club et comparer aux classements publiés après J6, J8 et J10) demande de relire les huit autres.
+- ~~**Départage au 4/4** : non reconstitué.~~ **Reconstitué le même jour** : voir la section suivante.
 - **Rien vu en session connectée** (comme les jours précédents) : `/promotion` → Statistiques sans bandeau, panneau d'un joueur sur J5 ou J8, en-tête « 10 journées sur 10 » de `/moncaro`.
 - **Calendrier fédéral 2025 vide** : la saison 2025 n'a toujours pas son bandeau de couverture (il lui manque la J5 dans `promotion_equipes`).
+
+## Session du 08/10/2026 (suite) — le départage au 4/4, reconstitué sur les dix feuilles
+
+Jérôme : « reconstitue le départage au 4/4 avec les dix feuilles » (`PROMO-Resultats-1-10-2.pdf`, une page par journée). C'était la question laissée ouverte depuis 0066 : seuls les trios qui marquent comptent-ils ? **Oui.**
+
+### Méthode
+
+Pour les **589 équipes** des dix feuilles (J5 et J8 déjà relevées en entier ; les huit autres relevées pour l'occasion — club, type H/M, parties gagnées, sans les noms), on recalcule :
+
+- les **points de chaque club** : meilleure équipe mixte + deux meilleures des autres (trois meilleures sans équipe mixte), × 5 ;
+- le **nombre de 4/4** cumulé, selon deux hypothèses : (A) toute équipe qui gagne ses quatre parties ; (B) seulement celles qui **comptent dans le score du club**.
+
+Puis on compare aux trois classements publiés (J6, J8, J10 : 14 clubs chacun).
+
+### Résultats
+
+- **Points** : les **133 totaux de club** des dix feuilles retombent sur la colonne « Total », et les points cumulés égalent les classements publiés (**42 sur 42**). Le relevé est donc sûr.
+- **4/4, hypothèse B** : 38 valeurs publiées sur 42 retrouvées, contre 35 pour A. Seule une équipe sépare les deux hypothèses : **Schifflange en J4 a trois équipes à quatre victoires, mais deux seulement marquent** — la fédération n'en compte que deux (compteur à 5 après J6, et non 6).
+- **Règle retenue** : un « 4/4 » est une équipe qui a gagné ses quatre parties **et dont le résultat compte dans les points du club**.
+- **Les trois égalités de points publiées sont départagées dans le bon ordre** : J6, Mondorf (2) devant KaBoule (1) à 195 ; J8, Clair-Chêne (4), Riganelli (3), Belvaux (2) à 280. Aux trois classements publiés, **l'ordre est exactement « points, puis 4/4 »**.
+
+### Deux écarts de compteur fédéral, non résolus
+
+| Où | Publié | Reconstitué | Ce que disent les feuilles |
+|---|---|---|---|
+| Boule d'Or, après J6, J8 et J10 | 5, 6, 6 | 3, 4, 4 | Écart de 2 acquis dès J1–J6, constant ensuite. Les totaux de points de Boule d'Or retombent exactement sur ces six feuilles : une équipe à quatre victoires ne peut pas m'avoir échappé. |
+| Clair-Chêne, après J10 | 4 | 5 | En J10, l'équipe 4 gagne ses quatre parties contre quatre adversaires réels, et compte aux points (6 parties = 4 + 2 + 0 → 30). La fédération ne l'ajoute pas au compteur. La feuille porte aussi une ligne 5 entièrement vide. |
+
+**Aucun rang publié n'est touché** : ni Boule d'Or ni Clair-Chêne ne sont à égalité de points avec un autre club à ces trois classements. On ne sait pas si le compteur fédéral est faux ou s'il suit un critère que les feuilles ne montrent pas ; on **ne tranche pas** et le classement reste celui que la fédération a publié.
+
+### Ce que la règle permettrait, et pourquoi ce n'est pas fait
+
+Sept journées n'ont pas de classement publié (J1 à J5, J7, J9) : l'application les **estime aux points**, et à égalité garde l'ordre de la journée précédente. Avec la règle, on pourrait départager certaines de ces égalités (J7 : KaBoule 1 devant Steinheim 0 à 220 ; J3 : Mondorf 2 devant KaBoule 0 à 105). Mais **plusieurs égalités restent à 4/4 aussi égaux** (J1 : quatre groupes ; J2 : trois ; J3, J4, J5 : un à deux) : le critère suivant n'est écrit nulle part. L'estimation actuelle reste donc la plus honnête.
+
+Pour l'implémenter il faudrait une colonne `quatre_quatre` dans `promotion_resultats_club` (133 valeurs, une par club et par journée) et un tri « points, puis 4/4 » dans `construireEvolutionPromotion`. **Non fait** : à décider par Jérôme.
+
+### Ce qui a changé dans l'application
+
+Le texte de l'onglet Classement précise désormais ce qu'est un 4/4 (« … et dont le résultat compte dans les points du club »). Deux commentaires périmés, qui disaient la règle introuvable, sont corrigés. Aucune donnée ni calcul modifiés.
+
+### Reste ouvert
+
+- Les écarts Boule d'Or et Clair-Chêne, si Jérôme veut un jour les soulever auprès de la fédération.
+- Décision : stocker le 4/4 par club et par journée (voir ci-dessus).
+- Les relevés (`quatre_quatre.py`, 589 équipes) vivaient dans le répertoire de travail de la session ; ils ne sont pas dans le dépôt. Les feuilles sources sont dans `Téléchargements\PROMO-Resultats-1-10-2.pdf`.
