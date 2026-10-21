@@ -30,6 +30,8 @@ npm run build    # production build — run before every deploy
 npm run lint     # ESLint
 npx tsc --noEmit                        # typecheck the Next.js app
 npx tsc --noEmit -p scripts/tsconfig.json  # typecheck the standalone scripts/ (excluded from the app's tsconfig)
+npm run db:droits       # check that migrations >= 0076 carry their API grants (see "Droits des nouvelles tables")
+npm run db:droits:test  # tests of that check
 npm run import -- --rencontres <csv> --division <csv> --promotion <csv> --federation <csv> --parties <csv> --acces <csv> [--dry-run]
 ```
 
@@ -55,6 +57,10 @@ npm run import -- --rencontres <csv> --division <csv> --promotion <csv> --federa
 ## Exigence produit : audit des modifications (décidée le 23/07/2026)
 
 Toute future action d'écriture (Phase 4 registre membres, Phase 5 actions CA) doit enregistrer **qui** a fait **quoi** — ajout, modification, ou suppression — via la session authentifiée, pas juste la donnée finale. Demande explicite de Jérôme, à respecter dès la première table/action d'écriture construite : prévoir soit des colonnes `modifie_par`/`modifie_le` (+ `cree_par`/`cree_le`) sur chaque table mutable, soit une table `journal_modifications` dédiée (table, ligne, action, ancien/nouvel état, `auth.uid()`/email, horodatage) — trancher au moment de concevoir la première action d'écriture plutôt que d'improviser après coup. Ne s'applique qu'aux données mutables ; les tables actuelles (Compétition) sont en lecture seule, non concernées pour l'instant.
+
+## Droits des nouvelles tables (règle du 21/10/2026, avis Supabase du 20/10)
+
+Depuis le **30/10/2026**, Supabase ne donne plus automatiquement l'accès à l'API de données (supabase-js, PostgREST, GraphQL) aux **nouvelles** tables et vues du schéma `public`. Sans `grant`, l'application reçoit « permission denied », clé secrète (service_role) comprise. **Toute migration qui crée une table ou une vue porte ses `grant` dans le même fichier**, en partant de `supabase/MODELE_MIGRATION.sql`. `npm run db:migrer` refuse une migration qui les oublie (`scripts/droits-migrations.js`, vérifiable seul avec `npm run db:droits`), avant toute connexion. Table volontairement non exposée : `-- sans-grant: table : raison`. Les tables des migrations 0001 à 0075 ne portent presque aucun grant explicite (un seul, sur `demandes_adhesion`) et ne sont jamais modifiées (voir CONTEXTE_PROJET.md).
 
 ## Secrets
 

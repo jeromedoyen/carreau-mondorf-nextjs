@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "import": "tsx scripts/import-csv.ts",
-    "db:migrer": "node scripts/appliquer-migrations.js"
+    "db:migrer": "node scripts/appliquer-migrations.js",
+    "db:droits": "node scripts/droits-migrations.js",
+    "db:droits:test": "node --test scripts/droits-migrations.test.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.26",

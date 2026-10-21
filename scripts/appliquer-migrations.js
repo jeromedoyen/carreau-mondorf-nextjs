@@ -23,6 +23,8 @@
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const droits = require('./droits-migrations');
 
 const DOSSIER_MIGRATIONS = path.join(__dirname, '..', 'supabase', 'migrations');
 
@@ -52,6 +54,10 @@ async function migrationsDejaAppliquees(client) {
 }
 
 async function main() {
+  // Règle des droits (21/10/2026) : refuse, avant toute connexion, une migration qui crée une
+  // table sans droits pour l'API de données. Voir scripts/droits-migrations.js.
+  droits.controlerAvantApplication();
+
   const url = chargerDatabaseUrl();
   const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
   await client.connect();
@@ -81,6 +87,8 @@ async function main() {
     await client.end();
     return;
   }
+
+  droits.avertirHistorique(enAttente);
 
   for (const fichier of enAttente) {
     const sql = fs.readFileSync(path.join(DOSSIER_MIGRATIONS, fichier), 'utf8');
