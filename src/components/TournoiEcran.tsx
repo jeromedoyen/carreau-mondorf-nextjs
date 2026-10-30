@@ -3,8 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, FileDown, Pencil, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
-import { pdf, type DocumentProps } from '@react-pdf/renderer';
+import { ArrowLeft, Check, Pencil, Plus, Search, Shuffle, Trash2, X } from 'lucide-react';
 import {
   annulerDernierePartie,
   cloturerTournoi,
@@ -18,6 +17,7 @@ import {
 import { scoreValide } from '@/lib/tournoi/moteur';
 import type { Participant, PartieDetail, Tournoi } from '@/lib/tournoi/donnees';
 import type { StatsClassees } from '@/lib/tournoi/moteur';
+import type { VuePoules } from '@/lib/tournoi/poulesDonnees';
 import {
   DocumentClassement,
   DocumentListe,
@@ -27,6 +27,8 @@ import {
 } from './TournoiPdf';
 import { TournoiImport } from './TournoiImport';
 import { TournoiReglages } from './TournoiReglages';
+import { VueClassementPoules, VuePoulesOnglet } from './TournoiPoulesVues';
+import { BTN, BoutonPdf, CHAMP, Carte, Tab, nomFichier } from './TournoiUi';
 
 type Props = {
   tournoi: Tournoi;
@@ -37,39 +39,11 @@ type Props = {
   classement: StatsClassees[];
   libelles: Record<number, string>;
   candidats: { id: number; nom: string }[];
+  /** Poules, tableaux et libellés des rencontres ; null hors format « poules ». */
+  vuePoules: VuePoules | null;
 };
 
 type Ligne = { personneId: number | null; nom: string; equipeDepart: number | null };
-
-const CHAMP =
-  'rounded-lg border border-ligne bg-sable px-3 py-2 text-[14px] outline-none focus:border-terracotta';
-
-/** Nom de fichier lisible et triable : « tournoi-2026-08-24-classement.pdf ». */
-function nomFichier(nom: string, date: string, suffixe: string) {
-  const base = nom
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase()
-    .slice(0, 40);
-  return `${base || 'tournoi'}-${date}-${suffixe}.pdf`;
-}
-
-/** Le PDF est produit dans le navigateur, comme les fiches membres. */
-async function telechargerPdf(document_: React.ReactElement<DocumentProps>, fichier: string) {
-  const blob = await pdf(document_).toBlob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fichier;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-const BTN =
-  'inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-opacity hover:opacity-90 disabled:opacity-40';
 
 export function TournoiEcran(p: Props) {
   const router = useRouter();
@@ -117,17 +91,22 @@ export function TournoiEcran(p: Props) {
     equipesParId: p.equipesParId,
     classement: p.classement,
     libelles: p.libelles,
+    vuePoules: p.vuePoules,
   };
 
   const partieComplete = (d: PartieDetail) =>
     d.rencontres.length > 0 &&
     d.rencontres.every((r) => scoreValide({ scoreA: r.scoreA, scoreB: r.scoreB }, p.tournoi.pointsVictoire));
 
-  const toutesJouees =
-    p.partiesDetail.length === p.tournoi.nbParties && p.partiesDetail.every(partieComplete);
+  const poules = p.tournoi.format === 'poules' ? p.vuePoules : null;
+  const toutesJouees = poules
+    ? poules.fini && p.partiesDetail.every(partieComplete)
+    : p.partiesDetail.length === p.tournoi.nbParties && p.partiesDetail.every(partieComplete);
+  // Poules : le nombre de parties n'est pas connu d'avance ; on propose la suivante tant qu'il en reste une.
+  const nbOngletsParties = poules ? p.partiesDetail.length + (poules.fini ? 0 : 1) : p.tournoi.nbParties;
 
   return (
-    <main className="mx-auto max-w-4xl px-5 py-10">
+    <main className="mx-auto w-full min-w-0 max-w-4xl px-5 py-10">
       <Link
         href="/outils/tournoi"
         className="inline-flex items-center gap-1.5 text-[12.5px] text-encre-douce hover:text-encre"
@@ -138,13 +117,22 @@ export function TournoiEcran(p: Props) {
       <header className="entree mt-3 mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-score text-[13px] tracking-[0.2em] text-terracotta">
-            {p.tournoi.format === 'melee' ? 'À LA MÊLÉE' : 'ÉQUIPES FIXES'}
+            {p.tournoi.format === 'melee'
+              ? 'À LA MÊLÉE'
+              : p.tournoi.format === 'poules'
+                ? p.tournoi.poules?.mode === 'repechage'
+                  ? 'POULES À REPÊCHAGE'
+                  : 'POULES TOUTES RONDES'
+                : 'ÉQUIPES FIXES'}
             {' · '}
             {['', 'TÊTE-À-TÊTE', 'DOUBLETTES', 'TRIPLETTES'][p.tournoi.tailleEquipe]}
           </p>
           <h1 className="font-display mt-1 text-4xl italic">{p.tournoi.nom}</h1>
           <p className="mt-1.5 text-[13px] text-encre-douce">
-            {p.tournoi.nbParties} parties en {p.tournoi.pointsVictoire} points ·{' '}
+            {p.tournoi.format === 'poules'
+              ? `${p.partiesDetail.length} partie${p.partiesDetail.length > 1 ? 's' : ''} composée${p.partiesDetail.length > 1 ? 's' : ''}`
+              : `${p.tournoi.nbParties} parties`}{' '}
+            en {p.tournoi.pointsVictoire} points ·{' '}
             {p.tournoi.nbTerrains} terrains · {p.participants.length} participants
           </p>
         </div>
@@ -156,7 +144,12 @@ export function TournoiEcran(p: Props) {
         <Tab actif={onglet === 'participants'} onClick={() => setOnglet('participants')}>
           Participants
         </Tab>
-        {Array.from({ length: p.tournoi.nbParties }, (_, i) => i + 1).map((n) => {
+        {poules && (
+          <Tab actif={onglet === 'poules'} onClick={() => setOnglet('poules')}>
+            Poules
+          </Tab>
+        )}
+        {Array.from({ length: nbOngletsParties }, (_, i) => i + 1).map((n) => {
           const d = p.partiesDetail.find((x) => x.numero === n);
           return (
             <Tab key={n} actif={onglet === `p${n}`} onClick={() => setOnglet(`p${n}`)}>
@@ -195,8 +188,22 @@ export function TournoiEcran(p: Props) {
         />
       )}
 
-      {onglet.startsWith('p') && onglet !== 'participants' && (
+      {onglet === 'poules' && poules && (
+        <VuePoulesOnglet
+          tournoi={p.tournoi}
+          vue={poules}
+          equipesPermanentes={p.equipesPermanentes}
+          membresDe={membresDe}
+          nbPartiesComposees={p.partiesDetail.length}
+          enCours={enCours}
+          lancer={lancer}
+          donneesPdf={donneesPdf}
+        />
+      )}
+
+      {/^p\d+$/.test(onglet) && (
         <VuePartie
+          vuePoules={poules}
           numero={Number(onglet.slice(1))}
           tournoi={p.tournoi}
           partiesDetail={p.partiesDetail}
@@ -209,76 +216,31 @@ export function TournoiEcran(p: Props) {
         />
       )}
 
-      {onglet === 'classement' && (
-        <VueClassement
-          tournoi={p.tournoi}
-          classement={p.classement}
-          libelles={p.libelles}
-          toutesJouees={toutesJouees}
-          enCours={enCours}
-          lancer={lancer}
-          donneesPdf={donneesPdf}
-        />
-      )}
+      {onglet === 'classement' &&
+        (poules ? (
+          <VueClassementPoules
+            tournoi={p.tournoi}
+            vue={poules}
+            partiesDetail={p.partiesDetail}
+            equipesPermanentes={p.equipesPermanentes}
+            membresDe={membresDe}
+            toutesJouees={toutesJouees}
+            enCours={enCours}
+            lancer={lancer}
+            donneesPdf={donneesPdf}
+          />
+        ) : (
+          <VueClassement
+            tournoi={p.tournoi}
+            classement={p.classement}
+            libelles={p.libelles}
+            toutesJouees={toutesJouees}
+            enCours={enCours}
+            lancer={lancer}
+            donneesPdf={donneesPdf}
+          />
+        ))}
     </main>
-  );
-}
-
-/** Bouton d'export : garde l'état « génération… », le PDF prend un instant. */
-function BoutonPdf({
-  libelle,
-  fichier,
-  document: doc,
-  principal,
-}: {
-  libelle: string;
-  fichier: string;
-  document: React.ReactElement<DocumentProps>;
-  principal?: boolean;
-}) {
-  const [enCours, setEnCours] = useState(false);
-  return (
-    <button
-      type="button"
-      disabled={enCours}
-      onClick={async () => {
-        setEnCours(true);
-        try {
-          await telechargerPdf(doc, fichier);
-        } finally {
-          setEnCours(false);
-        }
-      }}
-      className={`${BTN} ${principal ? 'bg-terracotta text-white' : 'border border-ligne bg-sable'}`}
-    >
-      <FileDown size={14} /> {enCours ? 'Génération…' : libelle}
-    </button>
-  );
-}
-
-// ------------------------------------------------------------------ onglet
-
-function Tab({
-  actif,
-  onClick,
-  children,
-}: {
-  actif: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`-mb-px whitespace-nowrap border-b-2 px-3.5 pb-2.5 pt-1 text-[13.5px] transition-colors ${
-        actif
-          ? 'border-terracotta text-encre'
-          : 'border-transparent text-encre-douce hover:text-encre'
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -416,7 +378,7 @@ function VueParticipants({
       </Carte>
 
       <TournoiImport
-        avecEquipes={tournoi.format === 'equipes_fixes'}
+        avecEquipes={tournoi.format !== 'melee'}
         onValider={(recues) => setLignes(recues)}
       />
 
@@ -433,7 +395,7 @@ function VueParticipants({
                     <span className="ml-1.5 text-[11px] text-encre-douce">hors registre</span>
                   )}
                 </span>
-                {tournoi.format === 'equipes_fixes' && (
+                {tournoi.format !== 'melee' && (
                   <input
                     type="number"
                     min={1}
@@ -464,7 +426,7 @@ function VueParticipants({
           </ul>
         )}
 
-        {tournoi.format === 'equipes_fixes' && (
+        {tournoi.format !== 'melee' && (
           <p className="mt-3 text-[11.5px] text-encre-douce">
             Le numéro d&apos;équipe est facultatif : laissé vide partout, l&apos;effectif sera
             découpé automatiquement en {['', 'tête-à-tête', 'doublettes', 'triplettes'][tournoi.tailleEquipe]}.
@@ -500,7 +462,7 @@ function VueParticipants({
         </div>
       </Carte>
 
-      {tournoi.format === 'equipes_fixes' && participants.length >= 2 && !modifie && (
+      {tournoi.format !== 'melee' && participants.length >= 2 && !modifie && (
         <EquipesDepart
           tournoi={tournoi}
           participants={participants}
@@ -677,6 +639,7 @@ function EquipesDepart({
 // ------------------------------------------------------------------ partie
 
 function VuePartie({
+  vuePoules,
   numero,
   tournoi,
   partiesDetail,
@@ -687,6 +650,7 @@ function VuePartie({
   lancer,
   donneesPdf,
 }: {
+  vuePoules: VuePoules | null;
   numero: number;
   tournoi: Tournoi;
   partiesDetail: PartieDetail[];
@@ -704,17 +668,21 @@ function VuePartie({
   if (!detail) {
     const bloquee = numero > 1 && (!precedente || !partieComplete(precedente));
     return (
-      <Carte titre={`Partie ${numero}`}>
+      <Carte titre={vuePoules?.prochaine && !bloquee ? `Partie ${numero} — ${vuePoules.prochaine}` : `Partie ${numero}`}>
         <p className="mb-4 text-[13px] text-encre-douce">
           {bloquee
             ? `Il reste des résultats à saisir en partie ${numero - 1} : les appariements de celle-ci en dépendent.`
-            : numero === 1
+            : vuePoules
+              ? vuePoules.poules.length === 0
+                ? 'Tirez d’abord les poules dans l’onglet « Poules ».'
+                : 'Cette partie est composée à partir des résultats déjà saisis : poules d’abord, puis tableau principal et consolante.'
+              : numero === 1
               ? 'Aucun appariement. Le tirage compose les rencontres au hasard.'
               : 'Les équipes vont être appariées selon leur nombre de victoires, sans revanche, en évitant de rejouer un terrain déjà occupé.'}
         </p>
         <button
           type="button"
-          disabled={enCours || bloquee || partiesDetail.length !== numero - 1}
+          disabled={enCours || bloquee || partiesDetail.length !== numero - 1 || (vuePoules != null && vuePoules.poules.length === 0)}
           onClick={() =>
             lancer(async () => {
               const r = await composerProchainePartie(tournoi.id);
@@ -724,7 +692,7 @@ function VuePartie({
           className={`${BTN} bg-terracotta text-white`}
         >
           <Shuffle size={14} />
-          {numero === 1 ? 'Tirer au sort la partie 1' : `Composer la partie ${numero}`}
+          {numero === 1 && !vuePoules ? 'Tirer au sort la partie 1' : `Composer la partie ${numero}`}
         </button>
       </Carte>
     );
@@ -732,6 +700,9 @@ function VuePartie({
 
   return (
     <section className="flex flex-col gap-3">
+      {detail.libelle && (
+        <p className="font-display text-[15px] italic text-encre-douce">{detail.libelle}</p>
+      )}
       {detail.revancheForcee && (
         <p className="rounded-xl border border-laiton/40 bg-laiton/10 px-4 py-2.5 text-[12.5px] text-[#7a5c1f]">
           À ce stade il n&apos;était plus possible d&apos;éviter toutes les revanches : des équipes
@@ -749,6 +720,7 @@ function VuePartie({
         <LigneRencontre
           key={r.id}
           rencontre={r}
+          etiquette={vuePoules?.etiquettes[r.id]}
           but={tournoi.pointsVictoire}
           membresDe={membresDe}
           numeroDe={numeroDe}
@@ -790,12 +762,14 @@ function VuePartie({
 
 function LigneRencontre({
   rencontre,
+  etiquette,
   but,
   membresDe,
   numeroDe,
   lancer,
 }: {
   rencontre: PartieDetail['rencontres'][number];
+  etiquette?: string;
   but: number;
   membresDe: (id: number) => string;
   numeroDe: (id: number) => number;
@@ -847,6 +821,7 @@ function LigneRencontre({
         <span className="font-score rounded-full bg-marine px-2.5 py-0.5 text-[12px] tracking-wide text-white">
           Terrain {rencontre.terrain}
         </span>
+        {etiquette && <span className="text-[12px] font-medium text-terracotta">{etiquette}</span>}
         {mauvais && (
           <span className="ml-auto text-[11.5px] text-danger">
             Score invalide — un vainqueur, à {but} au moins
@@ -980,17 +955,6 @@ function VueClassement({
           </p>
         )}
       </div>
-    </section>
-  );
-}
-
-// ------------------------------------------------------------------- carte
-
-function Carte({ titre, children }: { titre: string; children: React.ReactNode }) {
-  return (
-    <section className="entree rounded-2xl border border-ligne bg-sable-carte p-5">
-      <h2 className="font-display mb-3 text-[16px]">{titre}</h2>
-      {children}
     </section>
   );
 }

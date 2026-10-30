@@ -6,7 +6,7 @@ import { Settings, Trash2, X } from 'lucide-react';
 import { modifierTournoi, supprimerTournoi } from '@/lib/actions/tournoi';
 import type { FormatTournoi } from '@/lib/tournoi/moteur';
 import type { Tournoi } from '@/lib/tournoi/donnees';
-import { TournoiParametresChamps } from './TournoiParametresChamps';
+import { TournoiParametresChamps, lirePoulesDuFormulaire } from './TournoiParametresChamps';
 
 const BTN =
   'inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-opacity hover:opacity-90 disabled:opacity-40';
@@ -46,6 +46,7 @@ export function TournoiReglages({
       nbTerrains: Number(fd.get('nbTerrains')),
       pointsVictoire: Number(fd.get('pointsVictoire')),
       notes: tournoi.notes ?? undefined,
+      poules: format === 'poules' ? lirePoulesDuFormulaire(fd) : undefined,
     });
     setEnCours(false);
     if (!resultat.ok) {
@@ -122,6 +123,7 @@ export function TournoiReglages({
           nbParties: tournoi.nbParties,
           nbTerrains: tournoi.nbTerrains,
           pointsVictoire: tournoi.pointsVictoire,
+          poules: tournoi.poules,
         }}
         format={format}
         onFormat={setFormat}

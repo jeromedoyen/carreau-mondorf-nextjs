@@ -234,11 +234,13 @@ Toutes les pages ci-dessous affichent "Réservé au comité" avec un bouton "Se 
 **Objectif** : conduire un concours interne de bout en bout, de la composition des équipes au classement final.
 **Description** : liste des tournois puis un écran de conduite par tournoi (onglets Participants / Partie 1..N / Classement).
 
-Deux **formats**, choisis à la création et figés dès la première partie composée :
+Trois **formats**, choisis à la création et figés dès la première partie composée :
 - **Équipes fixes** — les équipes sont composées au départ et ne changent plus. Les rencontres sont appariées par nombre de victoires (système suisse) : les 2 victoires se rencontrent entre elles, les 1 victoire entre elles, etc. Classement **par équipe**. Quand on demande autant de parties que l'effectif le permet (N−1 pour N équipes), l'outil bascule automatiquement sur un calendrier **toutes rondes** — chacun rencontre chacun une fois, aucune revanche possible.
 - **À la mêlée** — les équipes sont retirées au sort **à chaque partie** parmi les joueurs, en regroupant les joueurs de même niveau. Classement **individuel** : chaque joueur hérite du résultat de l'équipe dans laquelle il jouait ce tour-là. L'outil garantit qu'on ne rejoue jamais avec le même coéquipier ; réaffronter un adversaire est en revanche possible (c'est inévitable quand on groupe par niveau) et simplement minimisé.
 
-**Paramètres** : taille d'équipe (tête-à-tête, doublettes, triplettes), nombre de parties, nombre de terrains, points de la partie (13 par défaut). S'il y a plus de rencontres que de terrains, plusieurs rencontres partagent un terrain et se jouent en deux vagues.
+- **Poules** — les équipes (fixes) sont réparties en poules de 3 à 5 par tirage au sort, en évitant de réunir deux équipes du même club (le club se saisit à côté de chaque équipe ; une équipe composée uniquement de licenciés est reconnue comme « Carreau Mondorf »). Chaque poule se joue **à repêchage** (poule de 4 : 1-2 et 3-4, puis gagnants entre eux et perdants entre eux, puis barrage ; 2 qualifiés) ou **en toutes rondes** (1 à 3 qualifiés par poule), au choix à la création. Les qualifiés jouent un **tableau principal** à élimination directe, les éliminés des poules une **consolante** (facultative). Le nombre de parties n'est pas à saisir : il découle du nombre d'équipes. Onglet « Poules » (tirage, clubs, composition, classement de chaque poule) ; deux feuilles PDF supplémentaires (composition des poules, résultats). Départage dans une poule : victoires, puis confrontation directe entre deux équipes à égalité, puis goal-average, puis points marqués, puis rang du tirage (signalé).
+
+**Paramètres** : taille d'équipe (tête-à-tête, doublettes, triplettes), nombre de parties (sauf poules), nombre de terrains, points de la partie (13 par défaut). Poules : façon de jouer, équipes par poule, qualifiés par poule, consolante. S'il y a plus de rencontres que de terrains, plusieurs rencontres partagent un terrain et se jouent en deux vagues.
 
 **Participants** : trois façons de constituer la liste, cumulables.
 - Sélection dans le registre du club, plus ajout manuel d'invités non licenciés.

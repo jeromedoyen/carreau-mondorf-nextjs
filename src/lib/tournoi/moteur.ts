@@ -16,7 +16,12 @@
 
 export type IdEquipe = number;
 export type IdParticipant = number;
-export type FormatTournoi = 'equipes_fixes' | 'melee';
+export type FormatTournoi = 'equipes_fixes' | 'melee' | 'poules';
+
+/** Les équipes sont-elles constituées avant le concours et permanentes ? Vrai pour les équipes fixes et les poules. */
+export function equipesPermanentesDuFormat(format: FormatTournoi): boolean {
+  return format !== 'melee';
+}
 
 /** Une équipe telle qu'elle joue une partie. `id` null = reste à créer (mêlée). */
 export type EquipeComposee = {
@@ -747,6 +752,8 @@ export function composerProchainePartie(
   parties: PartieJouee[],
   alea: Alea = Math.random,
 ): PartieProposee {
+  // Les poules ont leur propre moteur (`poules.ts`) : ce n'est pas un appariement suisse.
+  if (params.format === 'poules') throw new Error('Le format « poules » se compose avec le moteur des poules.');
   return params.format === 'equipes_fixes'
     ? composerPartieEquipesFixes(numero, equipesPermanentes, parties, params, alea)
     : composerPartieMelee(numero, participants, parties, params, alea);

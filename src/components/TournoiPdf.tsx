@@ -2,6 +2,7 @@ import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/render
 import { CLUB } from '@/lib/club';
 import { scoreValide, type StatsClassees } from '@/lib/tournoi/moteur';
 import type { Participant, PartieDetail, Tournoi } from '@/lib/tournoi/donnees';
+import type { VuePoules } from '@/lib/tournoi/poulesDonnees';
 
 // Charte v2 en littéral : react-pdf n'a pas accès aux variables CSS
 // (même liste que FichesMembresPdf.tsx / PlanningPdf.tsx).
@@ -42,6 +43,9 @@ const styles = StyleSheet.create({
   tiret: { fontSize: 10, color: ENCRE_DOUCE },
 
   note: { fontSize: 8.5, color: ENCRE_DOUCE, marginTop: 10 },
+  etiquette: { fontSize: 7.5, fontWeight: 700, color: TERRACOTTA, marginTop: 5, textTransform: 'uppercase' },
+  sectionTitre: { fontSize: 11.5, fontWeight: 700, color: ENCRE, marginTop: 14, marginBottom: 2 },
+  sectionSous: { fontSize: 8, fontWeight: 700, color: ENCRE_DOUCE, textTransform: 'uppercase', marginTop: 8, marginBottom: 2 },
   pied: { position: 'absolute', bottom: 22, left: 34, right: 34, fontSize: 7.5, color: ENCRE_DOUCE, borderTopWidth: 0.6, borderTopColor: LIGNE, paddingTop: 5, textAlign: 'center' },
 });
 
@@ -53,6 +57,8 @@ export type DonneesPdf = {
   equipesParId: Record<number, { numero: number; membres: number[] }>;
   classement: StatsClassees[];
   libelles: Record<number, string>;
+  /** Poules, tableaux et libellés des rencontres ; absent hors format « poules ». */
+  vuePoules?: VuePoules | null;
 };
 
 const LIBELLE_TAILLE: Record<number, string> = { 1: 'Tête-à-tête', 2: 'Doublettes', 3: 'Triplettes' };
@@ -94,7 +100,14 @@ function Pied({ tournoi }: { tournoi: Tournoi }) {
 }
 
 function sousTitre(t: Tournoi) {
-  return `${formaterDate(t.dateTournoi)} · ${t.format === 'melee' ? 'à la mêlée' : 'équipes fixes'} · ${LIBELLE_TAILLE[t.tailleEquipe]} · ${t.nbParties} parties en ${t.pointsVictoire} points`;
+  const format =
+    t.format === 'melee'
+      ? 'à la mêlée'
+      : t.format === 'poules'
+        ? `poules ${t.poules?.mode === 'repechage' ? 'à repêchage' : 'toutes rondes'}`
+        : 'équipes fixes';
+  const parties = t.format === 'poules' ? '' : ` · ${t.nbParties} parties`;
+  return `${formaterDate(t.dateTournoi)} · ${format} · ${LIBELLE_TAILLE[t.tailleEquipe]}${parties} · en ${t.pointsVictoire} points`;
 }
 
 /* ------------------------------------------------------ liste des équipes */
@@ -107,7 +120,7 @@ function sousTitre(t: Tournoi) {
 export function DocumentListe(d: DonneesPdf) {
   const { tournoi, participants, equipesPermanentes, equipesParId } = d;
   const nomDe = new Map(participants.map((p) => [p.id, p.nom]));
-  const parEquipes = tournoi.format === 'equipes_fixes' && equipesPermanentes.length > 0;
+  const parEquipes = tournoi.format !== 'melee' && equipesPermanentes.length > 0;
 
   const joueurs = [...participants].sort((a, b) =>
     a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }),
@@ -171,7 +184,7 @@ function PagePartie({ d, partie }: { d: DonneesPdf; partie: PartieDetail }) {
   return (
     <Page size="A4" style={styles.page}>
       <Entete
-        titre={`Partie ${partie.numero}`}
+        titre={partie.libelle ? `Partie ${partie.numero} — ${partie.libelle}` : `Partie ${partie.numero}`}
         sous={`${sousTitre(tournoi)} · ${complete ? 'résultats saisis' : 'feuille de match à remplir'}`}
       />
 
@@ -185,7 +198,9 @@ function PagePartie({ d, partie }: { d: DonneesPdf; partie: PartieDetail }) {
       {partie.rencontres.map((r) => {
         const ok = scoreValide({ scoreA: r.scoreA, scoreB: r.scoreB }, tournoi.pointsVictoire);
         return (
-          <View key={r.id} style={styles.tr} wrap={false}>
+          <View key={r.id} wrap={false}>
+            {d.vuePoules?.etiquettes[r.id] && <Text style={styles.etiquette}>{d.vuePoules.etiquettes[r.id]}</Text>}
+            <View style={styles.tr}>
             <View style={{ width: 52 }}>
               <Text style={styles.terrain}>{r.terrain}</Text>
             </View>
@@ -201,6 +216,7 @@ function PagePartie({ d, partie }: { d: DonneesPdf; partie: PartieDetail }) {
             <View style={{ flex: 1, paddingHorizontal: 6 }}>
               <Text style={styles.equipeNom}>Équipe {numeroDe(r.equipeBId)}</Text>
               <Text style={styles.equipeMembres}>{membresDe(r.equipeBId)}</Text>
+            </View>
             </View>
           </View>
         );
@@ -300,6 +316,160 @@ export function DocumentClassement(d: DonneesPdf) {
             mêmes points marqués. À départager sur place.
           </Text>
         )}
+
+        <Pied tournoi={tournoi} />
+      </Page>
+    </Document>
+  );
+}
+
+/* --------------------------------------------------------------- les poules */
+
+function aides(d: DonneesPdf) {
+  const nomDe = new Map(d.participants.map((p) => [p.id, p.nom]));
+  const numeroDe = (id: number) => d.equipesParId[id]?.numero ?? id;
+  const membresDe = (id: number) => (d.equipesParId[id]?.membres ?? []).map((m) => nomDe.get(m) ?? '?').join(' · ');
+  return { numeroDe, membresDe, nomEquipe: (id: number | null) => (id == null ? '—' : `Équipe ${numeroDe(id)}`) };
+}
+
+/** Composition des poules : la feuille qu'on affiche au lancement du concours. */
+export function DocumentPoules(d: DonneesPdf) {
+  const { tournoi, vuePoules } = d;
+  const { numeroDe, membresDe } = aides(d);
+  const poules = vuePoules?.poules ?? [];
+  return (
+    <Document title={`${tournoi.nom} — les poules`}>
+      <Page size="A4" style={styles.page}>
+        <Entete titre="Les poules" sous={`${sousTitre(tournoi)} · ${poules.length} poules`} />
+        <View style={styles.grille}>
+          {poules.map((p) => (
+            <View key={p.id} style={[styles.bloc, { width: '50%' }]} wrap={false}>
+              <View style={styles.blocCadre}>
+                <Text style={styles.blocTitre}>Poule {p.nom}</Text>
+                {[...p.classement].sort((a, b) => a.ordreTirage - b.ordreTirage).map((l) => (
+                  <View key={l.id} style={{ marginBottom: 3 }}>
+                    <Text style={styles.blocLigne}>
+                      <Text style={{ fontWeight: 700 }}>Équipe {numeroDe(l.id)}</Text> — {membresDe(l.id)}
+                    </Text>
+                    {vuePoules?.clubs[l.id] ? <Text style={styles.equipeMembres}>{vuePoules.clubs[l.id]}</Text> : null}
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+        {vuePoules && (
+          <Text style={styles.note}>
+            {vuePoules.mode === 'repechage'
+              ? 'Poules à repêchage : 1-2 et 3-4, puis gagnants entre eux et perdants entre eux, puis barrage ; 2 qualifiés par poule.'
+              : `Poules toutes rondes : chaque équipe rencontre toutes les autres de sa poule ; ${vuePoules.qualifies} qualifié${vuePoules.qualifies > 1 ? 's' : ''} par poule.`}
+            {vuePoules.consolante ? ' Les équipes éliminées en poule jouent la consolante.' : ''}
+          </Text>
+        )}
+        <Pied tournoi={tournoi} />
+      </Page>
+    </Document>
+  );
+}
+
+/** Résultats du concours : classement de chaque poule, rencontres et classement des tableaux. */
+export function DocumentResultatsPoules(d: DonneesPdf) {
+  const { tournoi, vuePoules, partiesDetail } = d;
+  const { membresDe, nomEquipe } = aides(d);
+  const colNum = { width: 30, textAlign: 'center' as const };
+  const rencontres = partiesDetail.flatMap((p) => p.rencontres);
+  const TITRES = { principal: 'Tableau principal', consolante: 'Consolante' } as const;
+
+  return (
+    <Document title={`${tournoi.nom} — résultats`}>
+      <Page size="A4" style={styles.page}>
+        <Entete
+          titre={tournoi.statut === 'termine' ? 'Résultats' : 'Résultats provisoires'}
+          sous={`${sousTitre(tournoi)} · départage en poule : victoires, confrontation directe, goal-average, points marqués`}
+        />
+
+        {(vuePoules?.poules ?? []).map((p) => (
+          <View key={p.id} wrap={false}>
+            <Text style={styles.sectionTitre}>Poule {p.nom}</Text>
+            <View style={[styles.thead, { marginTop: 3 }]}>
+              <Text style={[styles.th, colNum]}>Rg</Text>
+              <Text style={[styles.th, { flex: 1, paddingLeft: 6 }]}>Équipe</Text>
+              <Text style={[styles.th, colNum]}>J</Text>
+              <Text style={[styles.th, colNum]}>V</Text>
+              <Text style={[styles.th, { width: 40, textAlign: 'center' }]}>Pts +</Text>
+              <Text style={[styles.th, { width: 40, textAlign: 'center' }]}>Pts -</Text>
+              <Text style={[styles.th, { width: 46, textAlign: 'center' }]}>Goal-av.</Text>
+              <Text style={[styles.th, { width: 56, textAlign: 'center' }]} />
+            </View>
+            {p.classement.map((l) => (
+              <View key={l.id} style={[styles.tr, { paddingVertical: 4 }]}>
+                <Text style={[{ fontSize: 10.5, fontWeight: 700, color: ENCRE_DOUCE }, colNum]}>
+                  {l.rang}
+                  {l.exaequo ? ' =' : ''}
+                </Text>
+                <View style={{ flex: 1, paddingLeft: 6 }}>
+                  <Text style={styles.equipeNom}>{nomEquipe(l.id)}</Text>
+                  <Text style={styles.equipeMembres}>{membresDe(l.id)}</Text>
+                </View>
+                <Text style={colNum}>{l.joues}</Text>
+                <Text style={[{ fontWeight: 700, color: PIN }, colNum]}>{l.victoires}</Text>
+                <Text style={{ width: 40, textAlign: 'center' }}>{l.pointsPour}</Text>
+                <Text style={{ width: 40, textAlign: 'center' }}>{l.pointsContre}</Text>
+                <Text style={{ width: 46, textAlign: 'center', fontWeight: 700 }}>
+                  {l.diff > 0 ? '+' : ''}
+                  {l.diff}
+                </Text>
+                <Text style={{ width: 56, textAlign: 'center', fontSize: 8, fontWeight: 700, color: PIN }}>
+                  {p.complet && l.rang <= p.qualifiesK ? 'QUALIFIÉE' : ''}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ))}
+
+        {(vuePoules?.tableaux ?? []).map((t) => {
+          const siennes = rencontres.filter((r) => vuePoules?.etiquettes[r.id]?.startsWith(`${TITRES[t.tableau]} ·`));
+          const tours = [...new Set(siennes.map((r) => vuePoules!.etiquettes[r.id]))];
+          const rangs = [...new Set(t.classement.map((c) => c.rang).filter((r): r is number => r != null))].sort((a, b) => a - b);
+          return (
+            <View key={t.tableau}>
+              <Text style={[styles.sectionTitre, { marginTop: 18 }]}>{TITRES[t.tableau]}</Text>
+              {tours.map((tour) => (
+                <View key={tour} wrap={false}>
+                  <Text style={styles.sectionSous}>{tour.split('· ')[1]}</Text>
+                  {siennes
+                    .filter((r) => vuePoules!.etiquettes[r.id] === tour)
+                    .map((r) => {
+                      const joue = r.scoreA != null && r.scoreB != null;
+                      const gagneA = joue && r.scoreA! > r.scoreB!;
+                      return (
+                        <View key={r.id} style={[styles.tr, { paddingVertical: 4 }]}>
+                          <Text style={{ flex: 1, textAlign: 'right', fontWeight: gagneA ? 700 : 400 }}>{nomEquipe(r.equipeAId)}</Text>
+                          <Text style={{ width: 70, textAlign: 'center', fontWeight: 700 }}>{joue ? `${r.scoreA} – ${r.scoreB}` : '– – –'}</Text>
+                          <Text style={{ flex: 1, fontWeight: joue && !gagneA ? 700 : 400 }}>{nomEquipe(r.equipeBId)}</Text>
+                        </View>
+                      );
+                    })}
+                </View>
+              ))}
+              {t.termine && (
+                <View wrap={false}>
+                  <Text style={styles.sectionSous}>Classement du tableau</Text>
+                  {rangs.map((rg) => (
+                    <Text key={rg} style={styles.blocLigne}>
+                      <Text style={{ fontWeight: 700, color: TERRACOTTA }}>{rg === 1 ? 'Vainqueur' : rg === 2 ? 'Finaliste' : `${rg}e`}</Text>
+                      {'  '}
+                      {t.classement
+                        .filter((c) => c.rang === rg)
+                        .map((c) => nomEquipe(c.id))
+                        .join(' · ')}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
 
         <Pied tournoi={tournoi} />
       </Page>

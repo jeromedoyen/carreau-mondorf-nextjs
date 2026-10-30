@@ -5,11 +5,21 @@ import { createClient } from '@/lib/supabase/server';
 import { getTournoiComplet, parametresDe } from '@/lib/tournoi/donnees';
 import {
   composerProchainePartie as composerAvecLeMoteur,
+  equipesPermanentesDuFormat,
   partiesMaxSansRevanche,
   repartirEffectif,
   scoreValide,
   type FormatTournoi,
 } from '@/lib/tournoi/moteur';
+import { composerPartiePoules, type ModePoule } from '@/lib/tournoi/poules';
+import {
+  enregistrerClubsEquipes as enregistrerClubsEnBase,
+  enregistrerPartiePoules,
+  lireEtatPoules,
+  lireParametresPoules,
+  supprimerPoules,
+  tirerEtEnregistrerPoules,
+} from '@/lib/tournoi/poulesDonnees';
 
 type Resultat = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -45,13 +55,42 @@ export type DonneesTournoi = {
   nbTerrains: number;
   pointsVictoire: number;
   notes?: string;
+  /** Réglages du format « poules » (obligatoires pour ce format, ignorés sinon). */
+  poules?: { mode: ModePoule; taille: number; qualifies: number; consolante: boolean };
 };
+
+/** Colonnes `poules_*` à écrire : vides hors du format « poules ». */
+function colonnesPoules(d: DonneesTournoi) {
+  if (d.format !== 'poules' || !d.poules) {
+    return { poules_mode: null, poules_taille: null, poules_qualifies: null, poules_consolante: null };
+  }
+  return {
+    poules_mode: d.poules.mode,
+    // une poule à repêchage ne dépasse pas 4 équipes
+    poules_taille: d.poules.mode === 'repechage' ? Math.min(d.poules.taille, 4) : d.poules.taille,
+    poules_qualifies: d.poules.mode === 'repechage' ? 2 : d.poules.qualifies,
+    poules_consolante: d.poules.consolante,
+  };
+}
 
 function validerParametres(d: DonneesTournoi): string | null {
   if (!d.nom.trim()) return 'Le nom du tournoi est obligatoire.';
   if (!d.dateTournoi) return 'La date est obligatoire.';
   if (![1, 2, 3].includes(d.tailleEquipe)) return "La taille d'équipe doit être 1, 2 ou 3.";
-  if (d.nbParties < 1 || d.nbParties > 12) return 'Le nombre de parties doit être compris entre 1 et 12.';
+  // Les poules n'ont pas de nombre de parties à choisir : il découle du nombre d'équipes.
+  if (d.format !== 'poules' && (d.nbParties < 1 || d.nbParties > 12)) {
+    return 'Le nombre de parties doit être compris entre 1 et 12.';
+  }
+  if (d.format === 'poules') {
+    if (!d.poules) return 'Les réglages des poules sont obligatoires.';
+    if (!['repechage', 'toutes_rondes'].includes(d.poules.mode)) return 'Façon de jouer les poules inconnue.';
+    if (!Number.isInteger(d.poules.taille) || d.poules.taille < 3 || d.poules.taille > 5) {
+      return 'Une poule compte de 3 à 5 équipes.';
+    }
+    if (!Number.isInteger(d.poules.qualifies) || d.poules.qualifies < 1 || d.poules.qualifies > 3) {
+      return 'Le nombre de qualifiés par poule doit être compris entre 1 et 3.';
+    }
+  }
   if (d.nbTerrains < 1 || d.nbTerrains > 40) return 'Le nombre de terrains doit être compris entre 1 et 40.';
   if (d.pointsVictoire < 7 || d.pointsVictoire > 21) return 'Les points de la partie doivent être compris entre 7 et 21.';
   return null;
@@ -70,11 +109,12 @@ export async function creerTournoi(d: DonneesTournoi): Promise<Resultat> {
       date_tournoi: d.dateTournoi,
       format: d.format,
       taille_equipe: d.tailleEquipe,
-      nb_parties: d.nbParties,
+      nb_parties: d.format === 'poules' ? 1 : d.nbParties,
       nb_terrains: d.nbTerrains,
       points_victoire: d.pointsVictoire,
       notes: d.notes?.trim() || null,
       cree_par_email: email,
+      ...colonnesPoules(d),
     })
     .select('id')
     .single();
@@ -102,8 +142,31 @@ export async function modifierTournoi(id: number, d: DonneesTournoi): Promise<Re
     if (complet.tournoi.tailleEquipe !== d.tailleEquipe) {
       return { ok: false, error: "La taille d'équipe ne peut plus changer une fois la première partie composée." };
     }
-    if (d.nbParties < complet.parties.length) {
+    if (d.format !== 'poules' && d.nbParties < complet.parties.length) {
       return { ok: false, error: `${complet.parties.length} parties sont déjà composées.` };
+    }
+    if (d.format === 'poules') {
+      const avant = complet.tournoi.poules;
+      const apres = colonnesPoules(d);
+      if (
+        avant &&
+        (avant.mode !== apres.poules_mode ||
+          avant.taille !== apres.poules_taille ||
+          avant.qualifies !== apres.poules_qualifies ||
+          avant.consolante !== apres.poules_consolante)
+      ) {
+        return { ok: false, error: 'Les réglages des poules ne peuvent plus changer une fois la première partie composée.' };
+      }
+    }
+  } else if (d.format === 'poules') {
+    // Changer la façon de jouer ou la taille des poules rend le tirage caduc : il sera refait.
+    const avant = complet.tournoi.poules;
+    const apres = colonnesPoules(d);
+    if (
+      avant &&
+      (avant.mode !== apres.poules_mode || avant.taille !== apres.poules_taille || avant.qualifies !== apres.poules_qualifies)
+    ) {
+      await supprimerPoules(supabase, id);
     }
   }
 
@@ -114,11 +177,12 @@ export async function modifierTournoi(id: number, d: DonneesTournoi): Promise<Re
       date_tournoi: d.dateTournoi,
       format: d.format,
       taille_equipe: d.tailleEquipe,
-      nb_parties: d.nbParties,
+      nb_parties: d.format === 'poules' ? 1 : d.nbParties,
       nb_terrains: d.nbTerrains,
       points_victoire: d.pointsVictoire,
       notes: d.notes?.trim() || null,
       modifie_le: new Date().toISOString(),
+      ...colonnesPoules(d),
     })
     .eq('id', id);
   if (error) return { ok: false, error: error.message };
@@ -191,7 +255,8 @@ export async function remplacerParticipants(
   );
   if (error) return { ok: false, error: error.message };
 
-  // Les équipes permanentes dépendent de la liste : elles seront refaites.
+  // Les équipes permanentes dépendent de la liste : elles seront refaites, et le tirage des poules avec.
+  await supprimerPoules(supabase, tournoiId);
   await supabase.from('tournoi_equipes').delete().eq('tournoi_id', tournoiId).is('partie_id', null);
 
   revalidatePath(`/outils/tournoi/${tournoiId}`);
@@ -209,8 +274,8 @@ export async function composerEquipesDepart(tournoiId: number): Promise<Resultat
 
   const complet = await getTournoiComplet(tournoiId);
   if (!complet) return { ok: false, error: 'Tournoi introuvable.' };
-  if (complet.tournoi.format !== 'equipes_fixes') {
-    return { ok: false, error: 'Les équipes de départ ne concernent que le format à équipes fixes.' };
+  if (!equipesPermanentesDuFormat(complet.tournoi.format)) {
+    return { ok: false, error: 'Les équipes de départ ne concernent pas le format à la mêlée.' };
   }
   if (complet.parties.length > 0) {
     return { ok: false, error: 'Le tournoi a commencé : les équipes sont figées.' };
@@ -250,6 +315,7 @@ export async function composerEquipesDepart(tournoiId: number): Promise<Resultat
   const numeros = [...parNumero.keys()].sort((a, b) => a - b);
   if (numeros.length < 2) return { ok: false, error: 'Il faut au moins deux équipes.' };
 
+  await supprimerPoules(supabase, tournoiId);
   await supabase.from('tournoi_equipes').delete().eq('tournoi_id', tournoiId).is('partie_id', null);
 
   const { data: creees, error } = await supabase
@@ -289,8 +355,8 @@ export async function enregistrerEquipesDepart(
 
   const complet = await getTournoiComplet(tournoiId);
   if (!complet) return { ok: false, error: 'Tournoi introuvable.' };
-  if (complet.tournoi.format !== 'equipes_fixes') {
-    return { ok: false, error: 'Les équipes de départ ne concernent que le format à équipes fixes.' };
+  if (!equipesPermanentesDuFormat(complet.tournoi.format)) {
+    return { ok: false, error: 'Les équipes de départ ne concernent pas le format à la mêlée.' };
   }
   if (complet.parties.length > 0) {
     return { ok: false, error: 'Le tournoi a commencé : les équipes sont figées.' };
@@ -319,6 +385,7 @@ export async function enregistrerEquipesDepart(
   const numeros = [...parNumero.keys()].sort((a, b) => a - b);
   if (numeros.length < 2) return { ok: false, error: 'Il faut au moins deux équipes.' };
 
+  await supprimerPoules(supabase, tournoiId);
   await supabase.from('tournoi_equipes').delete().eq('tournoi_id', tournoiId).is('partie_id', null);
 
   const { data: creees, error } = await supabase
@@ -360,6 +427,8 @@ export async function composerProchainePartie(tournoiId: number): Promise<Result
   const complet = await getTournoiComplet(tournoiId);
   if (!complet) return { ok: false, error: 'Tournoi introuvable.' };
   const { tournoi, participants, equipesPermanentes, parties } = complet;
+
+  if (tournoi.format === 'poules') return composerPartieDePoules(supabase, complet);
 
   if (parties.length >= tournoi.nbParties) {
     return { ok: false, error: `Les ${tournoi.nbParties} parties sont déjà composées.` };
@@ -473,6 +542,86 @@ export async function composerProchainePartie(tournoiId: number): Promise<Result
   };
 }
 
+/**
+ * Format « poules » : le moteur des poules décide (poules, puis tableaux), cette
+ * fonction vérifie que la partie précédente est saisie en entier et enregistre.
+ */
+async function composerPartieDePoules(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  complet: NonNullable<Awaited<ReturnType<typeof getTournoiComplet>>>,
+): Promise<ResultatComposition> {
+  const { tournoi, parties } = complet;
+  const derniere = parties[parties.length - 1];
+  if (derniere) {
+    const incomplets = derniere.rencontres.filter((r) => !scoreValide(r, tournoi.pointsVictoire)).length;
+    if (incomplets > 0) {
+      return {
+        ok: false,
+        error: `${incomplets} résultat(s) manquant(s) en partie ${derniere.numero} : la suite en dépend.`,
+      };
+    }
+  }
+  const params = await lireParametresPoules(supabase, tournoi.id);
+  if (!params) return { ok: false, error: "Ce tournoi n'est pas un tournoi à poules." };
+
+  const etat = await lireEtatPoules(supabase, tournoi.id, params);
+  if (etat.ctx.poules.length === 0) {
+    return { ok: false, error: "Tirez d'abord les poules (onglet « Poules »)." };
+  }
+
+  const numero = etat.parties.length + 1;
+  let suite;
+  try {
+    suite = composerPartiePoules(etat.ctx);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Composition impossible.' };
+  }
+  if (suite.fini) {
+    return { ok: false, error: "Poules et tableaux sont joués : il n'y a plus rien à composer. Vous pouvez clôturer le tournoi." };
+  }
+
+  const r = await enregistrerPartiePoules(supabase, tournoi.id, numero, suite.proposition);
+  if (!r.ok) return { ok: false, error: r.error };
+
+  if (tournoi.statut === 'preparation') {
+    await supabase.from('tournois').update({ statut: 'en_cours' }).eq('id', tournoi.id);
+  }
+  revalidatePath(`/outils/tournoi/${tournoi.id}`);
+  return { ok: true, numero, revancheForcee: false, repetitionsAdversaires: 0 };
+}
+
+/** Tire les poules au sort (refait le tirage s'il existe déjà). Réservé à la préparation : avant la première partie. */
+export async function tirerLesPoules(tournoiId: number): Promise<Resultat> {
+  const { supabase, erreur } = await contexteCA();
+  if (erreur) return { ok: false, error: erreur };
+  const params = await lireParametresPoules(supabase, tournoiId);
+  if (!params) return { ok: false, error: "Ce tournoi n'est pas un tournoi à poules." };
+  const r = await tirerEtEnregistrerPoules(supabase, tournoiId, params);
+  if (!r.ok) return { ok: false, error: r.error };
+  revalidatePath(`/outils/tournoi/${tournoiId}`);
+  return { ok: true };
+}
+
+/** Club de chaque équipe, pour que le tirage évite de réunir deux équipes du même club. */
+export async function enregistrerClubsEquipes(
+  tournoiId: number,
+  clubs: { equipeId: number; club: string | null }[],
+): Promise<Resultat> {
+  const { supabase, erreur } = await contexteCA();
+  if (erreur) return { ok: false, error: erreur };
+  const params = await lireParametresPoules(supabase, tournoiId);
+  if (!params) return { ok: false, error: "Ce tournoi n'est pas un tournoi à poules." };
+  const { count } = await supabase
+    .from('tournoi_tableau_places')
+    .select('id', { count: 'exact', head: true })
+    .eq('tournoi_id', tournoiId);
+  if ((count ?? 0) > 0) return { ok: false, error: 'Les tableaux sont constitués : les clubs ne peuvent plus changer.' };
+  const r = await enregistrerClubsEnBase(supabase, tournoiId, clubs);
+  if (!r.ok) return { ok: false, error: r.error };
+  revalidatePath(`/outils/tournoi/${tournoiId}`);
+  return { ok: true };
+}
+
 /** N'autorise que la suppression de la DERNIÈRE partie : retirer une partie du
  *  milieu invaliderait les appariements de toutes les suivantes. */
 export async function annulerDernierePartie(tournoiId: number): Promise<Resultat> {
@@ -559,7 +708,12 @@ export async function cloturerTournoi(tournoiId: number): Promise<Resultat> {
     .flatMap((p) => p.rencontres)
     .filter((r) => !scoreValide(r, complet.tournoi.pointsVictoire)).length;
   if (manquants > 0) return { ok: false, error: `${manquants} résultat(s) encore à saisir.` };
-  if (complet.parties.length < complet.tournoi.nbParties) {
+  if (complet.tournoi.format === 'poules') {
+    if (!complet.vuePoules?.fini) {
+      const suite = complet.vuePoules?.prochaine;
+      return { ok: false, error: suite ? `Il reste à jouer : ${suite}.` : 'Les poules et les tableaux ne sont pas terminés.' };
+    }
+  } else if (complet.parties.length < complet.tournoi.nbParties) {
     return { ok: false, error: `Il reste ${complet.tournoi.nbParties - complet.parties.length} partie(s) à jouer.` };
   }
 

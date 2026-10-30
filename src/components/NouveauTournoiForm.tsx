@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, X } from 'lucide-react';
 import { creerTournoi } from '@/lib/actions/tournoi';
 import type { FormatTournoi } from '@/lib/tournoi/moteur';
-import { TournoiParametresChamps } from './TournoiParametresChamps';
+import { TournoiParametresChamps, lirePoulesDuFormulaire } from './TournoiParametresChamps';
 
 export function NouveauTournoiForm() {
   const router = useRouter();
@@ -27,6 +27,7 @@ export function NouveauTournoiForm() {
       nbParties: Number(fd.get('nbParties')),
       nbTerrains: Number(fd.get('nbTerrains')),
       pointsVictoire: Number(fd.get('pointsVictoire')),
+      poules: format === 'poules' ? lirePoulesDuFormulaire(fd) : undefined,
     });
     setEnCours(false);
     if (!resultat.ok) {
