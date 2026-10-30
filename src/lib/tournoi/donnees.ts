@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import {
   classer,
+  equipesPermanentesDuFormat,
   statistiquesEquipes,
   statistiquesParticipants,
   partiesMaxSansRevanche,
@@ -10,6 +11,8 @@ import {
   type ParametresTournoi,
   type StatsClassees,
 } from './moteur';
+import { construireVuePoules, lireEtatPoules, type VuePoules } from './poulesDonnees';
+import type { ModePoule } from './poules';
 
 export type Tournoi = {
   id: number;
@@ -23,6 +26,8 @@ export type Tournoi = {
   statut: 'preparation' | 'en_cours' | 'termine';
   notes: string | null;
   creeParEmail: string;
+  /** Réglages du format « poules » ; null pour les autres formats. */
+  poules: { mode: ModePoule; taille: number; qualifies: number; consolante: boolean } | null;
 };
 
 export type Participant = {
@@ -46,6 +51,9 @@ export type RencontreDetail = {
 export type PartieDetail = {
   id: number;
   numero: number;
+  /** Phase et libellé d'une partie de poules (« Poules — tour 2 sur 3 ») ; null pour les autres formats. */
+  phase: 'poules' | 'tableaux' | null;
+  libelle: string | null;
   equipeExempteId: number | null;
   revancheForcee: boolean;
   rencontres: RencontreDetail[];
@@ -67,6 +75,8 @@ export type TournoiComplet = {
   libelle: (id: number) => string;
   /** Même chose sous forme sérialisable, pour les composants client. */
   libelles: Record<number, string>;
+  /** Poules, tableaux et libellés des rencontres ; null hors format « poules ». */
+  vuePoules: VuePoules | null;
 };
 
 export type ParametresLisibles = ParametresTournoi;
@@ -97,7 +107,14 @@ type LigneTournoi = {
   statut: Tournoi['statut'];
   notes: string | null;
   cree_par_email: string;
+  poules_mode: ModePoule | null;
+  poules_taille: number | null;
+  poules_qualifies: number | null;
+  poules_consolante: boolean | null;
 };
+
+const COLONNES_TOURNOI =
+  'id, nom, date_tournoi, format, taille_equipe, nb_parties, nb_terrains, points_victoire, statut, notes, cree_par_email, poules_mode, poules_taille, poules_qualifies, poules_consolante';
 
 function versTournoi(l: LigneTournoi): Tournoi {
   return {
@@ -112,6 +129,15 @@ function versTournoi(l: LigneTournoi): Tournoi {
     statut: l.statut,
     notes: l.notes,
     creeParEmail: l.cree_par_email,
+    poules:
+      l.format === 'poules' && l.poules_mode
+        ? {
+            mode: l.poules_mode,
+            taille: l.poules_taille ?? 4,
+            qualifies: l.poules_qualifies ?? 2,
+            consolante: !!l.poules_consolante,
+          }
+        : null,
   };
 }
 
@@ -119,7 +145,7 @@ export async function getTournois(): Promise<Tournoi[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('tournois')
-    .select('id, nom, date_tournoi, format, taille_equipe, nb_parties, nb_terrains, points_victoire, statut, notes, cree_par_email')
+    .select(COLONNES_TOURNOI)
     .order('date_tournoi', { ascending: false })
     .order('id', { ascending: false });
   if (error || !data) return [];
@@ -138,7 +164,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
 
   const { data: ligne, error } = await supabase
     .from('tournois')
-    .select('id, nom, date_tournoi, format, taille_equipe, nb_parties, nb_terrains, points_victoire, statut, notes, cree_par_email')
+    .select(COLONNES_TOURNOI)
     .eq('id', id)
     .maybeSingle();
   if (error || !ligne) return null;
@@ -154,7 +180,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
         .order('id'),
       supabase
         .from('tournoi_parties')
-        .select('id, numero, equipe_exempte_id, revanche_forcee')
+        .select('id, numero, equipe_exempte_id, revanche_forcee, phase, libelle')
         .eq('tournoi_id', id)
         .order('numero'),
       supabase
@@ -204,7 +230,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
     // participent à toutes les parties. En mêlée, seules celles tirées pour
     // cette partie-là comptent.
     const equipesDeLaPartie =
-      tournoi.format === 'equipes_fixes'
+      equipesPermanentesDuFormat(tournoi.format)
         ? equipesPermanentes
         : equipes.filter((e) => e.partieId === partieId).map((e) => ({ id: e.id, numero: e.numero, membres: e.membres }));
 
@@ -225,7 +251,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
   });
 
   const classement =
-    tournoi.format === 'equipes_fixes'
+    equipesPermanentesDuFormat(tournoi.format)
       ? classer(statistiquesEquipes(parties, tournoi.pointsVictoire))
       : classer(
           statistiquesParticipants(
@@ -238,13 +264,15 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
   const nomParticipant = new Map(participants.map((p) => [p.id, p.nom]));
   const numeroEquipe = new Map(equipes.map((e) => [e.id, e.numero]));
   const libelle = (idLigne: number) =>
-    tournoi.format === 'equipes_fixes'
+    equipesPermanentesDuFormat(tournoi.format)
       ? `Équipe ${numeroEquipe.get(idLigne) ?? idLigne}`
       : (nomParticipant.get(idLigne) ?? `#${idLigne}`);
 
   const partiesDetail: PartieDetail[] = (partiesBrutes ?? []).map((p) => ({
     id: p.id as number,
     numero: p.numero as number,
+    phase: (p.phase as 'poules' | 'tableaux' | null) ?? null,
+    libelle: (p.libelle as string | null) ?? null,
     equipeExempteId: (p.equipe_exempte_id as number | null) ?? null,
     revancheForcee: !!p.revanche_forcee,
     rencontres: (rencontresBrutes ?? [])
@@ -265,6 +293,19 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
   const libelles: Record<number, string> = {};
   for (const s of classement) libelles[s.id] = libelle(s.id);
 
+  let vuePoules: VuePoules | null = null;
+  if (tournoi.format === 'poules' && tournoi.poules) {
+    const etat = await lireEtatPoules(supabase, tournoi.id, {
+      mode: tournoi.poules.mode,
+      taillePoule: tournoi.poules.taille,
+      qualifies: tournoi.poules.qualifies,
+      consolante: tournoi.poules.consolante,
+      pointsVictoire: tournoi.pointsVictoire,
+      nbTerrains: tournoi.nbTerrains,
+    });
+    vuePoules = construireVuePoules(etat);
+  }
+
   return {
     tournoi,
     participants,
@@ -275,6 +316,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
     classement,
     libelle,
     libelles,
+    vuePoules,
   };
 }
 

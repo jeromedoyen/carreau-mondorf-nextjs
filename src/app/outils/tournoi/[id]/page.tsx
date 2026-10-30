@@ -44,6 +44,7 @@ export default async function TournoiPage({ params }: { params: Promise<{ id: st
       classement={complet.classement}
       libelles={complet.libelles}
       candidats={candidats}
+      vuePoules={complet.vuePoules}
     />
   );
 }

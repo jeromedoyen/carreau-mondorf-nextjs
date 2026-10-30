@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: 'Tournois' };
 const LIBELLE_FORMAT: Record<string, string> = {
   equipes_fixes: 'Équipes fixes',
   melee: 'À la mêlée',
+  poules: 'Poules',
 };
 const LIBELLE_TAILLE: Record<number, string> = {
   1: 'Tête-à-tête',
@@ -98,7 +99,7 @@ export default async function TournoisPage() {
                       <Users size={13} /> {LIBELLE_TAILLE[t.tailleEquipe]}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
-                      <Trophy size={13} /> {t.nbParties} parties en {t.pointsVictoire} points
+                      <Trophy size={13} /> {t.format === 'poules' ? 'Poules' : `${t.nbParties} parties`} en {t.pointsVictoire} points
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <MapPin size={13} /> {t.nbTerrains} terrains
