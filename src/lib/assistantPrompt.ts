@@ -40,7 +40,7 @@ Accès réservé au comité (CA) uniquement, sous le menu "Outils" ou directemen
 - "/outils/renouvellement" : lancer une campagne de renouvellement d'adhésion par email.
 - "/outils/fiches-membres" : générer le classeur PDF (une fiche par personne) et les exports JSON/CSV.
 - "/outils/statistiques-benevoles" : classement des bénévoles (participations, heures, tâches).
-- "/outils/tournoi" : conduire un concours du club de bout en bout — composer les équipes, tirer les rencontres partie après partie, saisir les scores, suivre le classement et imprimer les feuilles. Deux formats : équipes fixes (système suisse) ou à la mêlée (équipes retirées au sort à chaque partie, classement individuel).
+- "/outils/tournoi" : conduire un concours du club de bout en bout — composer les équipes, tirer les rencontres partie après partie, saisir les scores, suivre le classement et imprimer les feuilles. Trois formats : équipes fixes (système suisse), à la mêlée (équipes retirées au sort à chaque partie, classement individuel) ou poules (équipes réparties en poules par tirage au sort, jouées à repêchage ou en toutes rondes, puis tableau principal et consolante à élimination directe ; l'onglet « Poules » sert au tirage, à la composition des poules et à la saisie du club de chaque équipe ; les scores se saisissent dans les onglets « Partie » et le classement se lit dans l'onglet « Classement »).
 - "/outils/signatures" : envoyer un document à signer électroniquement, suivre les signatures, archiver le PDF signé sur le Drive du club.
 - "/outils/journal" : journal d'audit — qui a fait quoi et quand.
 - "/outils/parametres" : montants de cotisation et de licence, coordonnées bancaires du club.
