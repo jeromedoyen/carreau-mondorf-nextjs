@@ -1766,3 +1766,19 @@ On réutilise le modèle de 0059 : une partie porte maintenant une `phase` (poul
 - **Rien vu dans une session CA réelle** (aucun accès à un compte CA) : créer un concours « Poules », composer les équipes, tirer les poules, jouer une partie.
 - Le PDF du classement existant imprime « Pts » sans le « − » (caractère absent de la police du PDF) ; corrigé seulement dans les nouvelles feuilles.
 - Non fait, non demandé : têtes de série, déplacement manuel d'une équipe d'une poule à l'autre, import du club depuis le fichier Excel ou la photo, poules à la mêlée.
+
+## Session du 30/10/2026 (suite) — livraison des poules, Caro, note aux couleurs du club
+
+### Livraison de la PR #40
+
+Fusionnée le 30/10 (`main` = `f156fd5`), déploiement de production en `success`. **Accès** : les sept membres du CA (drapeau `est_ca` de la table `acces`) et le compte administrateur ; un licencié non CA ou un visiteur voit « Accès restreint ». **Jamais vu en session CA réelle** : à confirmer par un essai (concours « Poules » de test, supprimé ensuite depuis « Paramètres »).
+
+### Caro
+
+Caro a deux sources : `BASE_CONNAISSANCE_FONCTIONNALITES.md` (lue au démarrage du serveur, donc à jour dès le déploiement de la #40) et la liste de pages du prompt (`src/lib/assistantPrompt.ts`). Cette seconde disait encore « Deux formats ». La PR #41 l'aligne (trois formats) et précise où se font le tirage (onglet « Poules »), la saisie des scores (onglets « Partie ») et la lecture du classement (onglet « Classement »). Une première rédaction faisait situer la saisie des scores dans l'onglet « Poules » : repérée en interrogeant le modèle avec **le même prompt système et la même base** (script jetable), corrigée dans le prompt et la base.
+
+**Réflexe à garder** (déjà noté le 25/08) : toute nouvelle fonctionnalité se met à jour à DEUX endroits pour Caro, la base de connaissances et la liste du prompt. **Non vérifié sur `/api/assistant` en production** : la route est réservée aux licenciés connectés.
+
+### Note explicative pour les utilisateurs
+
+Page illustrée aux couleurs du club (logo, barre terracotta-laiton-pin du site, coordonnées publiques en pied de page), publiée comme artefact privé, et **PDF de 5 pages** produit à partir de cette page avec des polices statiques incorporées. Le PDF est **déposé sur le Drive du club** (le dossier `GOOGLE_DRIVE_FOLDER_ID`, celui qui reçoit déjà les PV signés, avec l'autorisation OAuth de l'application) ; copie locale dans `C:\Users\jerom\carreau-mondorf-affiches\`. Envoi aux membres : par courriel, geste de Jérôme.
