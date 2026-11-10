@@ -42,6 +42,12 @@ const SCHEMA = z.object({
           .nullable()
           .describe("Numéro d'équipe tel qu'il figure sur le document, ou null."),
         joueurs: z.array(z.string()).describe("Noms des joueurs, tels qu'écrits."),
+        club: z
+          .string()
+          .nullable()
+          .describe(
+            "Club de l'équipe tel qu'il est écrit sur le document (par exemple « Belvaux » ou « Kayl / Mondorf »), ou null s'il n'y en a pas. Ce n'est jamais un joueur.",
+          ),
       }),
     )
     .describe(
@@ -55,6 +61,7 @@ const INSTRUCTIONS = `Tu lis la liste des participants d'un concours de pétanqu
 
 Recopie les noms EXACTEMENT tels qu'ils sont écrits : ne corrige pas l'orthographe, n'inverse pas prénom et nom, n'ajoute personne, n'invente rien.
 Si une équipe est incomplète, renvoie seulement les joueurs présents.
+Si le document a une colonne ou une mention de club, recopie le club de chaque équipe dans "club" EXACTEMENT comme il est écrit, y compris quand il en cite deux ("Kayl / Mondorf") ; sans club sur le document, mets null. Un nom de club n'est jamais un joueur.
 Ignore les titres ("LES ÉQUIPES"), les numéros de page et tout ce qui n'est pas un nom de joueur.
 Si une partie du document est manuscrite et que tu hésites sur un nom, recopie ta meilleure lecture — un humain relira tout derrière toi.`;
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { clubDeEquipe } from '@/lib/tournoi/clubs';
 import { getTournoiComplet, parametresDe } from '@/lib/tournoi/donnees';
 import {
   composerProchainePartie as composerAvecLeMoteur,
@@ -207,6 +208,8 @@ export type ParticipantEntrant = {
   personneId?: number | null;
   nom: string;
   equipeDepart?: number | null;
+  /** Club de l'équipe lu dans la feuille importée ; facultatif. */
+  club?: string | null;
 };
 
 /**
@@ -250,6 +253,7 @@ export async function remplacerParticipants(
       personne_id: e.personneId ?? null,
       nom: e.nom,
       equipe_depart: e.equipeDepart ?? null,
+      club: e.club?.trim() ? e.club.trim().slice(0, 80) : null,
       ordre: i,
     })),
   );
@@ -261,6 +265,20 @@ export async function remplacerParticipants(
 
   revalidatePath(`/outils/tournoi/${tournoiId}`);
   return { ok: true };
+}
+
+/**
+ * Club d'une équipe qu'on crée : celui de ses membres, tel que la feuille
+ * importée l'a donné (« Belvaux », ou « Kayl / Mondorf » si les deux joueurs
+ * viennent de clubs différents). `null` quand personne n'en a — l'équipe reste
+ * alors « sans club connu » jusqu'à ce que l'organisateur le renseigne.
+ */
+function clubDesMembres(
+  participantIds: number[],
+  participants: { id: number; club: string | null }[],
+): string | null {
+  const parId = new Map(participants.map((p) => [p.id, p.club]));
+  return clubDeEquipe(participantIds.map((id) => parId.get(id) ?? null));
 }
 
 /**
@@ -320,7 +338,14 @@ export async function composerEquipesDepart(tournoiId: number): Promise<Resultat
 
   const { data: creees, error } = await supabase
     .from('tournoi_equipes')
-    .insert(numeros.map((n, i) => ({ tournoi_id: tournoiId, partie_id: null, numero: i + 1 })))
+    .insert(
+      numeros.map((n, i) => ({
+        tournoi_id: tournoiId,
+        partie_id: null,
+        numero: i + 1,
+        club: clubDesMembres(parNumero.get(n) ?? [], complet.participants),
+      })),
+    )
     .select('id, numero');
   if (error || !creees) return { ok: false, error: error?.message ?? 'Création des équipes impossible.' };
 
@@ -390,7 +415,14 @@ export async function enregistrerEquipesDepart(
 
   const { data: creees, error } = await supabase
     .from('tournoi_equipes')
-    .insert(numeros.map((n, i) => ({ tournoi_id: tournoiId, partie_id: null, numero: i + 1 })))
+    .insert(
+      numeros.map((n, i) => ({
+        tournoi_id: tournoiId,
+        partie_id: null,
+        numero: i + 1,
+        club: clubDesMembres(parNumero.get(n) ?? [], complet.participants),
+      })),
+    )
     .select('id, numero');
   if (error || !creees) return { ok: false, error: error?.message ?? 'Création des équipes impossible.' };
 

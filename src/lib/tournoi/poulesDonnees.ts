@@ -229,6 +229,22 @@ export async function enregistrerClubsEquipes(
       .eq('id', c.equipeId)
       .eq('tournoi_id', tournoiId);
     if (error) return { ok: false, error: error.message };
+
+    // Le club suit aussi les joueurs : les équipes sont recréées si la
+    // composition change, et le club saisi ici ne doit pas s'y perdre.
+    const { data: membres } = await supabase
+      .from('tournoi_equipe_membres')
+      .select('participant_id')
+      .eq('equipe_id', c.equipeId);
+    const ids = (membres ?? []).map((m) => m.participant_id as number);
+    if (ids.length > 0) {
+      const { error: eP } = await supabase
+        .from('tournoi_participants')
+        .update({ club })
+        .in('id', ids)
+        .eq('tournoi_id', tournoiId);
+      if (eP) return { ok: false, error: eP.message };
+    }
   }
   return { ok: true };
 }

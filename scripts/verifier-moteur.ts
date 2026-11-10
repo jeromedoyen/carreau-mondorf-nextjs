@@ -24,6 +24,7 @@ import {
   type ParametresTournoi,
   type FormatTournoi,
 } from '../src/lib/tournoi/moteur';
+import { clesClub, clubDeEquipe, clubEnCommun } from '../src/lib/tournoi/clubs';
 
 /** Générateur déterministe : une graine = un tournoi rejouable à l'identique. */
 function generateur(graine: number) {
@@ -470,6 +471,60 @@ console.log('\n=== Équipes fixes : la 1re partie évite le même club ===');
     const p = tirer(eq, 11);
     const ms = Date.now() - t0;
     constater('40 équipes dont 30 du même club (impossible à séparer) : réponse en moins de 2 s', ms < 2000 && p.rencontres.length === 20, `${ms} ms, ${p.rencontres.length} rencontres`);
+  }
+
+  // 8. Équipes de clubs mixtes — la feuille réelle du tournoi 43 : « Kayl / Mondorf »
+  // rencontre un club dès qu'UN des deux lui est commun.
+  {
+    const clubs = [
+      'Kayl / Mondorf', 'Dudelange', 'Mondorf', 'Belvaux', 'Mondorf', 'Mondorf', 'Belvaux',
+      "Boule d'Or", "Boule d'Or", 'Mondorf', 'Lasauvage', 'Kayl / Mondorf', 'Belvaux', 'Kayl',
+    ];
+    const eq: Eq[] = clubs.map((c, i) => ({ id: i + 1, numero: i + 1, membres: [2 * i + 1, 2 * i + 2], club: c }));
+    const conflits = (p: ReturnType<typeof composerPartieEquipesFixes>) =>
+      p.rencontres.filter((r) => clubEnCommun(eq[p.equipes[r.indexA].id! - 1].club, eq[p.equipes[r.indexB].id! - 1].club) !== null).length;
+    let pire = 0;
+    for (let s = 1; s <= NB; s++) pire = Math.max(pire, conflits(tirer(eq, s)));
+    constater('feuille du tournoi 43 (clubs mixtes « Kayl / Mondorf ») : jamais de club en commun', pire === 0, `pire cas ${pire} sur ${NB} tirages`);
+
+    // Avec la comparaison « club entier », le même tirage laisserait passer des Mondorf contre « Kayl / Mondorf ».
+    let tiragesTrompes = 0;
+    for (let s = 1; s <= 300; s++) {
+      const p = tirer(eq.map((e) => ({ ...e, club: e.club!.replace(/\s*\/\s*/g, '|') })), s); // une seule valeur opaque : pas de séparation
+      if (conflits(p) > 0) tiragesTrompes++;
+    }
+    constater('contre-épreuve : sans séparer les clubs d’une équipe mixte, des conflits passent', tiragesTrompes > 0, `${tiragesTrompes}/300 tirages avec conflit`);
+  }
+
+  // 9. Les petites règles : ce qui est « le même club » et le club d'une équipe formée de deux joueurs.
+  {
+    const cas: [string, string | null, string | null, string | null][] = [
+      ['mixte contre simple', 'Kayl / Mondorf', 'Mondorf', 'Mondorf'],
+      ['deux simples différents', 'Kayl', 'Mondorf', null],
+      ['« Carreau Mondorf » = « Mondorf »', 'Carreau Mondorf', 'Mondorf', 'Carreau Mondorf'],
+      ['apostrophes et casse', "Boule d'Or", 'BOULE D’OR', "Boule d'Or"],
+      ['accents', 'Pétanque Kayl', 'petanque kayl', 'Pétanque Kayl'],
+      ['« Mondorf-les-Bains » n’est pas « Mondorf »', 'Mondorf-les-Bains', 'Mondorf', null],
+      ['séparateurs « + » et « / » équivalents', 'Kayl + Mondorf', 'Mondorf / Kayl', 'Kayl / Mondorf'],
+      ['inconnu contre inconnu', null, null, null],
+      ['vide contre un club', '  ', 'Mondorf', null],
+    ];
+    for (const [titre, a, b, attendu] of cas) {
+      const r = clubEnCommun(a, b);
+      constater(`clubEnCommun : ${titre}`, r === attendu, `obtenu ${JSON.stringify(r)}`);
+    }
+    const eqs: [string, (string | null)[], string | null][] = [
+      ['deux joueurs du même club', ['Belvaux', 'Belvaux'], 'Belvaux'],
+      ['deux clubs différents', ['Kayl', 'Mondorf'], 'Kayl / Mondorf'],
+      ['aucun club', [null, null], null],
+      ['un seul joueur a un club', [null, 'Belvaux'], 'Belvaux'],
+      ['déjà mixte + simple', ['Kayl / Mondorf', 'Mondorf'], 'Kayl / Mondorf'],
+    ];
+    for (const [titre, membres, attendu] of eqs) {
+      const r = clubDeEquipe(membres);
+      constater(`clubDeEquipe : ${titre}`, r === attendu, `obtenu ${JSON.stringify(r)}`);
+    }
+    constater('clesClub : « Kayl / Mondorf » donne deux clubs', clesClub('Kayl / Mondorf').length === 2);
   }
 }
 

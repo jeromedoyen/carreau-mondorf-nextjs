@@ -14,7 +14,7 @@ import {
   remplacerParticipants,
   rouvrirTournoi,
 } from '@/lib/actions/tournoi';
-import { cleClub } from '@/lib/tournoi/clubs';
+import { clesClub, clubEnCommun } from '@/lib/tournoi/clubs';
 import { scoreValide } from '@/lib/tournoi/moteur';
 import type { Participant, PartieDetail, Tournoi } from '@/lib/tournoi/donnees';
 import type { StatsClassees } from '@/lib/tournoi/moteur';
@@ -45,7 +45,15 @@ type Props = {
   vuePoules: VuePoules | null;
 };
 
-type Ligne = { personneId: number | null; nom: string; equipeDepart: number | null };
+type Ligne = { personneId: number | null; nom: string; equipeDepart: number | null; club?: string | null };
+
+/** Un participant enregistré, sous la forme éditable (l'ordre des clés compte : on compare par JSON). */
+const versLigne = (x: { personneId: number | null; nom: string; equipeDepart: number | null; club: string | null }): Ligne => ({
+  personneId: x.personneId,
+  nom: x.nom,
+  equipeDepart: x.equipeDepart,
+  club: x.club,
+});
 
 export function TournoiEcran(p: Props) {
   const router = useRouter();
@@ -265,9 +273,7 @@ function VueParticipants({
   donneesPdf: DonneesPdf;
 }) {
   const verrou = tournoi.statut !== 'preparation';
-  const [lignes, setLignes] = useState<Ligne[]>(
-    participants.map((x) => ({ personneId: x.personneId, nom: x.nom, equipeDepart: x.equipeDepart })),
-  );
+  const [lignes, setLignes] = useState<Ligne[]>(participants.map(versLigne));
   const [recherche, setRecherche] = useState('');
   const [nomManuel, setNomManuel] = useState('');
 
@@ -277,11 +283,7 @@ function VueParticipants({
     .filter((c) => c.nom.toLowerCase().includes(recherche.trim().toLowerCase()))
     .slice(0, 40);
 
-  const modifie =
-    JSON.stringify(lignes) !==
-    JSON.stringify(
-      participants.map((x) => ({ personneId: x.personneId, nom: x.nom, equipeDepart: x.equipeDepart })),
-    );
+  const modifie = JSON.stringify(lignes) !== JSON.stringify(participants.map(versLigne));
 
   if (verrou) {
     return (
@@ -400,6 +402,7 @@ function VueParticipants({
                   {l.personneId == null && (
                     <span className="ml-1.5 text-[11px] text-encre-douce">hors registre</span>
                   )}
+                  {l.club && <span className="ml-1.5 text-[11px] text-encre-douce">· {l.club}</span>}
                 </span>
                 {tournoi.format !== 'melee' && (
                   <input
@@ -451,15 +454,7 @@ function VueParticipants({
           {modifie && (
             <button
               type="button"
-              onClick={() =>
-                setLignes(
-                  participants.map((x) => ({
-                    personneId: x.personneId,
-                    nom: x.nom,
-                    equipeDepart: x.equipeDepart,
-                  })),
-                )
-              }
+              onClick={() => setLignes(participants.map(versLigne))}
               className={`${BTN} border border-ligne bg-sable`}
             >
               <X size={14} /> Annuler les changements
@@ -687,14 +682,11 @@ function VuePartie({
   // Clubs : ils ne comptent qu'au tirage de la 1re partie des équipes fixes, mais
   // on repère les rencontres de même club à toutes les parties — c'est un fait.
   const equipesFixes = tournoi.format === 'equipes_fixes';
-  const clubDe = (id: number) => cleClub(equipesPermanentes.find((e) => e.id === id)?.club);
-  const nbSansClub = equipesFixes ? equipesPermanentes.filter((e) => cleClub(e.club) === null).length : 0;
-  const clubCommun = (r: PartieDetail['rencontres'][number]) => {
-    const a = equipesFixes ? clubDe(r.equipeAId) : null;
-    return a !== null && a === clubDe(r.equipeBId)
-      ? (equipesPermanentes.find((e) => e.id === r.equipeAId)?.club ?? null)
-      : null;
-  };
+  const clubDe = (id: number) => equipesPermanentes.find((e) => e.id === id)?.club ?? null;
+  const nbSansClub = equipesFixes ? equipesPermanentes.filter((e) => clesClub(e.club).length === 0).length : 0;
+  // Une équipe peut réunir deux clubs (« Kayl / Mondorf ») : un seul en commun suffit.
+  const clubCommun = (r: PartieDetail['rencontres'][number]) =>
+    equipesFixes ? clubEnCommun(clubDe(r.equipeAId), clubDe(r.equipeBId)) : null;
   const nbMemeClub = detail ? detail.rencontres.filter((r) => clubCommun(r) !== null).length : 0;
   const consigneTirage =
     equipesFixes && nbSansClub === equipesPermanentes.length

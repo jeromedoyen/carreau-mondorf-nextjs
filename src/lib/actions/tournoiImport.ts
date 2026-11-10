@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { rapprocherNom, type Licencie } from '@/lib/fuzzyMatch';
-import { analyserTexte, type EntreeImport } from '@/lib/tournoi/import';
+import { analyserTableau, type EntreeImport } from '@/lib/tournoi/import';
 import { lireListeParIA } from '@/lib/tournoi/lectureIA';
 
 /**
@@ -17,6 +17,8 @@ import { lireListeParIA } from '@/lib/tournoi/lectureIA';
 export type LigneImport = {
   nomLu: string;
   equipeDepart: number | null;
+  /** Club de l'équipe lu dans le document (« Belvaux », « Kayl / Mondorf »), ou null. */
+  club: string | null;
   personneId: number | null;
   nomRegistre: string | null;
   statut: 'trouve' | 'ambigu' | 'inconnu';
@@ -73,6 +75,7 @@ export async function rapprocherParticipants(
       return {
         nomLu: e.nom,
         equipeDepart: e.equipeDepart,
+        club: e.club,
         personneId: r.licencie.id,
         nomRegistre: nomComplet(r.licencie),
         statut: 'trouve',
@@ -85,6 +88,7 @@ export async function rapprocherParticipants(
     return {
       nomLu: e.nom,
       equipeDepart: e.equipeDepart,
+      club: e.club,
       personneId: null,
       nomRegistre: null,
       statut: candidats.length > 0 ? 'ambigu' : 'inconnu',
@@ -146,20 +150,25 @@ export async function analyserFichierParticipants(
   }
   const objet = resultatIA.objet;
 
-  // On repasse par l'analyseur de texte : il applique le même nettoyage
-  // (numéros collés, cellules parasites) que l'import de fichier, donc les deux
-  // chemins produisent exactement la même chose.
-  const texte = objet.equipes
-    .map((eq) => {
-      const prefixe = objet.aDesEquipes && eq.numero != null ? `${eq.numero}) ` : '';
-      return prefixe + eq.joueurs.join(', ');
-    })
-    .join('\n');
+  // On repasse par l'analyseur de tableau : il applique le même nettoyage
+  // (numéros collés, cellules parasites, colonne « Club » mise de côté) que
+  // l'import de fichier, donc les deux chemins produisent exactement la même
+  // chose. La lecture de l'IA est remise en forme de tableau avec son en-tête.
+  const largeur = Math.max(1, ...objet.equipes.map((eq) => eq.joueurs.length));
+  const grille: string[][] = [
+    ['Série', ...Array.from({ length: largeur }, (_, i) => `Joueur ${i + 1}`), 'Club'],
+    ...objet.equipes.map((eq) => [
+      objet.aDesEquipes && eq.numero != null ? String(eq.numero) : '',
+      ...eq.joueurs,
+      ...Array<string>(largeur - eq.joueurs.length).fill(''),
+      objet.aDesEquipes ? (eq.club ?? '') : '',
+    ]),
+  ];
 
-  const lecture = analyserTexte(texte);
+  const lecture = analyserTableau(grille);
   const entrees = objet.aDesEquipes
     ? lecture.entrees
-    : lecture.entrees.map((e) => ({ ...e, equipeDepart: null }));
+    : lecture.entrees.map((e) => ({ ...e, equipeDepart: null, club: null }));
 
   if (entrees.length === 0) {
     return { ok: false, error: "Aucun nom lisible n'a été trouvé sur ce document." };

@@ -1836,3 +1836,34 @@ Page illustrée aux couleurs du club (logo, barre terracotta-laiton-pin du site,
 **Leçon.** Sur cette clé, une série de tests réels se compte en requêtes comptées, pas en rafales. Ne pas lancer de course entre deux modèles (deux requêtes par lecture) : le relais est séquentiel pour cette raison. Si l'IA devient d'un usage courant, la clé payante (quelques centimes par lecture) est la vraie réponse — décision de Jérôme.
 
 **Non vérifié.** (1) Une lecture réelle de la photo *réduite* par le module final : bloquée par le quota. Indices favorables : une image de 1 240 × 1 500 px, de la même classe que la sortie réduite (1 200 × 1 600), a été lue 24/24 au premier essai. (2) Le relais sur un vrai 404 a été vu une fois sur l'ancienne version du code, pas sur la finale. (3) Le parcours complet dans l'application connectée en CA : l'écran exige une session du CA.
+
+
+## Session du 10/11/2026 (suite 2) — l'import lit le club de chaque équipe
+
+**Déclencheur.** Jérôme, après la fusion de #43 : « les clubs faisaient partie de la feuille de constitution d'équipe que j'ai importée ». Le tournoi 43 avait été importé d'un PDF (`SÉRIE | PRÉNOM | PRÉNOM | CLUB`, 14 doublettes) : le numéro d'équipe et les prénoms étaient lus, **le club était jeté sans un mot** — ni le schéma de lecture par IA, ni l'analyseur de tableau n'avaient de champ pour lui. J'avais classé ça en « limite connue » à la livraison de #43 ; c'est un défaut : l'information était sur la feuille, et la saisie à la main de 14 clubs n'aurait pas dû être nécessaire.
+
+**Constat en base (lecture seule, tournoi 43).** 28 participants, 14 équipes de 2, uniquement nom + numéro d'équipe. Aucune trace des clubs : ils ne sont pas récupérables en base, il faut la feuille (ou les saisir).
+
+**Particularité de la feuille.** Deux équipes sont « Kayl / Mondorf » (joueurs de deux clubs). Avec une comparaison « club entier », « Kayl / Mondorf » n'aurait jamais été vu comme du même club que « Mondorf » ni que « Kayl » : le tirage aurait laissé passer Mondorf contre Kayl/Mondorf (226 tirages sur 300 l'auraient fait, contre-épreuve du banc).
+
+**Changements** (branche `feature/import-club`, qui contient aussi #42 — même fichier touché)
+- `supabase/migrations/0077_tournoi_participant_club.sql` : colonne facultative `tournoi_participants.club`. Le club se rattache aux **joueurs**, pas aux équipes : les équipes permanentes sont supprimées et recréées à chaque changement de composition, les participants survivent. **À appliquer (`npm run db:migrer`) AVANT de fusionner** : le code lit cette colonne.
+- `import.ts` : `EntreeImport.club`. En-tête reconnu avec `Série`, `Club`, `Prénom` répété ; la colonne Club est mise de côté avant de chercher les joueurs (sinon « Belvaux » devenait un participant). Disposition longue : le club de la 1re ligne d'une équipe vaut pour l'équipe. Sans en-tête, aucune colonne n'est devinée comme un club.
+- `lectureIA.ts` : champ `club` par équipe dans le schéma et les instructions (« recopie exactement, y compris Kayl / Mondorf »). `tournoiImport.ts` : la lecture de l'IA est remise en tableau (en-tête `Série | Joueur n | Club`) et passe par `analyserTableau` — un seul analyseur pour fichier et IA.
+- `TournoiImport.tsx` : colonne « Club » à l'écran de correction ; corriger le club d'une ligne le corrige pour toute l'équipe ; « Club lu pour N équipes sur M ». `TournoiEcran.tsx` : le club suit chaque participant dans la liste, affiché à côté du nom.
+- `tournoi.ts` : `remplacerParticipants` enregistre le club ; `composerEquipesDepart` et `enregistrerEquipesDepart` donnent à chaque équipe créée le club de ses membres (`clubDeEquipe` : « Belvaux » si deux joueurs de Belvaux, « Kayl / Mondorf » si un de chaque). `poulesDonnees.enregistrerClubsEquipes` recopie aussi le club saisi dans la carte « Club de chaque équipe » sur les joueurs : un club tapé à la main survit à une recomposition.
+- `clubs.ts` : règle des clubs mixtes — `clesClub`, `clubEnCommun`, `clubDeEquipe`. Séparateurs `/ + & ;` (pas le tiret : « Mondorf-les-Bains »). Comparaison sans accents ni casse, apostrophes unifiées, « Carreau Mondorf » = « Mondorf » (la feuille écrit « Mondorf », le club par défaut s'appelle « Carreau Mondorf »). Deux équipes sont « du même club » dès qu'un club leur est commun.
+- `moteur.ts` / `TournoiEcran.tsx` : la 1re partie des équipes fixes et le repère « Même club · X » utilisent cette règle.
+- Caro : l'import lit la colonne Club.
+
+**Vérifié** : `tsc`, ESLint, `next build` ; `verifier-moteur` (feuille du tournoi 43 : 0 club en commun sur 2 000 tirages ; 14 règles de comparaison ; sans club, tirage identique à l'ancien) ; `verifier-import-tournoi` (la feuille réelle en tableau, en CSV, sous la forme que fabrique l'IA, disposition longue, sans colonne club, sans en-tête) ; `verifier-poules` **inchangé au chiffre près** (8 986 paires, 0 au-delà du minimum) ; écran de correction rendu avec la feuille réelle dans le navigateur (28 lignes, « Club lu pour 14 équipes sur 14 », propagation d'un club à l'autre joueur de l'équipe, sortie `{personneId, nom, equipeDepart, club}`). Page d'essai supprimée.
+
+**Non vérifié.** (1) Une lecture IA réelle du PDF avec le champ club (quota journalier gratuit épuisé le 10/11 par mes essais) ; (2) les écritures en base (aucune session CA) et la migration 0077 ; (3) le parcours complet import → équipes → tirage en session CA.
+
+**Limites assumées**
+- Les **poules** gardent la comparaison « club entier » : une équipe « Kayl / Mondorf » y compte comme un club à part. Seul le tirage de la 1re partie des équipes fixes sépare les clubs mixtes.
+- Le club suit le **joueur** : changer le numéro d'équipe d'un joueur dans la liste ne change pas son club ; une équipe recomposée avec deux clubs différents devient « A / B » (visible dans la carte des clubs, modifiable).
+- Un club écrit différemment d'une feuille à l'autre (« Mondorf » / « Carreau Mondorf » est géré ; « Mondorf » / « Mondorff » ne l'est pas).
+- Photo d'une feuille où le club est écrit par joueur et non par équipe : seule la valeur par équipe est lue.
+
+**Pour le tournoi 43 (15/11).** Les équipes existent déjà sans club. Soit réimporter la feuille avec la version corrigée (refait équipes et poules à zéro, tant qu'aucune partie n'est tirée), soit saisir les 14 clubs dans la carte « Club de chaque équipe ». Série → club : 1 Kayl / Mondorf · 2 Dudelange · 3 Mondorf · 4 Belvaux · 5 Mondorf · 6 Mondorf · 7 Belvaux · 8 Boule d'Or · 9 Boule d'Or · 10 Mondorf · 11 Lasauvage · 12 Kayl / Mondorf · 13 Belvaux · 14 Kayl.

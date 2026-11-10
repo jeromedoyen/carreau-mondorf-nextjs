@@ -14,7 +14,9 @@ type Props = {
   /** Le tournoi attend-il des numéros d'équipe ? (format équipes fixes) */
   avecEquipes: boolean;
   /** Remplace la liste en cours d'édition par ce qui sort de la correction. */
-  onValider: (lignes: { personneId: number | null; nom: string; equipeDepart: number | null }[]) => void;
+  onValider: (
+    lignes: { personneId: number | null; nom: string; equipeDepart: number | null; club: string | null }[],
+  ) => void;
 };
 
 function lireFichierBase64(f: File): Promise<string> {
@@ -141,7 +143,26 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
     setLignes((l) => (l ? l.map((x, j) => (j === i ? { ...x, ...patch } : x)) : l));
   }
 
+  /**
+   * Le club est celui de l'ÉQUIPE : le corriger sur une ligne le corrige sur
+   * toutes les lignes de la même équipe, sinon les deux joueurs d'une doublette
+   * se retrouveraient avec deux clubs.
+   */
+  function majClub(i: number, club: string) {
+    setLignes((l) => {
+      if (!l) return l;
+      const eq = l[i].equipeDepart;
+      return l.map((x, j) => (j === i || (eq != null && x.equipeDepart === eq) ? { ...x, club } : x));
+    });
+  }
+
   const aCorriger = lignes?.filter((l) => l.statut !== 'trouve').length ?? 0;
+  const nbEquipesAvecClub = avecEquipes
+    ? new Set((lignes ?? []).filter((l) => l.club?.trim() && l.equipeDepart != null).map((l) => l.equipeDepart)).size
+    : 0;
+  const nbEquipes = avecEquipes
+    ? new Set((lignes ?? []).map((l) => l.equipeDepart).filter((n) => n != null)).size
+    : 0;
 
   if (!ouvert) {
     return (
@@ -253,6 +274,15 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
               ? 'tous rapprochés du registre'
               : `${aCorriger} à vérifier (surlignés)`}
             . Corrigez, puis validez : la liste du tournoi sera remplacée.
+            {avecEquipes && nbEquipes > 0 && (
+              <>
+                {' '}
+                <b className="text-encre">
+                  Club lu pour {nbEquipesAvecClub} équipe{nbEquipesAvecClub > 1 ? 's' : ''} sur {nbEquipes}
+                </b>
+                {nbEquipesAvecClub < nbEquipes && ' — complétez les autres dans la colonne « Club »'}.
+              </>
+            )}
           </p>
 
           <div className="max-h-[420px] overflow-y-auto rounded-xl border border-ligne">
@@ -262,6 +292,7 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
                   <th className="px-3 py-2 text-left font-medium">Nom lu</th>
                   <th className="px-3 py-2 text-left font-medium">Licencié</th>
                   {avecEquipes && <th className="w-16 px-2 py-2 text-center font-medium">Éq.</th>}
+                  {avecEquipes && <th className="w-40 px-2 py-2 text-left font-medium">Club</th>}
                   <th className="w-10 px-2 py-2" />
                 </tr>
               </thead>
@@ -310,6 +341,18 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
                         />
                       </td>
                     )}
+                    {avecEquipes && (
+                      <td className="px-2 py-2">
+                        <input
+                          type="text"
+                          value={l.club ?? ''}
+                          onChange={(e) => majClub(i, e.target.value)}
+                          placeholder="club"
+                          aria-label={`Club de ${l.nomLu}`}
+                          className={`${CHAMP} w-full`}
+                        />
+                      </td>
+                    )}
                     <td className="px-2 py-2 text-center">
                       <button
                         type="button"
@@ -338,6 +381,7 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
                     // qu'on retrouvera dans les statistiques et sur les feuilles.
                     nom: l.personneId != null && l.nomRegistre ? l.nomRegistre : l.nomLu,
                     equipeDepart: avecEquipes ? l.equipeDepart : null,
+                    club: avecEquipes ? l.club?.trim() || null : null,
                   })),
                 );
                 setOuvert(false);
