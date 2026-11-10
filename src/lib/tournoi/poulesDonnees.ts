@@ -9,6 +9,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { clubEffectif } from './clubs';
 import { scoreValide } from './moteur';
 import {
   classementTableau,
@@ -34,9 +35,6 @@ import {
   type RencontrePoules,
   type Tableau,
 } from './poules';
-
-/** Club supposé d'une équipe composée uniquement de licenciés du club. */
-export const CLUB_PAR_DEFAUT = 'Carreau Mondorf';
 
 type Resultat<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -93,8 +91,7 @@ export async function lireEquipesPoules(supabase: SupabaseClient, tournoiId: num
   return ((equipes ?? []) as unknown as Ligne[]).map((e) => {
     const membres = (e.tournoi_equipe_membres ?? []).map((m) => m.participant_id);
     const saisi = e.club?.trim() ? e.club.trim() : null;
-    const deduit = membres.length > 0 && membres.every((m) => licencie.get(m)) ? CLUB_PAR_DEFAUT : null;
-    return { id: e.id, numero: e.numero, club: saisi ?? deduit, clubSaisi: saisi, membres };
+    return { id: e.id, numero: e.numero, club: clubEffectif(saisi, membres, (m) => !!licencie.get(m)), clubSaisi: saisi, membres };
   });
 }
 

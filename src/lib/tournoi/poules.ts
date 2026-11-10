@@ -23,6 +23,7 @@
  * résultats de poule, qu'une correction ultérieure ne doit pas redistribuer.
  */
 
+import { cleClub } from './clubs';
 import { attribuerTerrains, calendrierToutesRondes, construireHistorique, scoreValide, type PartieJouee } from './moteur';
 
 export type ModePoule = 'repechage' | 'toutes_rondes';
@@ -96,11 +97,6 @@ export function repartitionPoules(
   const base = Math.floor(nbEquipes / nb);
   const reste = nbEquipes % nb;
   return { tailles: Array.from({ length: nb }, (_, i) => base + (i < reste ? 1 : 0)) };
-}
-
-function cleClub(club: string | null): string | null {
-  const c = club?.trim().toLowerCase();
-  return c ? c : null;
 }
 
 function melanger<T>(liste: T[], alea: Alea): T[] {
