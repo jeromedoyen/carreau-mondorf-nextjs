@@ -14,6 +14,7 @@ import {
   remplacerParticipants,
   rouvrirTournoi,
 } from '@/lib/actions/tournoi';
+import { cleClub } from '@/lib/tournoi/clubs';
 import { scoreValide } from '@/lib/tournoi/moteur';
 import type { Participant, PartieDetail, Tournoi } from '@/lib/tournoi/donnees';
 import type { StatsClassees } from '@/lib/tournoi/moteur';
@@ -25,6 +26,7 @@ import {
   DocumentToutesParties,
   type DonneesPdf,
 } from './TournoiPdf';
+import { ClubsEquipesFixes, type EquipeAvecClub } from './TournoiClubs';
 import { TournoiImport } from './TournoiImport';
 import { TournoiReglages } from './TournoiReglages';
 import { VueClassementPoules, VuePoulesOnglet } from './TournoiPoulesVues';
@@ -33,7 +35,7 @@ import { BTN, BoutonPdf, CHAMP, Carte, Tab, nomFichier } from './TournoiUi';
 type Props = {
   tournoi: Tournoi;
   participants: Participant[];
-  equipesPermanentes: { id: number; numero: number; membres: number[] }[];
+  equipesPermanentes: (EquipeAvecClub & { membres: number[] })[];
   partiesDetail: PartieDetail[];
   equipesParId: Record<number, { numero: number; membres: number[] }>;
   classement: StatsClassees[];
@@ -204,6 +206,7 @@ export function TournoiEcran(p: Props) {
       {/^p\d+$/.test(onglet) && (
         <VuePartie
           vuePoules={poules}
+          equipesPermanentes={p.equipesPermanentes}
           numero={Number(onglet.slice(1))}
           tournoi={p.tournoi}
           partiesDetail={p.partiesDetail}
@@ -312,6 +315,9 @@ function VueParticipants({
                 <li key={e.id} className="text-[13.5px]">
                   <span className="font-score mr-2 text-[15px] text-terracotta">{e.numero}</span>
                   {membresDe(e.id)}
+                  {tournoi.format === 'equipes_fixes' && (
+                    <span className="ml-2 text-[11.5px] text-encre-douce">{e.club ?? 'club inconnu'}</span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -467,6 +473,17 @@ function VueParticipants({
           tournoi={tournoi}
           participants={participants}
           equipesPermanentes={equipesPermanentes}
+          membresDe={membresDe}
+          enCours={enCours}
+          lancer={lancer}
+        />
+      )}
+
+      {tournoi.format === 'equipes_fixes' && equipesPermanentes.length >= 2 && !modifie && (
+        <ClubsEquipesFixes
+          key={equipesPermanentes.map((e) => e.id).join('-')}
+          tournoiId={tournoi.id}
+          equipes={equipesPermanentes}
           membresDe={membresDe}
           enCours={enCours}
           lancer={lancer}
@@ -640,6 +657,7 @@ function EquipesDepart({
 
 function VuePartie({
   vuePoules,
+  equipesPermanentes,
   numero,
   tournoi,
   partiesDetail,
@@ -651,6 +669,7 @@ function VuePartie({
   donneesPdf,
 }: {
   vuePoules: VuePoules | null;
+  equipesPermanentes: EquipeAvecClub[];
   numero: number;
   tournoi: Tournoi;
   partiesDetail: PartieDetail[];
@@ -665,6 +684,33 @@ function VuePartie({
   const precedente = partiesDetail.find((d) => d.numero === numero - 1);
   const estDerniere = partiesDetail.length === numero;
 
+  // Clubs : ils ne comptent qu'au tirage de la 1re partie des équipes fixes, mais
+  // on repère les rencontres de même club à toutes les parties — c'est un fait.
+  const equipesFixes = tournoi.format === 'equipes_fixes';
+  const clubDe = (id: number) => cleClub(equipesPermanentes.find((e) => e.id === id)?.club);
+  const nbSansClub = equipesFixes ? equipesPermanentes.filter((e) => cleClub(e.club) === null).length : 0;
+  const clubCommun = (r: PartieDetail['rencontres'][number]) => {
+    const a = equipesFixes ? clubDe(r.equipeAId) : null;
+    return a !== null && a === clubDe(r.equipeBId)
+      ? (equipesPermanentes.find((e) => e.id === r.equipeAId)?.club ?? null)
+      : null;
+  };
+  const nbMemeClub = detail ? detail.rencontres.filter((r) => clubCommun(r) !== null).length : 0;
+  const consigneTirage =
+    equipesFixes && nbSansClub === equipesPermanentes.length
+      ? 'Aucun club n’est renseigné : le tirage compose les rencontres au hasard et ne peut pas éviter d’opposer deux équipes du même club. Renseignez-les dans l’onglet « Participants » avant de tirer.'
+      : equipesFixes
+        ? `Le tirage compose les rencontres au hasard, sans opposer deux équipes d’un même club${
+            nbSansClub > 0 ? ' connu' : ''
+          }.${
+            nbSansClub > 0
+              ? ` ${nbSansClub} équipe${nbSansClub > 1 ? 's' : ''} sans club connu : ${
+                  nbSansClub > 1 ? 'elles ne seront pas séparées' : 'elle ne sera pas séparée'
+                } des autres. Renseignez-${nbSansClub > 1 ? 'les' : 'la'} dans l’onglet « Participants » avant de tirer.`
+              : ''
+          }`
+        : 'Aucun appariement. Le tirage compose les rencontres au hasard.';
+
   if (!detail) {
     const bloquee = numero > 1 && (!precedente || !partieComplete(precedente));
     return (
@@ -677,7 +723,7 @@ function VuePartie({
                 ? 'Tirez d’abord les poules dans l’onglet « Poules ».'
                 : 'Cette partie est composée à partir des résultats déjà saisis : poules d’abord, puis tableau principal et consolante.'
               : numero === 1
-              ? 'Aucun appariement. Le tirage compose les rencontres au hasard.'
+              ? consigneTirage
               : 'Les équipes vont être appariées selon leur nombre de victoires, sans revanche, en évitant de rejouer un terrain déjà occupé.'}
         </p>
         <button
@@ -709,6 +755,19 @@ function VuePartie({
           se rencontrent une deuxième fois.
         </p>
       )}
+      {equipesFixes && numero === 1 && nbMemeClub > 0 && (
+        <p className="rounded-xl border border-laiton/40 bg-laiton/10 px-4 py-2.5 text-[12.5px] text-[#7a5c1f]">
+          {nbMemeClub} rencontre{nbMemeClub > 1 ? 's' : ''} entre équipes du même club : le tirage n’a pas pu {nbMemeClub > 1 ? 'les éviter' : 'l’éviter'}{' '}
+          (un club compte trop d’équipes par rapport aux autres).
+        </p>
+      )}
+      {equipesFixes && numero === 1 && nbSansClub > 0 && (
+        <p className="rounded-xl border border-ligne bg-sable-carte px-4 py-2.5 text-[12.5px] text-encre-douce">
+          {nbSansClub} équipe{nbSansClub > 1 ? 's' : ''} sans club connu au moment du tirage : {nbSansClub > 1 ? 'elles ont pu' : 'elle a pu'} être
+          opposée{nbSansClub > 1 ? 's' : ''} à une équipe du même club. Pour refaire le tirage en en tenant compte : annulez cette partie,
+          renseignez les clubs dans l’onglet « Participants », puis tirez de nouveau.
+        </p>
+      )}
       {detail.equipeExempteId != null && (
         <p className="rounded-xl border border-ligne bg-sable-carte px-4 py-2.5 text-[12.5px] text-encre-douce">
           <b className="text-encre">Équipe {numeroDe(detail.equipeExempteId)} exempte</b> (
@@ -721,6 +780,7 @@ function VuePartie({
           key={r.id}
           rencontre={r}
           etiquette={vuePoules?.etiquettes[r.id]}
+          memeClub={clubCommun(r)}
           but={tournoi.pointsVictoire}
           membresDe={membresDe}
           numeroDe={numeroDe}
@@ -763,6 +823,7 @@ function VuePartie({
 function LigneRencontre({
   rencontre,
   etiquette,
+  memeClub,
   but,
   membresDe,
   numeroDe,
@@ -770,6 +831,8 @@ function LigneRencontre({
 }: {
   rencontre: PartieDetail['rencontres'][number];
   etiquette?: string;
+  /** Le club commun aux deux équipes, s'il est connu et identique. */
+  memeClub?: string | null;
   but: number;
   membresDe: (id: number) => string;
   numeroDe: (id: number) => number;
@@ -822,6 +885,11 @@ function LigneRencontre({
           Terrain {rencontre.terrain}
         </span>
         {etiquette && <span className="text-[12px] font-medium text-terracotta">{etiquette}</span>}
+        {memeClub && (
+          <span className="rounded-full border border-laiton/40 bg-laiton/10 px-2 py-0.5 text-[11px] text-[#7a5c1f]">
+            Même club · {memeClub}
+          </span>
+        )}
         {mauvais && (
           <span className="ml-auto text-[11.5px] text-danger">
             Score invalide — un vainqueur, à {but} au moins

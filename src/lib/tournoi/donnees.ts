@@ -11,6 +11,7 @@ import {
   type ParametresTournoi,
   type StatsClassees,
 } from './moteur';
+import { clubEffectif } from './clubs';
 import { construireVuePoules, lireEtatPoules, type VuePoules } from './poulesDonnees';
 import type { ModePoule } from './poules';
 
@@ -62,8 +63,12 @@ export type PartieDetail = {
 export type TournoiComplet = {
   tournoi: Tournoi;
   participants: Participant[];
-  /** Équipes permanentes (format equipes_fixes). Vide en mêlée. */
-  equipesPermanentes: { id: number; numero: number; membres: number[] }[];
+  /**
+   * Équipes permanentes (équipes fixes et poules). Vide en mêlée. `club` est le
+   * club EFFECTIF — celui qui a été saisi, sinon déduit quand tous les membres
+   * sont licenciés du club, sinon null ; `clubSaisi` ce qui a été tapé à la main.
+   */
+  equipesPermanentes: { id: number; numero: number; membres: number[]; club: string | null; clubSaisi: string | null }[];
   parties: PartieJouee[];
   /** Même chose, mais avec les ids : c'est ce que consomme l'écran de saisie. */
   partiesDetail: PartieDetail[];
@@ -185,7 +190,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
         .order('numero'),
       supabase
         .from('tournoi_equipes')
-        .select('id, partie_id, numero, tournoi_equipe_membres (participant_id)')
+        .select('id, partie_id, numero, club, tournoi_equipe_membres (participant_id)')
         .eq('tournoi_id', id)
         .order('numero'),
     ]);
@@ -202,18 +207,27 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
     id: number;
     partie_id: number | null;
     numero: number;
+    club: string | null;
     tournoi_equipe_membres: { participant_id: number }[] | null;
   };
   const equipes = ((equipesBrutes ?? []) as unknown as LigneEquipe[]).map((e) => ({
     id: e.id,
     partieId: e.partie_id,
     numero: e.numero,
+    club: e.club?.trim() ? e.club.trim() : null,
     membres: (e.tournoi_equipe_membres ?? []).map((m) => m.participant_id),
   }));
 
+  const estLicencie = new Map(participants.map((p) => [p.id, p.personneId !== null]));
   const equipesPermanentes = equipes
     .filter((e) => e.partieId === null)
-    .map((e) => ({ id: e.id, numero: e.numero, membres: e.membres }));
+    .map((e) => ({
+      id: e.id,
+      numero: e.numero,
+      membres: e.membres,
+      club: clubEffectif(e.club, e.membres, (m) => !!estLicencie.get(m)),
+      clubSaisi: e.club,
+    }));
 
   const partieIds = (partiesBrutes ?? []).map((p) => p.id as number);
   const { data: rencontresBrutes } = partieIds.length

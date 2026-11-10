@@ -602,20 +602,42 @@ export async function tirerLesPoules(tournoiId: number): Promise<Resultat> {
   return { ok: true };
 }
 
-/** Club de chaque équipe, pour que le tirage évite de réunir deux équipes du même club. */
+/**
+ * Club de chaque équipe, pour que le tirage évite de réunir deux équipes du même club.
+ *
+ * Poules : tant que les tableaux ne sont pas constitués. Équipes fixes : tant
+ * que la première partie n'est pas composée — c'est elle seule qui en tient
+ * compte, la modifier après coup ne changerait rien à ce qui est déjà tiré.
+ */
 export async function enregistrerClubsEquipes(
   tournoiId: number,
   clubs: { equipeId: number; club: string | null }[],
 ): Promise<Resultat> {
   const { supabase, erreur } = await contexteCA();
   if (erreur) return { ok: false, error: erreur };
-  const params = await lireParametresPoules(supabase, tournoiId);
-  if (!params) return { ok: false, error: "Ce tournoi n'est pas un tournoi à poules." };
-  const { count } = await supabase
-    .from('tournoi_tableau_places')
-    .select('id', { count: 'exact', head: true })
-    .eq('tournoi_id', tournoiId);
-  if ((count ?? 0) > 0) return { ok: false, error: 'Les tableaux sont constitués : les clubs ne peuvent plus changer.' };
+  const { data: tournoi } = await supabase.from('tournois').select('format').eq('id', tournoiId).maybeSingle();
+  if (!tournoi) return { ok: false, error: 'Tournoi introuvable.' };
+
+  if (tournoi.format === 'poules') {
+    const { count } = await supabase
+      .from('tournoi_tableau_places')
+      .select('id', { count: 'exact', head: true })
+      .eq('tournoi_id', tournoiId);
+    if ((count ?? 0) > 0) return { ok: false, error: 'Les tableaux sont constitués : les clubs ne peuvent plus changer.' };
+  } else if (tournoi.format === 'equipes_fixes') {
+    const { count } = await supabase
+      .from('tournoi_parties')
+      .select('id', { count: 'exact', head: true })
+      .eq('tournoi_id', tournoiId);
+    if ((count ?? 0) > 0) {
+      return {
+        ok: false,
+        error: 'La première partie est déjà composée : annulez-la pour modifier les clubs et refaire le tirage.',
+      };
+    }
+  } else {
+    return { ok: false, error: "Les clubs ne servent qu'aux équipes fixes et aux poules." };
+  }
   const r = await enregistrerClubsEnBase(supabase, tournoiId, clubs);
   if (!r.ok) return { ok: false, error: r.error };
   revalidatePath(`/outils/tournoi/${tournoiId}`);

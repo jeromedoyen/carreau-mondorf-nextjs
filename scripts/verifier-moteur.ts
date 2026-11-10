@@ -11,6 +11,7 @@
  */
 
 import {
+  composerPartieEquipesFixes,
   composerProchainePartie,
   construireHistorique,
   classer,
@@ -326,6 +327,150 @@ console.log('\n=== Historique : une composition compte avant même le score ==='
   const ok = h.adversairesEquipe.get(1)?.has(2) === true && h.coequipiers.get(10)?.has(11) === true;
   if (!ok) echecsGlobaux++;
   console.log(`  ${ok ? 'OK  ' : 'ÉCHEC'} adversaires et coéquipiers enregistrés sans score saisi`);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Première partie des équipes fixes : deux équipes du même club ne se       */
+/* rencontrent pas — quand c'est faisable, et au minimum sinon.              */
+/* ------------------------------------------------------------------------ */
+
+console.log('\n=== Équipes fixes : la 1re partie évite le même club ===');
+{
+  type Eq = { id: number; numero: number; membres: number[]; club?: string | null };
+  const params: ParametresTournoi = { format: 'equipes_fixes', tailleEquipe: 2, nbParties: 4, nbTerrains: 7, pointsVictoire: 13 };
+  const constater = (libelle: string, ok: boolean, detail = '') => {
+    if (!ok) echecsGlobaux++;
+    console.log(`  ${ok ? 'OK  ' : 'ÉCHEC'} ${libelle}${detail ? ` — ${detail}` : ''}`);
+  };
+  /** `repartition` : nombre d'équipes de chaque club ; un `null` = équipes sans club. */
+  const faireEquipes = (repartition: (number | null)[], nomClub = (c: number) => `Club ${c}`): Eq[] => {
+    const out: Eq[] = [];
+    repartition.forEach((n, c) => {
+      for (let i = 0; i < (n ?? 0); i++) out.push({ id: out.length + 1, numero: out.length + 1, membres: [out.length * 2 + 1, out.length * 2 + 2], club: nomClub(c) });
+    });
+    return out;
+  };
+  /** Rencontres de même club dans la partie proposée, d'après les clubs ci-dessus. */
+  const memeClub = (eq: Eq[], p: ReturnType<typeof composerPartieEquipesFixes>) => {
+    const club = new Map(eq.map((e) => [e.id, e.club?.trim().toLowerCase() || null]));
+    return p.rencontres.filter((r) => {
+      const a = club.get(p.equipes[r.indexA].id!);
+      return a !== null && a === club.get(p.equipes[r.indexB].id!);
+    }).length;
+  };
+  const NB = 2000;
+  const tirer = (eq: Eq[], graine: number) => composerPartieEquipesFixes(1, eq, [], params, generateur(graine));
+
+  // 1. Séparation possible : zéro rencontre de même club, sur 2000 tirages.
+  for (const [titre, rep] of [
+    ['8 équipes, 4 clubs de 2', [2, 2, 2, 2]],
+    ['14 équipes (tournoi 43), clubs 3/3/2/2/2/1/1', [3, 3, 2, 2, 2, 1, 1]],
+    ['12 équipes, 2 clubs de 6 (chaque équipe doit rencontrer l’autre club)', [6, 6]],
+    ['16 équipes, 8 clubs de 2', [2, 2, 2, 2, 2, 2, 2, 2]],
+  ] as [string, number[]][]) {
+    const eq = faireEquipes(rep);
+    let pire = 0;
+    for (let s = 1; s <= NB; s++) pire = Math.max(pire, memeClub(eq, tirer(eq, s)));
+    constater(`${titre} : jamais de même club`, pire === 0, `pire cas ${pire} sur ${NB} tirages`);
+  }
+
+  // 2. Séparation impossible : le minimum, ni plus ni moins. 6 équipes dont 4 d'un
+  // même club : seules 2 équipes d'autres clubs peuvent les séparer → exactement 1 rencontre inévitable.
+  {
+    const eq = faireEquipes([4, 1, 1]);
+    const vus = new Set<number>();
+    for (let s = 1; s <= NB; s++) vus.add(memeClub(eq, tirer(eq, s)));
+    constater('6 équipes dont 4 du même club : exactement 1 rencontre inévitable, jamais plus', vus.size === 1 && vus.has(1), `valeurs vues : ${[...vus].join(', ')}`);
+  }
+
+  // 3. Effectif impair : l'équipe exempte est écartée avant l'appariement, les autres sont séparées.
+  {
+    const eq = faireEquipes([2, 2, 2, 1]);
+    let pire = 0, sansExempt = 0;
+    for (let s = 1; s <= NB; s++) {
+      const p = tirer(eq, s);
+      if (p.indexExempt == null) sansExempt++;
+      pire = Math.max(pire, memeClub(eq, p));
+    }
+    constater('7 équipes (impair) : une équipe exempte et jamais de même club', pire === 0 && sansExempt === 0, `pire cas ${pire}, parties sans exempt ${sansExempt}`);
+  }
+
+  // 4. Clubs inconnus : jamais comptés comme « même club », et comportement ancien si aucun club.
+  {
+    // 4 clubs de 4 équipes, dont une sur quatre sans club saisi : chaque club a 3 équipes
+    // connues, que le tirage doit donc séparer (sans quoi un tirage au hasard en réunirait souvent).
+    const eq = faireEquipes([4, 4, 4, 4]).map((e, i) => ({ ...e, club: i % 4 === 3 ? null : e.club }));
+    let pireConnus = 0;
+    for (let s = 1; s <= NB; s++) {
+      const p = tirer(eq, s);
+      const club = new Map(eq.map((e) => [e.id, e.club ?? null]));
+      pireConnus = Math.max(pireConnus, p.rencontres.filter((r) => {
+        const a = club.get(p.equipes[r.indexA].id!);
+        return a !== null && a === club.get(p.equipes[r.indexB].id!);
+      }).length);
+    }
+    constater('clubs connus seulement pour la moitié des équipes : aucun conflit sur les clubs connus', pireConnus === 0, `pire cas ${pireConnus}`);
+
+    const nus = faireEquipes([2, 2, 2, 2]).map((e) => ({ id: e.id, numero: e.numero, membres: e.membres }));
+    const nulls = nus.map((e) => ({ ...e, club: null as string | null }));
+    let identiques = 0;
+    for (let s = 1; s <= 200; s++) {
+      const a = JSON.stringify(composerPartieEquipesFixes(1, nus, [], params, generateur(s)));
+      const b = JSON.stringify(composerPartieEquipesFixes(1, nulls, [], params, generateur(s)));
+      if (a === b) identiques++;
+    }
+    constater('aucun club (absent ou null) : tirage strictement identique à l’ancien, à graine égale', identiques === 200, `${identiques}/200`);
+  }
+
+  // 5. Casse et espaces : « Mondorf » et « mondorf  » sont un seul club.
+  {
+    const eq: Eq[] = [
+      { id: 1, numero: 1, membres: [1, 2], club: 'Mondorf' },
+      { id: 2, numero: 2, membres: [3, 4], club: '  mondorf ' },
+      { id: 3, numero: 3, membres: [5, 6], club: 'Jarny' },
+      { id: 4, numero: 4, membres: [7, 8], club: 'JARNY' },
+    ];
+    let pire = 0;
+    for (let s = 1; s <= NB; s++) pire = Math.max(pire, memeClub(eq, tirer(eq, s)));
+    constater('« Mondorf » = « mondorf  », « Jarny » = « JARNY » : jamais de même club', pire === 0, `pire cas ${pire}`);
+  }
+
+  // 6. Seule la première partie est concernée : les suivantes sont celles du classement, comme avant.
+  {
+    const eq = faireEquipes([2, 2, 2, 2]);
+    const sans = eq.map((e) => ({ id: e.id, numero: e.numero, membres: e.membres }));
+    const p1 = composerPartieEquipesFixes(1, sans, [], params, generateur(3));
+    const parties: PartieJouee[] = [
+      {
+        numero: 1,
+        equipes: eq.map((e) => ({ id: e.id, numero: e.numero, membres: e.membres })),
+        rencontres: p1.rencontres.map((r, i) => ({
+          terrain: i + 1,
+          equipeA: p1.equipes[r.indexA].id!,
+          equipeB: p1.equipes[r.indexB].id!,
+          scoreA: 13,
+          scoreB: 4,
+        })),
+        equipeExempteId: null,
+      },
+    ];
+    let identiques = 0;
+    for (let s = 1; s <= 200; s++) {
+      const a = JSON.stringify(composerPartieEquipesFixes(2, eq, parties, params, generateur(s)));
+      const b = JSON.stringify(composerPartieEquipesFixes(2, sans, parties, params, generateur(s)));
+      if (a === b) identiques++;
+    }
+    constater('2e partie : identique avec ou sans clubs (le classement prime)', identiques === 200, `${identiques}/200`);
+  }
+
+  // 7. Séparation impossible ET grand effectif : le solveur borné doit rendre la main vite.
+  {
+    const eq = faireEquipes([30, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    const t0 = Date.now();
+    const p = tirer(eq, 11);
+    const ms = Date.now() - t0;
+    constater('40 équipes dont 30 du même club (impossible à séparer) : réponse en moins de 2 s', ms < 2000 && p.rencontres.length === 20, `${ms} ms, ${p.rencontres.length} rencontres`);
+  }
 }
 
 console.log(

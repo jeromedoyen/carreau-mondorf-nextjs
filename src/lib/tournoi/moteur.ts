@@ -14,6 +14,8 @@
  *     joueurs, en regroupant les joueurs de même niveau. Classement individuel.
  */
 
+import { cleClub } from './clubs';
+
 export type IdEquipe = number;
 export type IdParticipant = number;
 export type FormatTournoi = 'equipes_fixes' | 'melee' | 'poules';
@@ -505,9 +507,13 @@ function choisirExempt(ordre: number[], exemptsDeja: Map<number, number>): numbe
 
 // ------------------------------------------------- composition : équipes fixes
 
+/**
+ * `club` est facultatif : s'il est renseigné pour au moins une équipe, la
+ * PREMIÈRE partie évite de réunir deux équipes d'un même club (voir plus bas).
+ */
 export function composerPartieEquipesFixes(
   numero: number,
-  equipes: { id: IdEquipe; numero: number; membres: IdParticipant[] }[],
+  equipes: { id: IdEquipe; numero: number; membres: IdParticipant[]; club?: string | null }[],
   parties: PartieJouee[],
   params: ParametresTournoi,
   alea: Alea = Math.random,
@@ -520,6 +526,7 @@ export function composerPartieEquipesFixes(
 
   const composees0: EquipeComposee[] = equipes.map((e) => ({ id: e.id, numero: e.numero, membres: e.membres }));
   const indexDe0 = new Map(composees0.map((e, i) => [e.id!, i]));
+  const clubParEquipe = new Map(equipes.map((e) => [e.id, e.club ?? null]));
 
   // Toutes rondes : dès qu'on demande N−1 parties ou plus, le suisse ne peut
   // plus tenir la promesse « pas de revanche ». Le calendrier du cercle, lui,
@@ -570,11 +577,32 @@ export function composerPartieEquipesFixes(
   }
 
   const dejaJoue = (a: number, b: number) => historique.adversairesEquipe.get(a)?.has(b) ?? false;
-  let paires = apparier(ordre, victoiresDe, dejaJoue, true);
+
+  // 1re partie et clubs connus : parmi les appariements possibles du tirage, on
+  // prend celui qui réunit le MOINS d'équipes d'un même club (zéro quand c'est
+  // faisable). Le tirage reste aléatoire — `ordre` est déjà mélangé, et le
+  // solveur retient le premier appariement sans conflit dans cet ordre.
+  //
+  // Un solveur à budget borné plutôt que l'appariement exact : si un club a
+  // plus d'équipes que les autres ne peuvent en séparer, il n'existe aucun
+  // appariement sans conflit, et un retour arrière exact explorerait toutes les
+  // combinaisons. Seule la première partie est concernée : ensuite l'ordre est
+  // celui du classement, et on ne s'écarte pas du classement pour un club.
+  const clubDe = (id: number) => cleClub(clubParEquipe.get(id));
+  let paires: [number, number][] | null = null;
+  if (parties.length === 0 && ordre.some((id) => clubDe(id) !== null)) {
+    paires = apparierMinCout(ordre, (a, b) => {
+      const k = clubDe(a);
+      return k !== null && k === clubDe(b) ? 1 : 0;
+    }).paires;
+  }
   let revancheForcee = false;
   if (!paires) {
-    paires = apparier(ordre, victoiresDe, dejaJoue, false);
-    revancheForcee = true;
+    paires = apparier(ordre, victoiresDe, dejaJoue, true);
+    if (!paires) {
+      paires = apparier(ordre, victoiresDe, dejaJoue, false);
+      revancheForcee = true;
+    }
   }
   if (!paires) throw new Error('Impossible de composer les rencontres de cette partie.');
 
@@ -747,7 +775,7 @@ export function composerPartieMelee(
 export function composerProchainePartie(
   numero: number,
   params: ParametresTournoi,
-  equipesPermanentes: { id: IdEquipe; numero: number; membres: IdParticipant[] }[],
+  equipesPermanentes: { id: IdEquipe; numero: number; membres: IdParticipant[]; club?: string | null }[],
   participants: IdParticipant[],
   parties: PartieJouee[],
   alea: Alea = Math.random,

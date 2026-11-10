@@ -1782,3 +1782,36 @@ Caro a deux sources : `BASE_CONNAISSANCE_FONCTIONNALITES.md` (lue au démarrage 
 ### Note explicative pour les utilisateurs
 
 Page illustrée aux couleurs du club (logo, barre terracotta-laiton-pin du site, coordonnées publiques en pied de page), publiée comme artefact privé, et **PDF de 5 pages** produit à partir de cette page avec des polices statiques incorporées. Le PDF est **déposé sur le Drive du club** (le dossier `GOOGLE_DRIVE_FOLDER_ID`, celui qui reçoit déjà les PV signés, avec l'autorisation OAuth de l'application) ; copie locale dans `C:\Users\jerom\carreau-mondorf-affiches\`. Envoi aux membres : par courriel, geste de Jérôme.
+
+
+## Session du 10/11/2026 (suite) — tournoi : le club de chaque équipe compte à la 1re partie des équipes fixes
+
+**Déclencheur.** Jérôme : « le système ne fait pas rencontrer deux équipes du même club à la première partie ? », puis le tournoi 43 (équipes fixes, doublettes, 14 équipes, dimanche 15/11, aucune partie composée). Branche `feature/club-equipes-fixes`.
+
+**Ce qui a été mesuré** (vraies fonctions, 3 000 tirages par cas, graine rejouable) :
+- **Poules, clubs saisis** : 0 % de poules avec deux équipes du même club quand la séparation est possible ; sinon le minimum, et l'alerte `conflitsClub` est exacte.
+- **Poules, clubs non saisis** : 99 % des tirages réunissent des équipes d'un même club — le tirage ne peut pas séparer ce qu'il ne connaît pas.
+- **Équipes fixes** : 42,7 % des premières parties (8 équipes, 4 clubs de 2) opposaient deux équipes du même club — le pur hasard (45/105). Le moteur ne recevait aucun club.
+- **Premier tour du tableau final des poules** : 24,7 % de tournois avec au moins une rencontre de même club, contre 61,8 % au hasard. Jamais deux équipes d'une même poule (0 sur 3 000). Reste un compromis, pas une garantie : inchangé.
+- **Tournoi 43** : 11 équipes sur 14 sans club connu (3 déduites « Carreau Mondorf »). Aucune saisie possible : la carte des clubs n'existait que pour les poules.
+
+**Changements**
+- `src/lib/tournoi/clubs.ts` (nouveau) : la règle du club en un seul endroit — `cleClub` (casse et espaces ignorés), `clubEffectif` (saisi, sinon déduit si tous licenciés), `CLUB_PAR_DEFAUT`. Les poules l'utilisent désormais (plus de copie) ; banc des poules inchangé au chiffre près.
+- `moteur.ts` : `composerPartieEquipesFixes` accepte un `club` facultatif par équipe. **Première partie seulement**, si au moins un club est connu : `apparierMinCout` (solveur à budget borné) cherche l'appariement qui réunit le moins d'équipes d'un même club — zéro quand c'est faisable, le minimum sinon. Pas l'appariement exact par retour arrière : sans appariement possible (30 équipes d'un club sur 40), il explorerait tout. 40 ms mesurés. Sans aucun club : tirage **strictement identique** à l'ancien à graine égale (vérifié 200/200). Parties suivantes : inchangées (le classement prime, vérifié 200/200).
+- `donnees.ts` : `equipesPermanentes` porte `club` (effectif) et `clubSaisi`.
+- `actions/tournoi.ts` : `enregistrerClubsEquipes` sert aussi aux équipes fixes, **tant qu'aucune partie n'est composée** ; sinon message clair (annuler la partie, puis refaire le tirage). Refus pour la mêlée.
+- Écran : carte « Club de chaque équipe » dans l'onglet Participants (équipes fixes, avant tirage) avec suggestions des clubs déjà saisis et avertissement recalculé à chaque frappe ; rappel avant « Tirer au sort la partie 1 » ; après tirage, avertissement « N rencontres de même club inévitables » et « N équipes sans club connu au tirage » ; repère « Même club · X » sur chaque rencontre concernée ; club affiché dans la liste figée des équipes.
+- `assistantPrompt.ts` : Caro connaît la saisie des clubs pour les équipes fixes.
+- `scripts/verifier-moteur.ts` : 11 contrôles ajoutés (séparation possible sur 4 cas, minimum inévitable exact, effectif impair, clubs inconnus, casse et espaces, parties suivantes inchangées, grand effectif).
+
+**Limites assumées**
+- **Toutes rondes** (parties demandées ≥ équipes − 1) : non concerné — chaque équipe rencontre chaque autre, la rencontre de même club est inévitable un jour ou l'autre. Le calendrier du cercle reste celui des numéros d'équipe.
+- **Mêlée** : aucune notion de club (les équipes se forment à partir de joueurs).
+- **Parties 2 et suivantes** des équipes fixes : ordre du classement, sans égard aux clubs. Le repère « Même club » s'y affiche quand même : c'est un fait, pas une garantie.
+- **L'import** (photo, Excel) ne renseigne pas le club : à saisir à la main dans la carte. Une colonne « club » dans l'import serait la suite logique.
+- Le club est du texte libre : « Mondorf » et « Mondorff » sont deux clubs. Les suggestions limitent le risque, sans l'éliminer.
+
+**Vérifié** : `tsc`, ESLint, `next build` ; banc du moteur, banc des poules (2 968 concours, 0 problème, mêmes chiffres qu'avant), banc de l'import. L'écran a été rendu avec les vrais composants et des données fictives (14 équipes calquées sur le tournoi 43) dans quatre états — préparation, clubs saisis, tiré avec clubs inconnus, tiré avec rencontres de même club — saisie en direct comprise. La page d'essai était temporaire et n'a pas été commitée. La règle de sécurité sur `tournoi_equipes` a été lue en base (`FOR ALL` pour le CA).
+**Non vérifié** : l'enregistrement réel d'un club en base (même chemin que les poules, déjà en production) et le parcours complet en session CA — aucune connexion CA possible depuis la session.
+
+**Pour le tournoi 43 (15/11)** : une fois la fusion faite et le déploiement terminé, ouvrir l'onglet Participants → « Club de chaque équipe », saisir le club des 14 équipes, puis tirer la partie 1. Si la partie a déjà été tirée : l'annuler d'abord.
