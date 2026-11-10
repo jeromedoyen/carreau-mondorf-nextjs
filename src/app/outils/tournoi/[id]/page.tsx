@@ -5,6 +5,13 @@ import { estMembreCA } from '@/lib/membres';
 import { getTournoiComplet, getCandidatsParticipants } from '@/lib/tournoi/donnees';
 import { TournoiEcran } from '@/components/TournoiEcran';
 
+/** La lecture d'une photo par l'IA (action `analyserFichierParticipants`,
+ *  lancée depuis cet écran) essaie deux modèles l'un après l'autre, sous
+ *  un budget de 48 s (`BUDGET_TOTAL_MS`). La durée de la page s'applique à
+ *  l'action : sans cette ligne, la fonction tombait sous la valeur par défaut
+ *  avant la fin du budget. */
+export const maxDuration = 60;
+
 export const metadata: Metadata = { title: 'Tournoi' };
 
 export default async function TournoiPage({ params }: { params: Promise<{ id: string }> }) {

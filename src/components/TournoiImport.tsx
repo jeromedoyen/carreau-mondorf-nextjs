@@ -14,7 +14,9 @@ type Props = {
   /** Le tournoi attend-il des numéros d'équipe ? (format équipes fixes) */
   avecEquipes: boolean;
   /** Remplace la liste en cours d'édition par ce qui sort de la correction. */
-  onValider: (lignes: { personneId: number | null; nom: string; equipeDepart: number | null }[]) => void;
+  onValider: (
+    lignes: { personneId: number | null; nom: string; equipeDepart: number | null; club: string | null }[],
+  ) => void;
 };
 
 function lireFichierBase64(f: File): Promise<string> {
@@ -27,6 +29,50 @@ function lireFichierBase64(f: File): Promise<string> {
     r.onerror = () => reject(new Error('Lecture du fichier impossible.'));
     r.readAsDataURL(f);
   });
+}
+
+/**
+ * Réduit une photo avant l'envoi : 1 600 px sur le grand côté, JPEG à 85 %.
+ *
+ * Une photo de téléphone fait 3 à 8 Mo ; la liste d'équipes n'a aucun besoin
+ * de cette définition pour être lue (essai du 10/11 : même lecture à
+ * 3 024 × 4 032 qu'à 1 600 px), et la requête, plafonnée à 4,5 Mo par Vercel,
+ * serait refusée avant d'arriver. Gain annexe : moins à transférer sur un
+ * réseau de boulodrome, moins de jetons à lire pour l'IA.
+ *
+ * Si le navigateur ne sait pas décoder le format (HEIC hors Safari), on rend le
+ * fichier tel quel plutôt que d'échouer : le serveur dira alors, clairement,
+ * s'il est trop lourd.
+ */
+async function reduireImage(f: File): Promise<{ base64: string; type: string }> {
+  const brut = async () => ({ base64: await lireFichierBase64(f), type: f.type });
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return brut();
+  try {
+    const bitmap = await createImageBitmap(f, { imageOrientation: 'from-image' });
+    const echelle = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    // Déjà petite : l'original est plus fidèle qu'une recompression.
+    if (echelle === 1 && f.size <= 900 * 1024) {
+      bitmap.close();
+      return brut();
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * echelle);
+    canvas.height = Math.round(bitmap.height * echelle);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return brut();
+    }
+    // Fond blanc : un PNG transparent deviendrait noir une fois passé en JPEG.
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const url = canvas.toDataURL('image/jpeg', 0.85);
+    return { base64: url.slice(url.indexOf(',') + 1), type: 'image/jpeg' };
+  } catch {
+    return brut();
+  }
 }
 
 export function TournoiImport({ avecEquipes, onValider }: Props) {
@@ -79,8 +125,8 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
     setErreur(null);
     setEnCours('ia');
     try {
-      const base64 = await lireFichierBase64(f);
-      const r = await analyserFichierParticipants(base64, f.type);
+      const { base64, type } = await reduireImage(f);
+      const r = await analyserFichierParticipants(base64, type);
       if (!r.ok) {
         setErreur(r.error);
         return;
@@ -97,7 +143,26 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
     setLignes((l) => (l ? l.map((x, j) => (j === i ? { ...x, ...patch } : x)) : l));
   }
 
+  /**
+   * Le club est celui de l'ÉQUIPE : le corriger sur une ligne le corrige sur
+   * toutes les lignes de la même équipe, sinon les deux joueurs d'une doublette
+   * se retrouveraient avec deux clubs.
+   */
+  function majClub(i: number, club: string) {
+    setLignes((l) => {
+      if (!l) return l;
+      const eq = l[i].equipeDepart;
+      return l.map((x, j) => (j === i || (eq != null && x.equipeDepart === eq) ? { ...x, club } : x));
+    });
+  }
+
   const aCorriger = lignes?.filter((l) => l.statut !== 'trouve').length ?? 0;
+  const nbEquipesAvecClub = avecEquipes
+    ? new Set((lignes ?? []).filter((l) => l.club?.trim() && l.equipeDepart != null).map((l) => l.equipeDepart)).size
+    : 0;
+  const nbEquipes = avecEquipes
+    ? new Set((lignes ?? []).map((l) => l.equipeDepart).filter((n) => n != null)).size
+    : 0;
 
   if (!ouvert) {
     return (
@@ -209,6 +274,15 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
               ? 'tous rapprochés du registre'
               : `${aCorriger} à vérifier (surlignés)`}
             . Corrigez, puis validez : la liste du tournoi sera remplacée.
+            {avecEquipes && nbEquipes > 0 && (
+              <>
+                {' '}
+                <b className="text-encre">
+                  Club lu pour {nbEquipesAvecClub} équipe{nbEquipesAvecClub > 1 ? 's' : ''} sur {nbEquipes}
+                </b>
+                {nbEquipesAvecClub < nbEquipes && ' — complétez les autres dans la colonne « Club »'}.
+              </>
+            )}
           </p>
 
           <div className="max-h-[420px] overflow-y-auto rounded-xl border border-ligne">
@@ -218,6 +292,7 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
                   <th className="px-3 py-2 text-left font-medium">Nom lu</th>
                   <th className="px-3 py-2 text-left font-medium">Licencié</th>
                   {avecEquipes && <th className="w-16 px-2 py-2 text-center font-medium">Éq.</th>}
+                  {avecEquipes && <th className="w-40 px-2 py-2 text-left font-medium">Club</th>}
                   <th className="w-10 px-2 py-2" />
                 </tr>
               </thead>
@@ -266,6 +341,18 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
                         />
                       </td>
                     )}
+                    {avecEquipes && (
+                      <td className="px-2 py-2">
+                        <input
+                          type="text"
+                          value={l.club ?? ''}
+                          onChange={(e) => majClub(i, e.target.value)}
+                          placeholder="club"
+                          aria-label={`Club de ${l.nomLu}`}
+                          className={`${CHAMP} w-full`}
+                        />
+                      </td>
+                    )}
                     <td className="px-2 py-2 text-center">
                       <button
                         type="button"
@@ -294,6 +381,7 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
                     // qu'on retrouvera dans les statistiques et sur les feuilles.
                     nom: l.personneId != null && l.nomRegistre ? l.nomRegistre : l.nomLu,
                     equipeDepart: avecEquipes ? l.equipeDepart : null,
+                    club: avecEquipes ? l.club?.trim() || null : null,
                   })),
                 );
                 setOuvert(false);

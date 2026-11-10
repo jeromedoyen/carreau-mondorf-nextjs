@@ -19,6 +19,11 @@ export type EntreeImport = {
   nom: string;
   /** Numéro d'équipe lu dans le fichier, s'il y en avait un. */
   equipeDepart: number | null;
+  /**
+   * Club de l'équipe tel qu'écrit dans le fichier (« Belvaux », « Kayl /
+   * Mondorf »), ou null. Même valeur pour tous les joueurs d'une équipe.
+   */
+  club: string | null;
 };
 
 export type LectureTableau = {
@@ -40,7 +45,8 @@ const cle = (s: unknown) => sansAccentsMinuscules(String(s ?? '')).trim();
  * Noter l'asymétrie, qui est voulue : « Joueur 1 » est un intitulé de colonne,
  * « Équipe 3 » est une donnée (l'intitulé, lui, s'écrit « Équipe » tout court).
  */
-const INTITULE = /^(equipes?|eq|joueurs?\s*\d*|participants?\s*\d*|noms?|prenoms?|nom prenom|numero|n°|no)$/;
+const INTITULE =
+  /^(equipes?|eq|series?|joueurs?\s*\d*|participants?\s*\d*|noms?|prenoms?\s*\d*|nom prenom|numero|n°|no|clubs?)$/;
 
 function estEnTete(ligne: string[]): boolean {
   const cells = ligne.map(cle).filter((c) => c !== '');
@@ -86,6 +92,26 @@ function nettoyerNom(v: string): string {
     .trim();
 }
 
+function nettoyerClub(v: string | undefined): string | null {
+  const c = String(v ?? '').replace(/\s+/g, ' ').trim();
+  return c === '' ? null : c;
+}
+
+/**
+ * Dans une disposition « une ligne par joueur », le club est écrit sur chaque
+ * ligne, parfois sur la première seulement : l'équipe prend le premier club
+ * rencontré parmi ses joueurs.
+ */
+function clubParEquipe(entrees: EntreeImport[]): EntreeImport[] {
+  const clubs = new Map<number, string>();
+  for (const e of entrees) {
+    if (e.equipeDepart != null && e.club && !clubs.has(e.equipeDepart)) clubs.set(e.equipeDepart, e.club);
+  }
+  return entrees.map((e) =>
+    e.club || e.equipeDepart == null ? e : { ...e, club: clubs.get(e.equipeDepart) ?? null },
+  );
+}
+
 /**
  * Analyse un tableau de cellules brutes (déjà extrait d'un .xlsx ou d'un .csv).
  * Ne jette jamais : une liste mal comprise doit arriver à l'écran de correction,
@@ -105,7 +131,8 @@ export function analyserTableau(lignes: unknown[][]): LectureTableau {
   // Colonnes nommées : on s'y fie en priorité, c'est l'information la plus sûre.
   const idxNom = entete.findIndex((c) => /^nom/.test(c));
   const idxPrenom = entete.findIndex((c) => /^prenom/.test(c));
-  const idxEquipe = entete.findIndex((c) => /^(equipe|eq)\b/.test(c));
+  const idxEquipe = entete.findIndex((c) => /^(equipe|eq|serie)s?\b/.test(c));
+  const idxClub = entete.findIndex((c) => /^clubs?$/.test(c));
   const nbColonnesJoueur = entete.filter((c) => /^(joueur|participant)/.test(c)).length;
 
   const entrees: EntreeImport[] = [];
@@ -126,9 +153,10 @@ export function analyserTableau(lignes: unknown[][]): LectureTableau {
       entrees.push({
         nom,
         equipeDepart: idxEquipe >= 0 ? extraireNumeroEquipe(l[idxEquipe] ?? '').numero : null,
+        club: idxClub >= 0 ? nettoyerClub(l[idxClub]) : null,
       });
     }
-    return { entrees, disposition, enTeteDetecte, ignorees };
+    return { entrees: clubParEquipe(entrees), disposition, enTeteDetecte, ignorees };
   }
 
   // ---- large ou colonne simple : on décide sur la largeur réelle des lignes
@@ -136,7 +164,11 @@ export function analyserTableau(lignes: unknown[][]): LectureTableau {
   disposition = largeurMax >= 2 ? 'large' : 'colonne-simple';
 
   let numeroImplicite = 0;
-  for (const l of corps) {
+  for (const ligne of corps) {
+    // La colonne « Club » n'est pas un joueur : on la met de côté avant de
+    // chercher les noms, sans quoi « Belvaux » deviendrait un participant.
+    const club = enTeteDetecte && idxClub >= 0 ? nettoyerClub(ligne[idxClub]) : null;
+    const l = enTeteDetecte && idxClub >= 0 ? ligne.filter((_, i) => i !== idxClub) : ligne;
     const cellules = l.filter((c) => c !== '');
     if (cellules.length === 0) {
       ignorees++;
@@ -149,7 +181,7 @@ export function analyserTableau(lignes: unknown[][]): LectureTableau {
         ignorees++;
         continue;
       }
-      entrees.push({ nom, equipeDepart: null });
+      entrees.push({ nom, equipeDepart: null, club: null });
       continue;
     }
 
@@ -164,7 +196,7 @@ export function analyserTableau(lignes: unknown[][]): LectureTableau {
     }
     numeroImplicite++;
     const numero = numeroLu ?? numeroImplicite;
-    for (const j of joueurs) entrees.push({ nom: j, equipeDepart: numero });
+    for (const j of joueurs) entrees.push({ nom: j, equipeDepart: numero, club });
   }
 
   return { entrees, disposition, enTeteDetecte, ignorees };

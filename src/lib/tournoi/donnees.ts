@@ -36,6 +36,8 @@ export type Participant = {
   personneId: number | null;
   nom: string;
   equipeDepart: number | null;
+  /** Club lu dans la feuille d'équipes ; sert à composer le club des équipes. */
+  club: string | null;
   ordre: number;
 };
 
@@ -179,7 +181,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
     await Promise.all([
       supabase
         .from('tournoi_participants')
-        .select('id, personne_id, nom, equipe_depart, ordre')
+        .select('id, personne_id, nom, equipe_depart, club, ordre')
         .eq('tournoi_id', id)
         .order('ordre')
         .order('id'),
@@ -200,6 +202,7 @@ export async function getTournoiComplet(id: number): Promise<TournoiComplet | nu
     personneId: (p.personne_id as number | null) ?? null,
     nom: p.nom as string,
     equipeDepart: (p.equipe_depart as number | null) ?? null,
+    club: (p.club as string | null) ?? null,
     ordre: (p.ordre as number) ?? 0,
   }));
 

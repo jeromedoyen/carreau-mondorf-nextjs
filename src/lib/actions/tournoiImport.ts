@@ -1,11 +1,9 @@
 'use server';
 
-import { google } from '@ai-sdk/google';
-import { generateObject } from 'ai';
-import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { rapprocherNom, type Licencie } from '@/lib/fuzzyMatch';
-import { analyserTexte, type EntreeImport } from '@/lib/tournoi/import';
+import { analyserTableau, type EntreeImport } from '@/lib/tournoi/import';
+import { lireListeParIA } from '@/lib/tournoi/lectureIA';
 
 /**
  * Une ligne prête pour l'écran de correction : ce que le fichier ou la photo a
@@ -19,6 +17,8 @@ import { analyserTexte, type EntreeImport } from '@/lib/tournoi/import';
 export type LigneImport = {
   nomLu: string;
   equipeDepart: number | null;
+  /** Club de l'équipe lu dans le document (« Belvaux », « Kayl / Mondorf »), ou null. */
+  club: string | null;
   personneId: number | null;
   nomRegistre: string | null;
   statut: 'trouve' | 'ambigu' | 'inconnu';
@@ -75,6 +75,7 @@ export async function rapprocherParticipants(
       return {
         nomLu: e.nom,
         equipeDepart: e.equipeDepart,
+        club: e.club,
         personneId: r.licencie.id,
         nomRegistre: nomComplet(r.licencie),
         statut: 'trouve',
@@ -87,6 +88,7 @@ export async function rapprocherParticipants(
     return {
       nomLu: e.nom,
       equipeDepart: e.equipeDepart,
+      club: e.club,
       personneId: null,
       nomRegistre: null,
       statut: candidats.length > 0 ? 'ambigu' : 'inconnu',
@@ -99,35 +101,15 @@ export async function rapprocherParticipants(
 
 /* ------------------------------------------------------------------- IA */
 
-const SCHEMA = z.object({
-  aDesEquipes: z
-    .boolean()
-    .describe('Vrai si le document regroupe les joueurs en équipes numérotées.'),
-  equipes: z
-    .array(
-      z.object({
-        numero: z
-          .number()
-          .int()
-          .nullable()
-          .describe("Numéro d'équipe tel qu'il figure sur le document, ou null."),
-        joueurs: z.array(z.string()).describe('Noms des joueurs, tels qu\'écrits.'),
-      }),
-    )
-    .describe(
-      "Une entrée par équipe. Si le document est une simple liste de joueurs sans équipes, renvoyer une seule entrée avec numero null contenant tous les joueurs.",
-    ),
-});
-
-const INSTRUCTIONS = `Tu lis la liste des participants d'un concours de pétanque, photographiée ou scannée.
-
-Recopie les noms EXACTEMENT tels qu'ils sont écrits : ne corrige pas l'orthographe, n'inverse pas prénom et nom, n'ajoute personne, n'invente rien.
-Si une équipe est incomplète, renvoie seulement les joueurs présents.
-Ignore les titres ("LES ÉQUIPES"), les numéros de page et tout ce qui n'est pas un nom de joueur.
-Si une partie du document est manuscrite et que tu hésites sur un nom, recopie ta meilleure lecture — un humain relira tout derrière toi.`;
-
 const TYPES_ACCEPTES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
-const TAILLE_MAX = 8 * 1024 * 1024;
+
+/**
+ * Vercel refuse toute requête de plus de 4,5 Mo, avant même que le code ne
+ * tourne : au-delà, mieux vaut le dire clairement. Le navigateur réduit les
+ * photos avant l'envoi (TournoiImport) ; seuls les PDF arrivent à leur taille.
+ * `bodySizeLimit` (next.config.ts) est réglé sur la même valeur.
+ */
+const TAILLE_MAX = 3 * 1024 * 1024;
 
 /**
  * Lit une photo ou un PDF de liste d'équipes. Le résultat est une PROPOSITION :
@@ -146,61 +128,47 @@ export async function analyserFichierParticipants(
   }
   // base64 pèse ~4/3 de l'original
   if (base64.length * 0.75 > TAILLE_MAX) {
-    return { ok: false, error: 'Fichier trop lourd (8 Mo au maximum).' };
+    return { ok: false, error: 'Fichier trop lourd (3 Mo au maximum). Pour un PDF, exportez-le en plus léger ou envoyez une photo.' };
   }
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return { ok: false, error: "La lecture par IA n'est pas configurée sur cet environnement." };
   }
 
-  let objet: z.infer<typeof SCHEMA>;
-  try {
-    // L'API peut rester muette un long moment en cas de surcharge (503) plutôt
-    // que d'échouer vite : sans plafond, l'écran resterait bloqué sur
-    // « Lecture en cours… » indéfiniment. 25 s laisse le temps d'une photo
-    // normale tout en donnant, sinon, un message exploitable.
-    const { object } = await generateObject({
-      model: google('gemini-3.6-flash'),
-      schema: SCHEMA,
-      abortSignal: AbortSignal.timeout(25_000),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: INSTRUCTIONS },
-            { type: 'file', data: base64, mediaType },
-          ],
-        },
-      ],
-    });
-    objet = object;
-  } catch (e) {
-    // AbortSignal.timeout() lève un TimeoutError ; un abandon manuel donnerait
-    // AbortError — les deux traduisent la même chose côté organisateur.
-    const delai = e instanceof Error && /^(Timeout|Abort)Error$/.test(e.name);
-    return {
-      ok: false,
-      error: delai
-        ? "Le service de lecture par IA met trop de temps à répondre (souvent une surcharge passagère). Réessayez dans une minute, ou utilisez l'import Excel/CSV."
-        : e instanceof Error
-          ? `Lecture impossible : ${e.message}`
-          : 'Lecture impossible.',
-    };
+  // Le délai, la réflexion et le relais entre deux modèles vivent dans
+  // `lireListeParIA` — voir ce fichier pour les mesures qui les justifient.
+  const resultatIA = await lireListeParIA(base64, mediaType);
+  if (!resultatIA.ok) {
+    const messages = {
+      passager:
+        "Le service de lecture par IA est surchargé ou met trop de temps à répondre (le plus souvent, c'est passager). Réessayez dans une minute, ou utilisez l'import Excel/CSV.",
+      // Réessayer dans une minute ne servirait à rien : on ne le propose pas.
+      'quota-jour':
+        "Le quota gratuit de lecture par IA est atteint pour aujourd'hui. Utilisez l'import Excel/CSV, ou réessayez demain.",
+      autre: `Lecture impossible : ${resultatIA.message}`,
+    } as const;
+    return { ok: false, error: messages[resultatIA.raison] };
   }
+  const objet = resultatIA.objet;
 
-  // On repasse par l'analyseur de texte : il applique le même nettoyage
-  // (numéros collés, cellules parasites) que l'import de fichier, donc les deux
-  // chemins produisent exactement la même chose.
-  const texte = objet.equipes
-    .map((eq) => {
-      const prefixe = objet.aDesEquipes && eq.numero != null ? `${eq.numero}) ` : '';
-      return prefixe + eq.joueurs.join(', ');
-    })
-    .join('\n');
+  // On repasse par l'analyseur de tableau : il applique le même nettoyage
+  // (numéros collés, cellules parasites, colonne « Club » mise de côté) que
+  // l'import de fichier, donc les deux chemins produisent exactement la même
+  // chose. La lecture de l'IA est remise en forme de tableau avec son en-tête.
+  const largeur = Math.max(1, ...objet.equipes.map((eq) => eq.joueurs.length));
+  const grille: string[][] = [
+    ['Série', ...Array.from({ length: largeur }, (_, i) => `Joueur ${i + 1}`), 'Club'],
+    ...objet.equipes.map((eq) => [
+      objet.aDesEquipes && eq.numero != null ? String(eq.numero) : '',
+      ...eq.joueurs,
+      ...Array<string>(largeur - eq.joueurs.length).fill(''),
+      objet.aDesEquipes ? (eq.club ?? '') : '',
+    ]),
+  ];
 
-  const lecture = analyserTexte(texte);
+  const lecture = analyserTableau(grille);
   const entrees = objet.aDesEquipes
     ? lecture.entrees
-    : lecture.entrees.map((e) => ({ ...e, equipeDepart: null }));
+    : lecture.entrees.map((e) => ({ ...e, equipeDepart: null, club: null }));
 
   if (entrees.length === 0) {
     return { ok: false, error: "Aucun nom lisible n'a été trouvé sur ce document." };

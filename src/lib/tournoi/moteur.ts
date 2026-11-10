@@ -14,7 +14,7 @@
  *     joueurs, en regroupant les joueurs de même niveau. Classement individuel.
  */
 
-import { cleClub } from './clubs';
+import { clesClub } from './clubs';
 
 export type IdEquipe = number;
 export type IdParticipant = number;
@@ -526,7 +526,6 @@ export function composerPartieEquipesFixes(
 
   const composees0: EquipeComposee[] = equipes.map((e) => ({ id: e.id, numero: e.numero, membres: e.membres }));
   const indexDe0 = new Map(composees0.map((e, i) => [e.id!, i]));
-  const clubParEquipe = new Map(equipes.map((e) => [e.id, e.club ?? null]));
 
   // Toutes rondes : dès qu'on demande N−1 parties ou plus, le suisse ne peut
   // plus tenir la promesse « pas de revanche ». Le calendrier du cercle, lui,
@@ -588,12 +587,15 @@ export function composerPartieEquipesFixes(
   // appariement sans conflit, et un retour arrière exact explorerait toutes les
   // combinaisons. Seule la première partie est concernée : ensuite l'ordre est
   // celui du classement, et on ne s'écarte pas du classement pour un club.
-  const clubDe = (id: number) => cleClub(clubParEquipe.get(id));
+  // Une équipe peut compter plusieurs clubs (« Kayl / Mondorf ») : deux équipes
+  // sont « du même club » dès qu'elles en ont un en commun.
+  const clesParEquipe = new Map(equipes.map((e) => [e.id, clesClub(e.club)]));
+  const clesDe = (id: number) => clesParEquipe.get(id) ?? [];
   let paires: [number, number][] | null = null;
-  if (parties.length === 0 && ordre.some((id) => clubDe(id) !== null)) {
+  if (parties.length === 0 && ordre.some((id) => clesDe(id).length > 0)) {
     paires = apparierMinCout(ordre, (a, b) => {
-      const k = clubDe(a);
-      return k !== null && k === clubDe(b) ? 1 : 0;
+      const cb = clesDe(b);
+      return clesDe(a).some((k) => cb.includes(k)) ? 1 : 0;
     }).paires;
   }
   let revancheForcee = false;
