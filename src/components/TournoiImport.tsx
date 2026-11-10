@@ -29,6 +29,50 @@ function lireFichierBase64(f: File): Promise<string> {
   });
 }
 
+/**
+ * Réduit une photo avant l'envoi : 1 600 px sur le grand côté, JPEG à 85 %.
+ *
+ * Une photo de téléphone fait 3 à 8 Mo ; la liste d'équipes n'a aucun besoin
+ * de cette définition pour être lue (essai du 10/11 : même lecture à
+ * 3 024 × 4 032 qu'à 1 600 px), et la requête, plafonnée à 4,5 Mo par Vercel,
+ * serait refusée avant d'arriver. Gain annexe : moins à transférer sur un
+ * réseau de boulodrome, moins de jetons à lire pour l'IA.
+ *
+ * Si le navigateur ne sait pas décoder le format (HEIC hors Safari), on rend le
+ * fichier tel quel plutôt que d'échouer : le serveur dira alors, clairement,
+ * s'il est trop lourd.
+ */
+async function reduireImage(f: File): Promise<{ base64: string; type: string }> {
+  const brut = async () => ({ base64: await lireFichierBase64(f), type: f.type });
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return brut();
+  try {
+    const bitmap = await createImageBitmap(f, { imageOrientation: 'from-image' });
+    const echelle = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    // Déjà petite : l'original est plus fidèle qu'une recompression.
+    if (echelle === 1 && f.size <= 900 * 1024) {
+      bitmap.close();
+      return brut();
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * echelle);
+    canvas.height = Math.round(bitmap.height * echelle);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return brut();
+    }
+    // Fond blanc : un PNG transparent deviendrait noir une fois passé en JPEG.
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const url = canvas.toDataURL('image/jpeg', 0.85);
+    return { base64: url.slice(url.indexOf(',') + 1), type: 'image/jpeg' };
+  } catch {
+    return brut();
+  }
+}
+
 export function TournoiImport({ avecEquipes, onValider }: Props) {
   const [ouvert, setOuvert] = useState(false);
   const [enCours, setEnCours] = useState<null | 'fichier' | 'ia'>(null);
@@ -79,8 +123,8 @@ export function TournoiImport({ avecEquipes, onValider }: Props) {
     setErreur(null);
     setEnCours('ia');
     try {
-      const base64 = await lireFichierBase64(f);
-      const r = await analyserFichierParticipants(base64, f.type);
+      const { base64, type } = await reduireImage(f);
+      const r = await analyserFichierParticipants(base64, type);
       if (!r.ok) {
         setErreur(r.error);
         return;

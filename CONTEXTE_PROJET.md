@@ -1815,3 +1815,24 @@ Page illustrée aux couleurs du club (logo, barre terracotta-laiton-pin du site,
 **Non vérifié** : l'enregistrement réel d'un club en base (même chemin que les poules, déjà en production) et le parcours complet en session CA — aucune connexion CA possible depuis la session.
 
 **Pour le tournoi 43 (15/11)** : une fois la fusion faite et le déploiement terminé, ouvrir l'onglet Participants → « Club de chaque équipe », saisir le club des 14 équipes, puis tirer la partie 1. Si la partie a déjà été tirée : l'annuler d'abord.
+
+## Session du 10/11/2026 — import d'une liste de tournoi par photo : « met trop de temps à répondre »
+
+**Signalement** (Jérôme, en chargeant une image) : « Le service de lecture par IA met trop de temps à répondre… ». Branche `fix/import-photo-tournoi`.
+
+**Ce qui a été mesuré** (appel réel, mêmes paramètres que l'application) :
+- La lecture est **juste** à chaque fois qu'elle aboutit : 24 joueurs sur 24, 8 équipes, sur image propre, sur photo au format téléphone (3 024 × 4 032) et avec quatre modèles différents.
+- La **lenteur est réelle et irrégulière chez Google** : la même lecture a pris de 6 à 21 s, parfois plus de 25 s (le plafond), et un appel sur quatre a reçu « high demand ». Avec la réflexion par défaut du modèle, 448 jetons de « réflexion » pour 166 de réponse.
+- **Deux défauts latents en plus** : aucun `bodySizeLimit` (Next.js refuse tout envoi de plus de 1 Mo — une photo de téléphone fait 3 à 8 Mo), et aucun `maxDuration` sur la page du tournoi (l'action serveur tourne sous la durée de la page).
+
+**Correctifs**
+- `src/lib/tournoi/lectureIA.ts` (nouveau) : l'appel à l'IA, isolé de l'action (qui exige d'être du CA) pour pouvoir être mesuré seul. Réflexion coupée, `gemini-3.5-flash` d'abord puis `gemini-3.6-flash` en relais, 24 s par essai, budget 48 s.
+- `tournoiImport.ts` : trois messages selon la raison (`passager`, `quota-jour`, `autre`). Un quota journalier atteint n'est plus présenté comme « réessayez dans une minute ».
+- `/outils/tournoi/[id]` : `maxDuration = 60`. `next.config.ts` : `serverActions.bodySizeLimit = 4mb` (Vercel coupe à 4,5 Mo de toute façon).
+- `TournoiImport.tsx` : la photo est **réduite dans le navigateur** (1 600 px, JPEG 85 %) avant l'envoi. Testé dans un vrai navigateur : 412 Ko → 71 Ko ; PNG transparent resté blanc ; petite image, PDF et HEIC renvoyés tels quels ; JPEG corrompu renvoyé sans planter. TAILLE_MAX serveur ramenée de 8 à 3 Mo (ne concerne plus que les PDF).
+
+⚠️ **Incident causé par les essais — à connaître.** La clé `GOOGLE_GENERATIVE_AI_API_KEY` est sur le **palier gratuit** de Google : plafonds par minute et **par jour et par modèle**. Les essais en rafale de cette session ont épuisé le quota journalier de `gemini-3.6-flash` **et** de `gemini-3.5-flash` (réessai annoncé à +22 h, vers 09 h le lendemain heure de Paris). `gemini-3.6-flash` est aussi le modèle de **Caro** (`/api/assistant`), de la déclaration vocale, de l'IA de déclaration de concours et de la proposition d'équipe : ils sont donc susceptibles de répondre en erreur jusqu'à la réinitialisation, **si la clé de Vercel est la même que celle de `.env.local`** (non vérifié).
+
+**Leçon.** Sur cette clé, une série de tests réels se compte en requêtes comptées, pas en rafales. Ne pas lancer de course entre deux modèles (deux requêtes par lecture) : le relais est séquentiel pour cette raison. Si l'IA devient d'un usage courant, la clé payante (quelques centimes par lecture) est la vraie réponse — décision de Jérôme.
+
+**Non vérifié.** (1) Une lecture réelle de la photo *réduite* par le module final : bloquée par le quota. Indices favorables : une image de 1 240 × 1 500 px, de la même classe que la sortie réduite (1 200 × 1 600), a été lue 24/24 au premier essai. (2) Le relais sur un vrai 404 a été vu une fois sur l'ancienne version du code, pas sur la finale. (3) Le parcours complet dans l'application connectée en CA : l'écran exige une session du CA.
