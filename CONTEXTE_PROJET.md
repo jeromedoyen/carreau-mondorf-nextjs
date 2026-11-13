@@ -1867,3 +1867,23 @@ Page illustrée aux couleurs du club (logo, barre terracotta-laiton-pin du site,
 - Photo d'une feuille où le club est écrit par joueur et non par équipe : seule la valeur par équipe est lue.
 
 **Pour le tournoi 43 (15/11).** Les équipes existent déjà sans club. Soit réimporter la feuille avec la version corrigée (refait équipes et poules à zéro, tant qu'aucune partie n'est tirée), soit saisir les 14 clubs dans la carte « Club de chaque équipe ». Série → club : 1 Kayl / Mondorf · 2 Dudelange · 3 Mondorf · 4 Belvaux · 5 Mondorf · 6 Mondorf · 7 Belvaux · 8 Boule d'Or · 9 Boule d'Or · 10 Mondorf · 11 Lasauvage · 12 Kayl / Mondorf · 13 Belvaux · 14 Kayl.
+
+## Session du 13/11/2026 — tournoi : le bouton « Renommer » (corriger un nom une fois la liste figée)
+
+**Demande de Jérôme.** « Peut-on changer des noms dans un concours une fois enregistré ? » : non, la liste des participants se fige dès la première partie composée (`remplacerParticipants` refuse, l'écran n'affiche plus qu'un texte). Le tournoi 43 (15/11) était déjà en cours (1 partie composée, 28 participants). Réponse : « Ajoute le bouton Renommer ».
+
+**Changements** (branche `feature/renommer-participant`)
+- `src/lib/tournoi/noms.ts` : `verifierNomParticipant()` — la règle d'écriture d'un nom, partagée par l'écran et l'action : espaces (insécables, retours à la ligne) ramenés à une espace, accents recomposés (NFC), vide refusé, 80 caractères au plus. Aucune autre « correction » (casse et ordre prénom / nom laissés tels quels).
+- `src/lib/actions/tournoi.ts` : `renommerParticipant(tournoiId, participantId, nom)` — CA seulement, **à tout moment** (tournoi commencé ou terminé). Ne change que `tournoi_participants.nom` : équipes, parties et scores s'appuient sur l'identifiant du participant, rien ne bouge ; `personne_id` et `club` non plus. Le filtre porte sur l'id ET le tournoi.
+- `src/components/TournoiEcran.tsx` : composant `NomModifiable` (crayon → champ ; Entrée enregistre, Échap annule, message si vide ou trop long). **Liste figée** : enregistre tout de suite par l'action. **Liste en préparation** : modifie la ligne en local, et le changement s'enregistre avec « Enregistrer la liste » (comportement existant : cet enregistrement refait équipes de départ et tirage). Le texte de la liste figée dit maintenant ce qui reste possible.
+- `supabase/migrations/0078_journal_renommage_participant.sql` : trigger `journal_tournoi_participants_nom` (journal partagé `journaliser_modification()`), **seulement quand le nom change** — l'exigence d'audit du 23/07 (qui a fait quoi). Les ajouts, suppressions et le club recopié ne sont pas journalisés (bruit).
+- `scripts/verifier-noms.ts` : banc d'essai de la règle (12 cas). `BASE_CONNAISSANCE_FONCTIONNALITES.md` mis à jour (Caro).
+
+**Vérifié** : `verifier-noms` (12 sur 12) ; `tsc` de l'application propre (l'erreur de `tsc -p scripts` sur `import.ts` et l'alias `@/` existe déjà sans mes changements, constatée par mise de côté) ; ESLint ; `npm run db:droits` ; `next build`. Écran rendu dans le navigateur avec le vrai composant et un tournoi fictif (page d'essai supprimée) : crayon sur chaque nom dans les deux vues, champ vide → message et bouton désactivé, Échap ferme (même après un refus), Entrée en liste figée appelle l'action (refusée sans session CA, champ conservé), en préparation la ligne change, « hors registre » et le club restent, « Enregistrer la liste » s'active.
+
+**Non vérifié.** L'écriture réelle en base sous une session du CA (aucune session ici) : à essayer une fois sur l'aperçu Vercel de la PR, avec un vrai nom du tournoi 43. La migration 0078 et la trace dans le journal le seront à la première correction réelle.
+
+**Limites assumées**
+- Le crayon change le **texte** seulement. Si un participant est rattaché à la mauvaise fiche du registre (cas de « DOMINIQUE » / Dominique ROUSSET, détaché à la main le 11/11), renommer ne défait pas le lien : il reste à détacher (ou à ajouter un « détacher de la fiche » à l'écran).
+- Corriger la fiche d'un membre dans le registre ne change pas un tournoi déjà créé : le nom y est une copie.
+- Ajouter ou retirer un participant reste interdit une fois la première partie composée.
