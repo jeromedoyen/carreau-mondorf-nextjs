@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { clubDeEquipe } from '@/lib/tournoi/clubs';
 import { getTournoiComplet, parametresDe } from '@/lib/tournoi/donnees';
+import { verifierNomParticipant } from '@/lib/tournoi/noms';
 import {
   composerProchainePartie as composerAvecLeMoteur,
   equipesPermanentesDuFormat,
@@ -262,6 +263,40 @@ export async function remplacerParticipants(
   // Les équipes permanentes dépendent de la liste : elles seront refaites, et le tirage des poules avec.
   await supprimerPoules(supabase, tournoiId);
   await supabase.from('tournoi_equipes').delete().eq('tournoi_id', tournoiId).is('partie_id', null);
+
+  revalidatePath(`/outils/tournoi/${tournoiId}`);
+  return { ok: true };
+}
+
+/**
+ * Corrige l'écriture du nom d'un participant, à tout moment : tournoi commencé
+ * ou terminé compris, là où `remplacerParticipants()` refuse (liste figée).
+ *
+ * Seul le texte change. Les équipes, les parties et les scores s'appuient sur
+ * l'identifiant du participant, pas sur son nom : le tirage et les résultats ne
+ * bougent pas. Le lien avec la fiche du registre (`personne_id`) et le club ne
+ * changent pas non plus. Le changement est journalisé par un trigger (0078).
+ */
+export async function renommerParticipant(
+  tournoiId: number,
+  participantId: number,
+  nomSaisi: string,
+): Promise<Resultat> {
+  const { supabase, erreur } = await contexteCA();
+  if (erreur) return { ok: false, error: erreur };
+
+  const verdict = verifierNomParticipant(nomSaisi);
+  if (!verdict.ok) return { ok: false, error: verdict.error };
+
+  // Le tournoi est dans le filtre : on ne renomme pas un participant d'un autre tournoi par erreur d'identifiant.
+  const { data, error } = await supabase
+    .from('tournoi_participants')
+    .update({ nom: verdict.nom })
+    .eq('id', participantId)
+    .eq('tournoi_id', tournoiId)
+    .select('id');
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: 'Participant introuvable dans ce tournoi.' };
 
   revalidatePath(`/outils/tournoi/${tournoiId}`);
   return { ok: true };

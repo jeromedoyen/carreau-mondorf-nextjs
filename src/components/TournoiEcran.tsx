@@ -12,9 +12,11 @@ import {
   enregistrerEquipesDepart,
   enregistrerScore,
   remplacerParticipants,
+  renommerParticipant,
   rouvrirTournoi,
 } from '@/lib/actions/tournoi';
 import { clesClub, clubEnCommun } from '@/lib/tournoi/clubs';
+import { verifierNomParticipant } from '@/lib/tournoi/noms';
 import { scoreValide } from '@/lib/tournoi/moteur';
 import type { Participant, PartieDetail, Tournoi } from '@/lib/tournoi/donnees';
 import type { StatsClassees } from '@/lib/tournoi/moteur';
@@ -257,6 +259,98 @@ export function TournoiEcran(p: Props) {
 
 // ------------------------------------------------------------ participants
 
+/**
+ * Un nom de participant avec son bouton « Renommer ». Au clic le nom devient un
+ * champ : Entrée enregistre, Échap annule. `enregistrer` reçoit le nom nettoyé
+ * et une fonction à appeler une fois c'est fait — le champ se referme alors ;
+ * sur un refus il reste ouvert, avec ce qu'on avait tapé.
+ * `children` : les mentions posées à côté du nom (« hors registre », le club).
+ */
+function NomModifiable({
+  nom,
+  desactive,
+  enregistrer,
+  children,
+}: {
+  nom: string;
+  desactive: boolean;
+  enregistrer: (nouveau: string, apres: () => void) => void;
+  children?: React.ReactNode;
+}) {
+  const [edition, setEdition] = useState(false);
+  const [saisie, setSaisie] = useState(nom);
+  const verdict = verifierNomParticipant(saisie);
+  const inchange = verdict.ok && verdict.nom === nom;
+
+  if (!edition) {
+    return (
+      <span className="flex flex-1 items-center gap-1.5">
+        <span className="text-[13.5px]">
+          {nom}
+          {children}
+        </span>
+        <button
+          type="button"
+          aria-label={`Renommer ${nom}`}
+          title="Renommer"
+          onClick={() => {
+            setSaisie(nom);
+            setEdition(true);
+          }}
+          className="text-encre-douce hover:text-terracotta"
+        >
+          <Pencil size={13} />
+        </button>
+      </span>
+    );
+  }
+
+  function valider() {
+    if (!verdict.ok || inchange) return;
+    enregistrer(verdict.nom, () => setEdition(false));
+  }
+
+  return (
+    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+      <input
+        autoFocus
+        value={saisie}
+        onChange={(e) => setSaisie(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            valider();
+          } else if (e.key === 'Escape') {
+            setEdition(false);
+          }
+        }}
+        aria-label={`Nouveau nom pour ${nom}`}
+        className={`${CHAMP} min-w-0 flex-1 py-1 text-[13.5px]`}
+      />
+      <button
+        type="button"
+        aria-label="Enregistrer le nom"
+        title="Enregistrer"
+        disabled={desactive || !verdict.ok || inchange}
+        onClick={valider}
+        className="text-pin hover:opacity-80 disabled:opacity-40"
+      >
+        <Check size={16} />
+      </button>
+      <button
+        type="button"
+        aria-label="Annuler"
+        title="Annuler"
+        onClick={() => setEdition(false)}
+        className="text-encre-douce hover:text-danger"
+      >
+        <X size={16} />
+      </button>
+      {!verdict.ok && <span className="basis-full text-[11.5px] text-danger">{verdict.error}</span>}
+    </span>
+  );
+}
+
 function VueParticipants({
   tournoi,
   participants,
@@ -290,15 +384,24 @@ function VueParticipants({
       <section className="flex flex-col gap-5">
         <Carte titre={`${participants.length} participants`}>
           <p className="mb-3 text-[12.5px] text-encre-douce">
-            Le tournoi a commencé : la liste est figée. Annulez toutes les parties pour la rouvrir.
+            Le tournoi a commencé : on ne peut plus ajouter ni retirer de participant (annulez toutes les
+            parties pour rouvrir la liste). Corriger l&apos;écriture d&apos;un nom reste possible avec le
+            crayon : les équipes, le tirage et les scores ne changent pas.
           </p>
           <ul className="grid gap-1.5 sm:grid-cols-2">
             {participants.map((x) => (
-              <li key={x.id} className="text-[13.5px]">
-                {x.nom}
-                {x.personneId == null && (
-                  <span className="ml-1.5 text-[11px] text-encre-douce">hors registre</span>
-                )}
+              <li key={x.id} className="flex items-center">
+                <NomModifiable
+                  nom={x.nom}
+                  desactive={enCours}
+                  enregistrer={(nouveau, apres) =>
+                    lancer(() => renommerParticipant(tournoi.id, x.id, nouveau), 'Nom corrigé.', apres)
+                  }
+                >
+                  {x.personneId == null && (
+                    <span className="ml-1.5 text-[11px] text-encre-douce">hors registre</span>
+                  )}
+                </NomModifiable>
               </li>
             ))}
           </ul>
@@ -397,13 +500,20 @@ function VueParticipants({
           <ul className="flex flex-col divide-y divide-ligne">
             {lignes.map((l, i) => (
               <li key={`${l.personneId ?? 'x'}-${i}`} className="flex items-center gap-3 py-2">
-                <span className="flex-1 text-[13.5px]">
-                  {l.nom}
+                {/* Avant le début : renommer change la ligne ici, et s'enregistre avec « Enregistrer la liste ». */}
+                <NomModifiable
+                  nom={l.nom}
+                  desactive={false}
+                  enregistrer={(nouveau, apres) => {
+                    setLignes((prev) => prev.map((x, j) => (j === i ? { ...x, nom: nouveau } : x)));
+                    apres();
+                  }}
+                >
                   {l.personneId == null && (
                     <span className="ml-1.5 text-[11px] text-encre-douce">hors registre</span>
                   )}
                   {l.club && <span className="ml-1.5 text-[11px] text-encre-douce">· {l.club}</span>}
-                </span>
+                </NomModifiable>
                 {tournoi.format !== 'melee' && (
                   <input
                     type="number"
